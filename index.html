@@ -765,7 +765,6 @@ function esc(s) {
 
 /* ── FADE IN OBSERVER ── */
 function observeFadeIns() {
-        // Clean up previous observer
         if (window._fadeObserver) window._fadeObserver.disconnect();
         window._fadeObserver = new IntersectionObserver((entries) => {
           entries.forEach(e => {
@@ -774,12 +773,14 @@ function observeFadeIns() {
               window._fadeObserver.unobserve(e.target);
             }
           });
-        }, {threshold:0.05, rootMargin:'200px'});
-        // Use rAF to ensure DOM is fully laid out before observing
+        }, {threshold:0.01, rootMargin:'600px'});
         requestAnimationFrame(() => {
-          document.querySelectorAll('.fade-in:not(.visible)').forEach(el => {
-            window._fadeObserver.observe(el);
-          });
+          const els = document.querySelectorAll('.fade-in:not(.visible)');
+          els.forEach(el => window._fadeObserver.observe(el));
+          // Safety net: force all cards visible after 800ms if observer missed them
+          setTimeout(() => {
+            document.querySelectorAll('.fade-in:not(.visible)').forEach(el => el.classList.add('visible'));
+          }, 800);
         });
       }
 
