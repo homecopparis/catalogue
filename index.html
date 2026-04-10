@@ -252,7 +252,7 @@ function renderCards(products) {
           var code = brandCode + '-' + String(idx + 1).padStart(3, '0');
           markup += '<div class="product-card">';
           if (price) markup += '<span class="price-badge">' + price + '</span>';
-          markup += '<div class="card-img-wrap"><img src="' + img + '" alt="' + brand + '" loading="lazy" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src=this.src;}else{this.style.opacity=\'0.3\';}"></div>';
+          markup += '<div class="card-img-wrap"><img src="' + img + '" alt="' + brand + '" loading="lazy" onerror="var r=parseInt(this.dataset.r||0);if(r<3){this.dataset.r=r+1;var s=this;setTimeout(function(){s.src=s.src.split('?')[0]+'?r='+s.dataset.r},r*1000)}else if(this.src.indexOf('_b.')>0){this.dataset.r=0;this.src=this.src.replace('_b.','_z.')}else{this.style.opacity='0.3'}"></div>';
           markup += '<div class="card-body">';
           markup += '<div class="card-ref">' + code + '</div>';
           markup += '<div class="card-name">' + brand.toLowerCase() + '</div>';
@@ -332,6 +332,9 @@ function setupMenuHandlers() {
 // Initialize
 applyFilters();
 setupMenuHandlers();
+
+// Global image retry
+document.addEventListener("error",function(e){var t=e.target;if(t.tagName==="IMG"&&t.src.indexOf("staticflickr")>-1){var r=parseInt(t.dataset.r||0);if(r<3){t.dataset.r=r+1;setTimeout(function(){t.src=t.src.split("?")[0]+"?r="+t.dataset.r},r*1000)}else if(t.src.indexOf("_b.")>0){t.dataset.r=0;t.src=t.src.replace("_b.","_z.")}else{t.style.opacity="0.3"}}},true);
 </script>
 </body>
 </html>
