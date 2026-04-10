@@ -6,138 +6,141 @@
 <meta name="referrer" content="no-referrer">
 <title>Home Cop Paris — Catalogue</title>
 <link rel="icon" href="logo.png">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0a0a;--surface:#141414;--card:#1a1a1a;--green:#00e676;--green-dim:#00c853;--text:#fff;--text2:#aaa;--text3:#666;--radius:16px;--pill-radius:999px}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+:root{--bg:#0a0a0a;--sidebar-bg:#111;--surface:#161616;--card:#1a1a1a;--green:#00e676;--green-dim:#00c853;--text:#fff;--text2:#aaa;--text3:#555;--radius:14px;--sidebar-w:260px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex}
 a{color:inherit;text-decoration:none}
 
-/* Header */
-.header{position:sticky;top:0;z-index:100;background:rgba(10,10,10,.92);backdrop-filter:blur(12px);border-bottom:1px solid #1a1a1a;padding:0 clamp(16px,4vw,48px);height:64px;display:flex;align-items:center;gap:16px}
-.logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+/* ---- SIDEBAR ---- */
+.sidebar{position:fixed;top:0;left:0;width:var(--sidebar-w);height:100vh;background:var(--sidebar-bg);border-right:1px solid #1e1e1e;display:flex;flex-direction:column;z-index:100;overflow:hidden}
+.sidebar-header{padding:24px 20px 16px;border-bottom:1px solid #1e1e1e}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:16px}
 .logo img{width:44px;height:44px;border-radius:10px;object-fit:contain}
-.logo span{font-size:1.2rem;font-weight:700;letter-spacing:-.02em}
+.logo span{font-size:1.15rem;font-weight:700;letter-spacing:-.02em}
 .logo .cop{color:var(--green)}
-.search-wrap{flex:1;max-width:520px;margin:0 auto}
-.search-wrap input{width:100%;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:var(--pill-radius);padding:10px 16px 10px 42px;color:#fff;font-size:.9rem;outline:none;transition:border-color .2s}
-.search-wrap input:focus{border-color:var(--green)}
+.search-box{width:100%;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:9px 12px 9px 34px;color:#fff;font-size:.82rem;outline:none;transition:border-color .2s;font-family:inherit}
+.search-box:focus{border-color:var(--green)}
 .search-wrap{position:relative}
-.search-wrap::before{content:'\1F50D';position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:.9rem;opacity:.5}
-.header-right{display:flex;align-items:center;gap:16px;flex-shrink:0;font-size:.85rem;color:var(--text2)}
-.header-right strong{color:var(--green);font-weight:600}
-.btn-dm{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--green);color:var(--green);padding:8px 20px;border-radius:var(--pill-radius);font-size:.85rem;font-weight:600;transition:all .2s;cursor:pointer;white-space:nowrap}
+.search-wrap::before{content:'\1F50D';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:.8rem;opacity:.4}
+.sidebar-stats{padding:12px 20px;font-size:.78rem;color:var(--text3);border-bottom:1px solid #1e1e1e}
+.sidebar-stats strong{color:var(--green)}
+
+/* Menu items */
+.sidebar-menu{flex:1;overflow-y:auto;padding:12px 0;scrollbar-width:thin;scrollbar-color:#333 transparent}
+.sidebar-menu::-webkit-scrollbar{width:4px}
+.sidebar-menu::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+.menu-section{padding:0 16px;margin-bottom:8px}
+.menu-section-title{font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);padding:8px 4px 6px}
+.menu-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:10px;cursor:pointer;transition:all .2s;font-size:.85rem;color:var(--text2);margin-bottom:2px}
+.menu-item:hover{background:#1a1a1a;color:var(--text)}
+.menu-item.active{background:var(--green);color:#000;font-weight:600}
+.menu-item .count{font-size:.75rem;opacity:.6;font-weight:500}
+.menu-item.active .count{opacity:.8}
+
+/* DM button at bottom */
+.sidebar-footer{padding:16px 20px;border-top:1px solid #1e1e1e}
+.btn-dm{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:1px solid var(--green);color:var(--green);padding:10px;border-radius:10px;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;background:transparent;font-family:inherit}
 .btn-dm:hover{background:var(--green);color:#000}
 
-/* Hero */
-.hero{text-align:center;padding:48px 20px 32px}
-.hero h1{font-family:'Playfair Display',serif;font-size:clamp(2.5rem,7vw,5rem);font-weight:700;line-height:1.05;margin-bottom:12px}
-.hero h1 .luxe{color:var(--green);font-style:italic}
-.hero p{color:var(--text2);font-size:clamp(.9rem,1.8vw,1.1rem);max-width:500px;margin:0 auto}
+/* ---- MAIN CONTENT ---- */
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh}
 
-/* Filter pills */
-.filters{padding:0 clamp(16px,4vw,48px);margin-bottom:32px;position:relative}
-.pills{display:flex;gap:10px;overflow-x:auto;padding:4px 0 12px;scrollbar-width:none;-ms-overflow-style:none}
-.pills::-webkit-scrollbar{display:none}
-.pill{flex-shrink:0;padding:10px 20px;border-radius:var(--pill-radius);border:1px solid #333;background:transparent;color:var(--text2);font-size:.85rem;font-weight:500;cursor:pointer;transition:all .25s;white-space:nowrap;display:flex;align-items:center;gap:6px}
-.pill:hover{border-color:var(--green);color:var(--text)}
-.pill.active{background:var(--green);color:#000;border-color:var(--green);font-weight:600}
-.pill .count{opacity:.6;font-size:.8rem}
+/* Hero */
+.hero{text-align:center;padding:48px 24px 28px}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,4rem);font-weight:700;line-height:1.05;margin-bottom:10px}
+.hero h1 .luxe{color:var(--green);font-style:italic}
+.hero p{color:var(--text2);font-size:clamp(.85rem,1.5vw,1rem)}
 
 /* Brand cards grid (home view) */
-.brands-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:0 clamp(16px,4vw,48px) 60px}
+.brands-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;padding:0 28px 60px}
 .brand-card{position:relative;border-radius:var(--radius);overflow:hidden;aspect-ratio:1/1;cursor:pointer;transition:transform .3s}
 .brand-card:hover{transform:scale(1.02)}
 .brand-card img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
 .brand-card:hover img{transform:scale(1.06)}
-.brand-card .overlay{position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,.85));display:flex;flex-direction:column;justify-content:flex-end;padding:24px}
-.brand-card .brand-name{font-size:1.3rem;font-weight:700;letter-spacing:-.01em}
-.brand-card .brand-count{display:flex;align-items:center;gap:8px;color:var(--green);font-size:.85rem;font-weight:500;margin-top:4px}
-.brand-card .brand-count::before{content:'';width:24px;height:2px;background:var(--green);display:inline-block}
+.brand-card .overlay{position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,.85));display:flex;flex-direction:column;justify-content:flex-end;padding:20px}
+.brand-card .brand-name{font-size:1.2rem;font-weight:700}
+.brand-card .brand-count{display:flex;align-items:center;gap:8px;color:var(--green);font-size:.82rem;font-weight:500;margin-top:3px}
+.brand-card .brand-count::before{content:'';width:20px;height:2px;background:var(--green);display:inline-block}
 
 /* Products grid (brand detail view) */
-.products-section{display:none;padding:0 clamp(16px,4vw,48px) 60px}
+.products-section{display:none;padding:0 28px 60px}
 .products-section.active{display:block}
-.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.products-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.products-header h2{font-size:1.4rem;font-weight:700}
+.products-header .prod-count{color:var(--green);font-size:.9rem}
+.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
 .product-card{background:var(--card);border-radius:var(--radius);overflow:hidden;transition:transform .3s}
 .product-card:hover{transform:translateY(-4px)}
 .product-card img{width:100%;aspect-ratio:1/1;object-fit:cover}
-.product-card .info{padding:12px 14px}
-.product-card .info .tag{font-size:.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
-.product-card .info .price{font-size:1.1rem;font-weight:600;margin-top:4px}
-.product-card .info .price::after{content:'€';margin-left:2px;font-size:.9rem;opacity:.7}
-
-/* Back button */
-.back-btn{display:none;align-items:center;gap:8px;padding:10px 24px;margin:0 clamp(16px,4vw,48px) 20px;border-radius:var(--pill-radius);background:var(--surface);border:1px solid #2a2a2a;color:var(--text);font-size:.9rem;cursor:pointer;transition:all .2s}
-.back-btn:hover{border-color:var(--green);color:var(--green)}
-.back-btn.show{display:inline-flex}
-.back-btn::before{content:'←'}
+.product-card .info{padding:10px 12px}
+.product-card .info .tag{font-size:.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+.product-card .info .price{font-size:1.15rem;font-weight:700;margin-top:3px;color:var(--green)}
 
 /* No results */
 .no-results{text-align:center;padding:80px 20px;color:var(--text3);font-size:1.1rem;display:none}
 
-/* Responsive */
+/* Mobile sidebar */
+.sidebar-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;background:var(--sidebar-bg);border:1px solid #2a2a2a;border-radius:10px;padding:8px 12px;color:var(--text);font-size:1.2rem;cursor:pointer}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90}
+
 @media(max-width:768px){
-  .header{height:56px;gap:10px}
-  .header-right .stats{display:none}
-  .btn-dm{padding:6px 14px;font-size:.8rem}
-  .brands-grid{grid-template-columns:repeat(2,1fr);gap:12px;padding:0 12px 40px}
-  .products-grid{grid-template-columns:repeat(2,1fr);gap:10px;padding:0}
-  .brand-card .brand-name{font-size:1rem}
-  .hero{padding:32px 16px 20px}
-  .hero h1{font-size:2.2rem}
-  .filters{padding:0 12px;margin-bottom:20px}
+  .sidebar{transform:translateX(-100%);transition:transform .3s}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-toggle{display:block}
+  .sidebar-overlay.show{display:block}
+  .main{margin-left:0}
+  .hero{padding:60px 16px 20px}
+  .brands-grid{grid-template-columns:repeat(2,1fr);gap:10px;padding:0 12px 40px}
+  .products-grid{grid-template-columns:repeat(2,1fr);gap:10px}
   .products-section{padding:0 12px 40px}
-  .back-btn{margin:0 12px 16px}
-}
-@media(max-width:480px){
-  .brands-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-  .products-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-  .brand-card .overlay{padding:12px}
-  .product-card .info{padding:8px 10px}
+  .products-header{padding:0 0 0;margin-bottom:14px}
 }
 </style>
 </head>
 <body>
-<!-- Header -->
-<header class="header">
-  <a href="./" class="logo">
-    <img src="logo.png" alt="Home Cop">
-    <span>Home<span class="cop">Cop</span></span>
-  </a>
-  <div class="search-wrap">
-    <input type="text" id="searchInput" placeholder="Rechercher une marque, un prix...">
+<!-- Mobile toggle -->
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">☰</button>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <a href="./" class="logo">
+      <img src="logo.png" alt="Home Cop">
+      <span>Home<span class="cop">Cop</span></span>
+    </a>
+    <div class="search-wrap">
+      <input type="text" class="search-box" id="searchInput" placeholder="Rechercher...">
+    </div>
   </div>
-  <div class="header-right">
-    <span class="stats" id="statsText">717 articles · <strong>24</strong> marques</span>
+  <div class="sidebar-stats" id="sidebarStats">717 articles · <strong>24</strong> marques</div>
+  <nav class="sidebar-menu" id="sidebarMenu"></nav>
+  <div class="sidebar-footer">
     <a href="https://www.instagram.com/homecopparis/" target="_blank" class="btn-dm">📷 DM pour commander</a>
   </div>
-</header>
+</aside>
 
-<!-- Hero -->
-<section class="hero" id="hero">
-  <h1>Streetwear <em>&amp;</em> <span class="luxe">Luxe</span></h1>
-  <p>Collection curated par Home Cop Paris. <span id="heroStats">24 marques, 717 pièces.</span></p>
-</section>
+<!-- Main content -->
+<main class="main">
+  <section class="hero" id="hero">
+    <h1>Streetwear <em>&amp;</em> <span class="luxe">Luxe</span></h1>
+    <p>Collection curated par Home Cop Paris. <span id="heroStats">24 marques, 717 pièces.</span></p>
+  </section>
 
-<!-- Filter pills -->
-<nav class="filters">
-  <div class="pills" id="pills"></div>
-</nav>
+  <section class="brands-grid" id="brandsGrid"></section>
 
-<!-- Back button -->
-<button class="back-btn" id="backBtn" onclick="showHome()">Retour aux marques</button>
+  <section class="products-section" id="productsSection">
+    <div class="products-header">
+      <h2 id="prodTitle">Marque</h2>
+      <span class="prod-count" id="prodCount"></span>
+    </div>
+    <div class="products-grid" id="productsGrid"></div>
+  </section>
 
-<!-- Brand cards (home) -->
-<section class="brands-grid" id="brandsGrid"></section>
-
-<!-- Products (detail) -->
-<section class="products-section" id="productsSection">
-  <div class="products-grid" id="productsGrid"></div>
-</section>
-
-<!-- No results -->
-<div class="no-results" id="noResults">🔍 Aucun résultat trouvé</div>
+  <div class="no-results" id="noResults">🔍 Aucun résultat trouvé</div>
+</main>
 
 <script>
 const ALBUMS = [{"id":"72177720325732861","name":"Acne Studio","count":23,"cover":"https://live.staticflickr.com/65535/55144442551_bc3e94b345_z.jpg"},{"id":"72177720320174599","name":"Aimé Leon Dore","count":24,"cover":"https://live.staticflickr.com/65535/53978688962_f6000d222c_z.jpg"},{"id":"72177720328741284","name":"Alo","count":25,"cover":"https://live.staticflickr.com/65535/54755252177_6d29efdf08_z.jpg"},{"id":"72177720311625870","name":"AMI Paris","count":25,"cover":"https://live.staticflickr.com/65535/54960445477_92e77f1ba9_z.jpg"},{"id":"72177720313039337","name":"Amiri","count":23,"cover":"https://live.staticflickr.com/65535/54862115162_751d2101f6_z.jpg"},{"id":"72177720320268065","name":"Arc’teryx","count":25,"cover":"https://live.staticflickr.com/65535/55115593922_3cb28a5038_z.jpg"},{"id":"72177720323734272","name":"Arte","count":24,"cover":"https://live.staticflickr.com/65535/53805100887_68f2cbacf2_z.jpg"},{"id":"72177720312966797","name":"Balenciaga","count":23,"cover":"https://live.staticflickr.com/65535/55165144026_ec092c4f1c_z.jpg"},{"id":"72177720313358060","name":"Broken Planet","count":24,"cover":"https://live.staticflickr.com/65535/55053489242_24946129da_z.jpg"},{"id":"72177720311858668","name":"BURBERRY","count":23,"cover":"https://live.staticflickr.com/65535/55155450196_3d57d940b3_z.jpg"},{"id":"72177720313412408","name":"Canada Goose","count":25,"cover":"https://live.staticflickr.com/65535/54711816007_a9d357cefa_z.jpg"},{"id":"72177720311527310","name":"Casablanca","count":24,"cover":"https://live.staticflickr.com/65535/55137830377_e9a9c65abf_z.jpg"},{"id":"72177720311700155","name":"CELINE","count":24,"cover":"https://live.staticflickr.com/65535/55125021167_0810a4c8f6_z.jpg"},{"id":"72177720313349340","name":"Chrome Hearts","count":24,"cover":"https://live.staticflickr.com/65535/55158278757_2d96ec71d8_z.jpg"},{"id":"72177720311717636","name":"Comme Des Garçon","count":25,"cover":"https://live.staticflickr.com/65535/54058133624_b5f2c07847_z.jpg"},{"id":"72177720313762775","name":"Corteiz","count":24,"cover":"https://live.staticflickr.com/65535/55056571217_cbc2c0c817_z.jpg"},{"id":"72177720311711392","name":"CP COMPANY","count":24,"cover":"https://live.staticflickr.com/65535/54898552614_b45962d46c_z.jpg"},{"id":"72177720319851647","name":"Denim Tears","count":24,"cover":"https://live.staticflickr.com/65535/54717239166_fb3804354b_z.jpg"},{"id":"72177720311467382","name":"DIOR","count":25,"cover":"https://live.staticflickr.com/65535/55176111011_5d981fa1e7_z.jpg"},{"id":"72177720326362168","name":"Fear Of God","count":24,"cover":"https://live.staticflickr.com/65535/55116862987_127130f669_z.jpg"},{"id":"72177720316980804","name":"Fendi","count":25,"cover":"https://live.staticflickr.com/65535/55124943307_4c621d5007_z.jpg"},{"id":"72177720313350487","name":"Gallery Dept.","count":24,"cover":"https://live.staticflickr.com/65535/54947270282_8bfd0c6774_z.jpg"},{"id":"72177720323752594","name":"Givenchy","count":24,"cover":"https://live.staticflickr.com/65535/55148819687_9ced907e02_z.jpg"},{"id":"lego","name":"LEGO","count":162,"cover":"https://images.brickset.com/sets/large/75252-1.jpg"}];
@@ -145,36 +148,41 @@ const PRODUCTS = [["72177720325732861","70","Acne Studio","https://www.flickr.co
 
 const LEGO_SUBCATS = {"starwars":"Star Wars","cars":"Cars","autres":"Autres","lotr":"Seigneur des Anneaux","pirates":"Pirates","hp":"Harry Potter","medieval":"Medieval","technic":"Technic","f1":"F1"};
 
-let currentView = 'home'; // 'home' or 'brand'
+let currentView = 'home';
 let currentBrand = null;
 
 function init() {
   var totalProducts = PRODUCTS.length;
   var totalBrands = ALBUMS.length;
-  document.getElementById('statsText').innerHTML = totalProducts + ' articles \xb7 <strong>' + totalBrands + '</strong> marques';
+  document.getElementById('sidebarStats').innerHTML = totalProducts + ' articles \xb7 <strong>' + totalBrands + '</strong> marques';
   document.getElementById('heroStats').textContent = totalBrands + ' marques, ' + totalProducts + ' pi\u00e8ces.';
-  renderPills();
+  renderSidebarMenu();
   renderBrandCards(ALBUMS);
 }
 
-function renderPills() {
-  var c = document.getElementById('pills');
-  var total = PRODUCTS.length;
-  var h = '<button class="pill active" onclick="filterPill(this,null)">Toutes <span class="count">' + total + '</span></button>';
+function renderSidebarMenu() {
+  var m = document.getElementById('sidebarMenu');
+  var h = '<div class="menu-section">';
+  h += '<div class="menu-section-title">Marques</div>';
+  h += '<div class="menu-item active" data-id="all" onclick="menuClick(this,null)"><span>Toutes</span><span class="count">' + PRODUCTS.length + '</span></div>';
   ALBUMS.forEach(function(a) {
-    h += '<button class="pill" onclick="filterPill(this,\'' + a.id + '\')">' + a.name + ' <span class="count">' + a.count + '</span></button>';
+    h += '<div class="menu-item" data-id="' + a.id + '" onclick="menuClick(this,\'' + a.id + '\')">';
+    h += '<span>' + a.name + '</span><span class="count">' + a.count + '</span></div>';
   });
-  c.innerHTML = h;
+  h += '</div>';
+  m.innerHTML = h;
 }
 
-function filterPill(el, albumId) {
-  document.querySelectorAll('.pill').forEach(function(p) { p.classList.remove('active'); });
+function menuClick(el, albumId) {
+  document.querySelectorAll('.menu-item').forEach(function(i) { i.classList.remove('active'); });
   el.classList.add('active');
   if (!albumId) {
     showHome();
   } else {
     showBrand(albumId);
   }
+  // Close mobile sidebar
+  if (window.innerWidth <= 768) toggleSidebar();
 }
 
 function showHome() {
@@ -182,9 +190,12 @@ function showHome() {
   currentBrand = null;
   document.getElementById('brandsGrid').style.display = '';
   document.getElementById('productsSection').classList.remove('active');
-  document.getElementById('backBtn').classList.remove('show');
   document.getElementById('hero').style.display = '';
   document.getElementById('noResults').style.display = 'none';
+  // Sync menu
+  document.querySelectorAll('.menu-item').forEach(function(i) { i.classList.remove('active'); });
+  var allItem = document.querySelector('.menu-item[data-id="all"]');
+  if (allItem) allItem.classList.add('active');
   var q = document.getElementById('searchInput').value.toLowerCase().trim();
   if (q) {
     var filtered = ALBUMS.filter(function(a) { return a.name.toLowerCase().indexOf(q) > -1; });
@@ -201,15 +212,23 @@ function showBrand(albumId) {
   var album = ALBUMS.find(function(a) { return a.id === albumId; });
   document.getElementById('brandsGrid').style.display = 'none';
   document.getElementById('productsSection').classList.add('active');
-  document.getElementById('backBtn').classList.add('show');
   document.getElementById('hero').style.display = 'none';
+  // Sync menu
+  document.querySelectorAll('.menu-item').forEach(function(i) { i.classList.remove('active'); });
+  var mi = document.querySelector('.menu-item[data-id="' + albumId + '"]');
+  if (mi) mi.classList.add('active');
   var prods = PRODUCTS.filter(function(p) { return p[0] === albumId; });
   var q = document.getElementById('searchInput').value.toLowerCase().trim();
   if (q) {
     prods = prods.filter(function(p) { return p[5].indexOf(q) > -1 || p[1].toString().indexOf(q) > -1; });
   }
+  if (album) {
+    document.getElementById('prodTitle').textContent = album.name;
+    document.getElementById('prodCount').textContent = prods.length + ' articles';
+  }
   renderProducts(prods, album ? album.name : '');
   document.getElementById('noResults').style.display = prods.length ? 'none' : 'block';
+  window.scrollTo(0, 0);
 }
 
 function renderBrandCards(albums) {
@@ -231,9 +250,14 @@ function renderProducts(prods, brandName) {
     h += '<a href="' + p[3] + '" target="_blank" class="product-card">';
     h += '<img src="' + p[4] + '" alt="' + p[2] + '" referrerpolicy="no-referrer" loading="lazy">';
     h += '<div class="info"><div class="tag">' + p[2] + '</div>';
-    h += '<div class="price">' + p[1] + '</div></div></a>';
+    h += '<div class="price">' + p[1] + '\u20AC</div></div></a>';
   });
   g.innerHTML = h;
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
 }
 
 // Search
