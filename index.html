@@ -313,8 +313,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .footer a:hover{color:var(--green-light)}
 
 /* ── FADE IN ── */
-.fade-in{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
-.fade-in.visible{opacity:1;transform:translateY(0)}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeInUp .5s ease forwards}
+
 
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){
@@ -764,25 +764,7 @@ function esc(s) {
 }
 
 /* ── FADE IN OBSERVER ── */
-function observeFadeIns() {
-        if (window._fadeObserver) window._fadeObserver.disconnect();
-        window._fadeObserver = new IntersectionObserver((entries) => {
-          entries.forEach(e => {
-            if (e.isIntersecting) {
-              e.target.classList.add('visible');
-              window._fadeObserver.unobserve(e.target);
-            }
-          });
-        }, {threshold:0.01, rootMargin:'600px'});
-        requestAnimationFrame(() => {
-          const els = document.querySelectorAll('.fade-in:not(.visible)');
-          els.forEach(el => window._fadeObserver.observe(el));
-          // Safety net: force all cards visible after 800ms if observer missed them
-          setTimeout(() => {
-            document.querySelectorAll('.fade-in:not(.visible)').forEach(el => el.classList.add('visible'));
-          }, 800);
-        });
-      }
+function observeFadeIns() { /* animation handled by CSS keyframes */ }
 
 /* ── GO ── */
 init();
