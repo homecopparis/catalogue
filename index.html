@@ -77,6 +77,17 @@ a{color:inherit;text-decoration:none}
 .product-card .info{padding:10px 12px}
 .product-card .info .tag{font-size:.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
 .product-card .info .price{font-size:1.15rem;font-weight:700;margin-top:3px;color:var(--green)}
+/* Lightbox */
+.lightbox{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.95);align-items:center;justify-content:center;flex-direction:column;cursor:pointer}
+.lightbox.open{display:flex}
+.lightbox img{max-width:90vw;max-height:80vh;object-fit:contain;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+.lightbox .lb-info{margin-top:16px;text-align:center}
+.lightbox .lb-brand{font-size:1rem;color:var(--text2);text-transform:uppercase;letter-spacing:.05em}
+.lightbox .lb-price{font-size:1.5rem;font-weight:700;color:var(--green);margin-top:4px}
+.lightbox .lb-close{position:absolute;top:20px;right:28px;font-size:2rem;color:#fff;cursor:pointer;opacity:.7;transition:opacity .2s;background:none;border:none;font-family:inherit}
+.lightbox .lb-close:hover{opacity:1}
+.lightbox .lb-back{position:absolute;top:20px;left:28px;display:flex;align-items:center;gap:8px;color:#fff;font-size:.95rem;cursor:pointer;opacity:.7;transition:opacity .2s;background:none;border:none;font-family:inherit}
+.lightbox .lb-back:hover{opacity:1}
 
 /* No results */
 .no-results{text-align:center;padding:80px 20px;color:var(--text3);font-size:1.1rem;display:none}
@@ -140,6 +151,16 @@ a{color:inherit;text-decoration:none}
   </section>
 
   <div class="no-results" id="noResults">🔍 Aucun résultat trouvé</div>
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <button class="lb-back" onclick="closeLightbox(event)">\u2190 Retour</button>
+  <button class="lb-close" onclick="closeLightbox(event)">\u2715</button>
+  <img id="lbImg" src="" alt="" referrerpolicy="no-referrer">
+  <div class="lb-info">
+    <div class="lb-brand" id="lbBrand"></div>
+    <div class="lb-price" id="lbPrice"></div>
+  </div>
+</div>
 </main>
 
 <script>
@@ -247,10 +268,10 @@ function renderProducts(prods, brandName) {
   var g = document.getElementById('productsGrid');
   var h = '';
   prods.forEach(function(p) {
-    h += '<a href="' + p[3] + '" target="_blank" class="product-card">';
+    h += '<div class="product-card" onclick="openLightbox(\'' + p[4] + '\',\'' + p[2] + '\',' + p[1] + ')">';
     h += '<img src="' + p[4] + '" alt="' + p[2] + '" referrerpolicy="no-referrer" loading="lazy">';
     h += '<div class="info"><div class="tag">' + p[2] + '</div>';
-    h += '<div class="price">' + p[1] + '\u20AC</div></div></a>';
+    h += '<div class="price">' + p[1] + '</div></div></div>';
   });
   g.innerHTML = h;
 }
@@ -284,6 +305,25 @@ document.addEventListener("error", function(e) {
     }
   }
 }, true);
+
+function openLightbox(imgUrl, brand, price) {
+  // Try to load higher res _b version
+  var bigUrl = imgUrl.replace('_z.', '_b.');
+  document.getElementById('lbImg').src = bigUrl;
+  document.getElementById('lbImg').onerror = function() { this.src = imgUrl; };
+  document.getElementById('lbBrand').textContent = brand;
+  document.getElementById('lbPrice').textContent = price;
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox(e) {
+  if (e && e.target.tagName === 'IMG') return;
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeLightbox(e);
+});
 
 init();
 </script>
