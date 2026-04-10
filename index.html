@@ -489,7 +489,7 @@ function renderAlbums() {
   
   let h = '';
   ALBUMS.forEach((a, i) => {
-    h += '<div class="album-card fade-in" onclick="openAlbum(''+a.id+'')" style="transition-delay:'+(i*40)+'ms">';
+    h += '<div class="album-card fade-in" onclick="openAlbum(&apos;'+a.id+'&apos;)" style="transition-delay:'+(i*40)+'ms">';
     h += '<img src="'+a.cover+'" alt="'+esc(a.name)+'" loading="lazy">';
     h += '<div class="album-overlay"><div class="album-name">'+esc(a.name)+'</div>';
     h += '<div class="album-count">'+a.count+' articles</div></div></div>';
