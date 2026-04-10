@@ -1,4 +1,7 @@
 <!DOCTYPE html>
+
+    var nvCountEl = document.querySelector('.menu-item[data-id="nouveautes"] .count');
+    if (nvCountEl) nvCountEl.textContent = PRODUCTS.length;
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -189,7 +192,8 @@ function renderSidebarMenu() {
   var m = document.getElementById('sidebarMenu');
   var h = '<div class="menu-section">';
   h += '<div class="menu-section-title">Marques</div>';
-  h += '<div class="menu-item active" data-id="all" onclick="menuClick(this,null)"><span>Toutes</span><span class="count">' + PRODUCTS.length + '</span></div>';
+  h += '<div class="menu-item active" data-id="all" onclick="menuClick(this,null)"><span>Accueil</span><span class="count">' + PRODUCTS.length + '</span></div>
+      <div class="menu-item" data-id="nouveautes" onclick="showNouveautes();window.scrollTo(0,0)"><span>Nouveautés</span><span class="count"></span></div>';
   ALBUMS.forEach(function(a) {
     h += '<div class="menu-item" data-id="' + a.id + '" onclick="menuClick(this,\'' + a.id + '\')">';
     h += '<span>' + a.name + '</span><span class="count">' + a.count + '</span></div>';
@@ -213,16 +217,26 @@ function menuClick(el, albumId) {
 function showHome() {
   currentView = 'home';
   currentBrand = null;
-  document.getElementById('brandsGrid').style.display = 'none';
-  document.getElementById('productsSection').classList.add('active');
+  document.getElementById('brandsGrid').style.display = '';
+  document.getElementById('productsSection').classList.remove('active');
   document.getElementById('hero').style.display = '';
   document.getElementById('noResults').style.display = 'none';
-  document.getElementById('prodTitle').textContent = 'Nouveaut\u00e9s';
-  // Sync menu
   document.querySelectorAll('.menu-item').forEach(function(i) { i.classList.remove('active'); });
   var allItem = document.querySelector('.menu-item[data-id="all"]');
   if (allItem) allItem.classList.add('active');
-  // Show ALL products (reversed = newest first)
+  renderBrandCards();
+}
+function showNouveautes() {
+  currentView = 'nouveautes';
+  currentBrand = null;
+  document.getElementById('brandsGrid').style.display = 'none';
+  document.getElementById('productsSection').classList.add('active');
+  document.getElementById('hero').style.display = 'none';
+  document.getElementById('noResults').style.display = 'none';
+  document.getElementById('prodTitle').textContent = 'Nouveaut\u00e9s';
+  document.querySelectorAll('.menu-item').forEach(function(i) { i.classList.remove('active'); });
+  var nvItem = document.querySelector('.menu-item[data-id="nouveautes"]');
+  if (nvItem) nvItem.classList.add('active');
   var allProds = PRODUCTS.slice().reverse();
   var q = document.getElementById('searchInput').value.toLowerCase().trim();
   if (q) {
@@ -232,6 +246,7 @@ function showHome() {
   renderProducts(allProds, '');
   document.getElementById('noResults').style.display = allProds.length ? 'none' : 'block';
 }
+
 
 function showBrand(albumId) {
   currentView = 'brand';
