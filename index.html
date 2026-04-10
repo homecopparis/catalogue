@@ -221,7 +221,7 @@ function showHome() {
   document.querySelectorAll('.menu-item').forEach(function(i) { i.classList.remove('active'); });
   var allItem = document.querySelector('.menu-item[data-id="all"]');
   if (allItem) allItem.classList.add('active');
-  renderBrandCards();
+  renderBrandCards(ALBUMS);
 }
 function showNouveautes() {
   currentView = 'nouveautes';
