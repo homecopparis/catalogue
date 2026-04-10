@@ -765,16 +765,23 @@ function esc(s) {
 
 /* ── FADE IN OBSERVER ── */
 function observeFadeIns() {
-  const obs = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('visible');
-        obs.unobserve(e.target);
+        // Clean up previous observer
+        if (window._fadeObserver) window._fadeObserver.disconnect();
+        window._fadeObserver = new IntersectionObserver((entries) => {
+          entries.forEach(e => {
+            if (e.isIntersecting) {
+              e.target.classList.add('visible');
+              window._fadeObserver.unobserve(e.target);
+            }
+          });
+        }, {threshold:0.05, rootMargin:'200px'});
+        // Use rAF to ensure DOM is fully laid out before observing
+        requestAnimationFrame(() => {
+          document.querySelectorAll('.fade-in:not(.visible)').forEach(el => {
+            window._fadeObserver.observe(el);
+          });
+        });
       }
-    });
-  }, {threshold:0.08, rootMargin:'40px'});
-  document.querySelectorAll('.fade-in:not(.visible)').forEach(el => obs.observe(el));
-}
 
 /* ── GO ── */
 init();
