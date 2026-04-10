@@ -1,7 +1,4 @@
 <!DOCTYPE html>
-
-    var nvCountEl = document.querySelector('.menu-item[data-id="nouveautes"] .count');
-    if (nvCountEl) nvCountEl.textContent = PRODUCTS.length;
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -225,6 +222,8 @@ function showHome() {
   var allItem = document.querySelector('.menu-item[data-id="all"]');
   if (allItem) allItem.classList.add('active');
   renderBrandCards();
+  var nvEl = document.querySelector('.menu-item[data-id="nouveautes"] .count');
+  if (nvEl) nvEl.textContent = PRODUCTS.length;
 }
 function showNouveautes() {
   currentView = 'nouveautes';
