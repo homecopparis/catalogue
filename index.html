@@ -189,8 +189,8 @@ function renderSidebarMenu() {
   var m = document.getElementById('sidebarMenu');
   var h = '<div class="menu-section">';
   h += '<div class="menu-section-title">Marques</div>';
-  h += '<div class="menu-item active" data-id="all" onclick="menuClick(this,null)"><span>Accueil</span><span class="count">' + PRODUCTS.length + '</span></div>
-      <div class="menu-item" data-id="nouveautes" onclick="showNouveautes();window.scrollTo(0,0)"><span>Nouveautés</span><span class="count"></span></div>';
+  h += '<div class="menu-item active" data-id="all" onclick="menuClick(this,null)"><span>Accueil</span><span class="count">' + PRODUCTS.length + '</span></div>';
+    h += '<div class="menu-item" data-id="nouveautes" onclick="showNouveautes();window.scrollTo(0,0)"><span>Nouveaut\u00e9s</span><span class="count">' + PRODUCTS.length + '</span></div>';
   ALBUMS.forEach(function(a) {
     h += '<div class="menu-item" data-id="' + a.id + '" onclick="menuClick(this,\'' + a.id + '\')">';
     h += '<span>' + a.name + '</span><span class="count">' + a.count + '</span></div>';
@@ -222,8 +222,6 @@ function showHome() {
   var allItem = document.querySelector('.menu-item[data-id="all"]');
   if (allItem) allItem.classList.add('active');
   renderBrandCards();
-  var nvEl = document.querySelector('.menu-item[data-id="nouveautes"] .count');
-  if (nvEl) nvEl.textContent = PRODUCTS.length;
 }
 function showNouveautes() {
   currentView = 'nouveautes';
