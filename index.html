@@ -15,7 +15,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a2e1
   display:flex;flex-direction:column;
   position:fixed;top:0;left:0;bottom:0;z-index:100;
   transition:transform .3s ease;
-}
+overflow-y:auto;scrollbar-width:thin}
 .sidebar-header{
   padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.08);
   display:flex;align-items:center;gap:12px;
@@ -252,7 +252,7 @@ function renderCards(products) {
           var code = brandCode + '-' + String(idx + 1).padStart(3, '0');
           markup += '<div class="product-card">';
           if (price) markup += '<span class="price-badge">' + price + '</span>';
-          markup += '<div class="card-img-wrap"><img src="' + img + '" alt="' + brand + '" loading="lazy" onerror="this.style.display=\'none\'"></div>';
+          markup += '<div class="card-img-wrap"><img src="' + img + '" alt="' + brand + '" loading="lazy" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src=this.src;}else{this.style.opacity=\'0.3\';}"></div>';
           markup += '<div class="card-body">';
           markup += '<div class="card-ref">' + code + '</div>';
           markup += '<div class="card-name">' + brand.toLowerCase() + '</div>';
