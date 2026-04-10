@@ -91,6 +91,8 @@ a{color:inherit;text-decoration:none}
 .lightbox .lb-back:hover{opacity:1}
 
 /* No results */
+.back-home{cursor:pointer;opacity:.5;transition:opacity .2s;margin-right:8px;font-size:1.2em}
+.back-home:hover{opacity:1;color:var(--green)}
 .no-results{text-align:center;padding:80px 20px;color:var(--text3);font-size:1.1rem;display:none}
 
 /* Mobile sidebar */
@@ -121,7 +123,7 @@ a{color:inherit;text-decoration:none}
   <div class="sidebar-header">
     <a href="./" class="logo">
       <img src="logo.png" alt="Home Cop">
-      <span>Home<span class="cop">Cop</span></span>
+      <span>Home<span class="cop">Cop Paris</span></span>
     </a>
     <div class="search-wrap">
       <input type="text" class="search-box" id="searchInput" placeholder="Rechercher...">
@@ -179,7 +181,7 @@ function init() {
   document.getElementById('sidebarStats').innerHTML = totalProducts + ' articles \xb7 <strong>' + totalBrands + '</strong> marques';
   document.getElementById('heroStats').textContent = totalBrands + ' marques, ' + totalProducts + ' pi\u00e8ces.';
   renderSidebarMenu();
-  renderBrandCards(ALBUMS);
+  showHome();
 }
 
 function renderSidebarMenu() {
@@ -210,22 +212,24 @@ function menuClick(el, albumId) {
 function showHome() {
   currentView = 'home';
   currentBrand = null;
-  document.getElementById('brandsGrid').style.display = '';
-  document.getElementById('productsSection').classList.remove('active');
+  document.getElementById('brandsGrid').style.display = 'none';
+  document.getElementById('productsSection').classList.add('active');
   document.getElementById('hero').style.display = '';
   document.getElementById('noResults').style.display = 'none';
+  document.getElementById('prodTitle').textContent = 'Nouveaut\u00e9s';
   // Sync menu
   document.querySelectorAll('.menu-item').forEach(function(i) { i.classList.remove('active'); });
   var allItem = document.querySelector('.menu-item[data-id="all"]');
   if (allItem) allItem.classList.add('active');
+  // Show ALL products (reversed = newest first)
+  var allProds = PRODUCTS.slice().reverse();
   var q = document.getElementById('searchInput').value.toLowerCase().trim();
   if (q) {
-    var filtered = ALBUMS.filter(function(a) { return a.name.toLowerCase().indexOf(q) > -1; });
-    renderBrandCards(filtered);
-    document.getElementById('noResults').style.display = filtered.length ? 'none' : 'block';
-  } else {
-    renderBrandCards(ALBUMS);
+    allProds = allProds.filter(function(p) { return p[5].indexOf(q) > -1 || p[1].toString().indexOf(q) > -1 || p[2].toLowerCase().indexOf(q) > -1; });
   }
+  document.getElementById('prodCount').textContent = allProds.length + ' articles';
+  renderProducts(allProds, '');
+  document.getElementById('noResults').style.display = allProds.length ? 'none' : 'block';
 }
 
 function showBrand(albumId) {
@@ -245,7 +249,7 @@ function showBrand(albumId) {
     prods = prods.filter(function(p) { return p[5].indexOf(q) > -1 || p[1].toString().indexOf(q) > -1; });
   }
   if (album) {
-    document.getElementById('prodTitle').textContent = album.name;
+    document.getElementById('prodTitle').innerHTML = '<span class="back-home" onclick="showHome();window.scrollTo(0,0)">←</span> ' + album.name;
     document.getElementById('prodCount').textContent = prods.length + ' articles';
   }
   renderProducts(prods, album ? album.name : '');
