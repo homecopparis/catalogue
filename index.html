@@ -72,6 +72,7 @@ a{color:inherit;text-decoration:none}
 .products-header .prod-count{color:var(--green);font-size:.9rem}
 .products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
 .product-card{background:var(--card);border-radius:var(--radius);overflow:hidden;transition:transform .3s}
+.product-card{cursor:pointer}
 .product-card:hover{transform:translateY(-4px)}
 .product-card img{width:100%;aspect-ratio:1/1;object-fit:cover}
 .product-card .info{padding:10px 12px}
@@ -153,8 +154,8 @@ a{color:inherit;text-decoration:none}
   <div class="no-results" id="noResults">🔍 Aucun résultat trouvé</div>
 <!-- Lightbox -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
-  <button class="lb-back" onclick="closeLightbox(event)">\u2190 Retour</button>
-  <button class="lb-close" onclick="closeLightbox(event)">\u2715</button>
+  <button class="lb-back" onclick="closeLightbox(event)">← Retour</button>
+  <button class="lb-close" onclick="closeLightbox(event)">✕</button>
   <img id="lbImg" src="" alt="" referrerpolicy="no-referrer">
   <div class="lb-info">
     <div class="lb-brand" id="lbBrand"></div>
