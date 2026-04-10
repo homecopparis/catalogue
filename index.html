@@ -330,14 +330,8 @@ function setupMenuHandlers() {
       }
 
 // Initialize
-renderCards();
+applyFilters();
 setupMenuHandlers();
-
-// Search handler
-searchInput.addEventListener('input', (e) => {
-  searchQuery = e.target.value.toLowerCase().trim();
-  applyFilters();
-});
 </script>
 </body>
 </html>
