@@ -238,39 +238,30 @@ function toggleSidebar() {
 }
 
 function renderCards(products) {
-        const grid = document.getElementById('productGrid');
+        var grid = document.getElementById('grid');
         if (!grid) return;
-        
-        const albumNames = {"72177720325732861":"Acne Studio","72177720320174599":"Aimé Leon Dore","72177720328741284":"Alo","72177720311625870":"AMI Paris","72177720313039337":"Amiri","72177720320268065":"Arc’teryx","72177720323734272":"Arte","72177720312966797":"Balenciaga","72177720313358060":"Broken Planet","72177720311858668":"BURBERRY","72177720313412408":"Canada Goose","72177720311527310":"Casablanca","72177720311700155":"CELINE","72177720313349340":"Chrome Hearts","72177720311717636":"Comme Des Garçon","72177720313762775":"Corteiz","72177720311711392":"CP COMPANY","72177720319851647":"Denim Tears","72177720311467382":"DIOR","72177720326362168":"Fear Of God","72177720316980804":"Fendi","72177720313350487":"Gallery Dept.","72177720323752594":"Givenchy","lego":"LEGO"};
-        
-        let html = '';
-        products.forEach((p, idx) => {
-          const albumId = p[0];
-          const price = p[1];
-          const brand = p[2] || albumNames[albumId] || '';
-          const url = p[3] || '';
-          const img = p[4] || '';
-          const tags = p[5] || '';
-          
-          // Generate product code
-          const brandCode = brand.substring(0,3).toUpperCase();
-          const code = brandCode + '-' + String(idx + 1).padStart(3, '0');
-          
-          // Determine link text
-          const isLego = albumId === 'lego';
-          const linkDomain = isLego ? 'LEGO.com' : 'Flickr';
-          
-          html += '<div class="product-card">';
-          if (price) html += '<span class="price-badge">' + price + '</span>';
-          html += '<div class="card-img-wrap"><img src="' + img + '" alt="' + brand + '" loading="lazy" onerror="this.style.display=\'none\'"></div>';
-          html += '<div class="card-body">';
-          html += '<div class="card-ref">' + code + '</div>';
-          html += '<div class="card-name">' + brand.toLowerCase() + '</div>';
-          html += '<div class="card-contact">Contacter le staff Homecopparis pour cet objet</div>';
-          html += '</div></div>';
-        });
-        
-        grid.innerHTML = html;
+        var albumNames = {"72177720325732861":"Acne Studio","72177720320174599":"Aimé Leon Dore","72177720328741284":"Alo","72177720311625870":"AMI Paris","72177720313039337":"Amiri","72177720320268065":"Arc’teryx","72177720323734272":"Arte","72177720312966797":"Balenciaga","72177720313358060":"Broken Planet","72177720311858668":"BURBERRY","72177720313412408":"Canada Goose","72177720311527310":"Casablanca","72177720311700155":"CELINE","72177720313349340":"Chrome Hearts","72177720311717636":"Comme Des Garçon","72177720313762775":"Corteiz","72177720311711392":"CP COMPANY","72177720319851647":"Denim Tears","72177720311467382":"DIOR","72177720326362168":"Fear Of God","72177720316980804":"Fendi","72177720313350487":"Gallery Dept.","72177720323752594":"Givenchy","lego":"LEGO"};
+        var markup = '';
+        for (var idx = 0; idx < products.length; idx++) {
+          var p = products[idx];
+          var albumId = p[0];
+          var price = p[1];
+          var brand = p[2] || albumNames[albumId] || '';
+          var img = p[4] || '';
+          var brandCode = brand.substring(0,3).toUpperCase();
+          var code = brandCode + '-' + String(idx + 1).padStart(3, '0');
+          markup += '<div class="product-card">';
+          if (price) markup += '<span class="price-badge">' + price + '</span>';
+          markup += '<div class="card-img-wrap"><img src="' + img + '" alt="' + brand + '" loading="lazy" onerror="this.style.display=\'none\'"></div>';
+          markup += '<div class="card-body">';
+          markup += '<div class="card-ref">' + code + '</div>';
+          markup += '<div class="card-name">' + brand.toLowerCase() + '</div>';
+          markup += '<div class="card-contact">Contacter le staff Homecopparis pour cet objet</div>';
+          markup += '</div></div>';
+        }
+        grid.innerHTML = markup || '<div class="no-results">Aucun produit</div>';
+        var countEl = document.getElementById('visibleCount');
+        if (countEl) countEl.textContent = products.length;
       }
 
 function applyFilters() {
