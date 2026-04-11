@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="referrer" content="no-referrer">
-<title>Home Cop Paris — Catalogue</title>
+<title>Home Cop Paris â Catalogue</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -93,8 +93,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 </style>
 </head>
 <body>
-<div id="loading"><div class="spinner"></div><p>Chargement du catalogue…</p></div>
-<button class="hamburger" onclick="toggleSidebar()">☰</button>
+<div id="loading"><div class="spinner"></div><p>Chargement du catalogueâ¦</p></div>
+<button class="hamburger" onclick="toggleSidebar()">â°</button>
 <div class="overlay" onclick="toggleSidebar()"></div>
 <aside class="sidebar">
   <div class="sidebar-header">
@@ -103,7 +103,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <span>Home<span class="cop">Cop Paris</span></span>
     </a>
     <div class="search-wrap">
-      <input class="search-box" id="searchInput" type="text" placeholder="Rechercher… ex: hoodie noir nike" oninput="onSmartSearch(this.value)" onkeydown="onSearchKey(event)" autocomplete="off">
+      <input class="search-box" id="searchInput" type="text" placeholder="Rechercherâ¦ ex: hoodie noir nike" oninput="onSmartSearch(this.value)" onkeydown="onSearchKey(event)" autocomplete="off">
       <div class="search-suggest" id="searchSuggest"></div>
     </div>
     <div class="search-tags" id="searchTags"></div>
@@ -124,8 +124,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   </div>
 </main>
 <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
-  <button class="lb-back" onclick="closeLightbox(event)">← Retour</button>
-  <button class="lb-close" onclick="closeLightbox(event)">✕</button>
+  <button class="lb-back" onclick="closeLightbox(event)">â Retour</button>
+  <button class="lb-close" onclick="closeLightbox(event)">â</button>
   <img id="lbImg" src="" alt="" referrerpolicy="no-referrer">
   <div class="lb-info"><div class="lb-brand" id="lbBrand"></div><div class="lb-price" id="lbPrice"></div></div>
 </div>
@@ -134,7 +134,7 @@ var PREFIX='',CATEGORIES=[],PRODUCTS=[],CURRENT_VIEW='home',CURRENT_CAT=null;
 var FILTERED=[],RENDER_INDEX=0,BATCH_SIZE=48;
 var searchTimer=null;
 
-/* URL helpers — reconstruct from prefix + photo_id + secret, or return full URL */
+/* URL helpers â reconstruct from prefix + photo_id + secret, or return full URL */
 function imgUrl(pid,secret,size){if(pid&&pid.indexOf('http')===0)return pid;return PREFIX+pid+'_'+secret+'_'+size+'.jpg'}
 
 fetch('data.json').then(function(r){return r.json()}).then(function(data){
@@ -166,9 +166,9 @@ function init(){
 }
 
 function buildSidebar(){
-  document.getElementById('sidebarStats').textContent=PRODUCTS.length+' articles · '+CATEGORIES.length+' marques';
+  document.getElementById('sidebarStats').textContent=PRODUCTS.length+' articles Â· '+CATEGORIES.length+' marques';
   var h='<div class="menu-item active" data-cat="home" onclick="showHome()"><span>Accueil</span></div>';
-  h+='<div class="menu-item" data-cat="nouveautes" onclick="showNouveautes()"><span>Nouveautés</span><span class="count">'+PRODUCTS.length+'</span></div>';
+  h+='<div class="menu-item" data-cat="nouveautes" onclick="showNouveautes()"><span>NouveautÃ©s</span><span class="count">'+PRODUCTS.length+'</span></div>';
   for(var i=0;i<CATEGORIES.length;i++){
     var c=CATEGORIES[i];
     h+='<div class="menu-item" data-cat="'+c.id+'" onclick="showBrand(\''+c.id+'\')"><span>'+escH(c.n)+'</span><span class="count">'+c.c+'</span></div>';
@@ -194,7 +194,7 @@ function showNouveautes(){
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
   document.getElementById('productsSection').style.display='block';
-  document.getElementById('productsHeader').innerHTML='<h2>Nouveautés</h2>';
+  document.getElementById('productsHeader').innerHTML='<h2>NouveautÃ©s</h2>';
   FILTERED=PRODUCTS.slice().sort(function(a,b){return(b.u||0)-(a.u||0)});
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
@@ -207,7 +207,7 @@ function showBrand(albumId){
   document.getElementById('productsSection').style.display='block';
   var cat=CATEGORIES.find(function(c){return c.id===albumId});
   var catName=cat?cat.n:albumId;
-  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>'+escH(catName)+'</h2>';
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">â</button><h2>'+escH(catName)+'</h2>';
   FILTERED=PRODUCTS.filter(function(p){return p.a===albumId});
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
@@ -234,9 +234,11 @@ function renderBatch(){
     var cardImg=p.p?(p.p.indexOf('http')===0?p.p:((p.ts)?imgUrl(p.p,p.ts,'n'):'')):'';
 
     var price=extractPrice(p.t);
+    var pubTitle=cleanTitle(p.t);
     h+='<div class="product-card" onclick="openLightbox('+i+')">';
-    h+='<img src="'+escH(cardImg)+'" alt="'+escH(p.t||'')+'" loading="lazy" referrerpolicy="no-referrer">';
-    h+='<div class="info"><div class="pname">'+escH(p.t||'Sans titre')+'</div>';
+    h+='<img src="'+escH(cardImg)+'" alt="'+escH(pubTitle||'')+'" loading="lazy" referrerpolicy="no-referrer">';
+    h+='<div class="info">';
+    if(pubTitle)h+='<div class="pname">'+escH(pubTitle)+'</div>';
     if(price)h+='<div class="price">'+price+'</div>';
     h+='</div></div>';
   }
@@ -251,65 +253,65 @@ function setupInfiniteScroll(){
   obs.observe(sentinel);
 }
 
-/* ═══════════════════════════════════════════════════════
-   SMART SEARCH ENGINE v2 — strict AND filtering, confidence scoring
-   ═══════════════════════════════════════════════════════ */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SMART SEARCH ENGINE v2 â strict AND filtering, confidence scoring
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
-/* ── Confidence threshold — below this, a match is ignored ── */
+/* ââ Confidence threshold â below this, a match is ignored ââ */
 var CONF_THRESHOLD=0.6;
 
-/* ── Scoring weights (type=0.4, brand=0.3, color=0.2, text=0.1) ── */
+/* ââ Scoring weights (type=0.4, brand=0.3, color=0.2, text=0.1) ââ */
 var W_TYPE=40,W_BRAND=30,W_COLOR=20,W_TEXT=10;
 
-/* ── Dictionnaire types produit (canonical → synonymes) ── */
+/* ââ Dictionnaire types produit (canonical â synonymes) ââ */
 var TYPE_DICT={
   'T-shirt':['t-shirt','tshirt','tee shirt','tee-shirt','t shirt','teeshirt','maillot'],
-  'Hoodie':['hoodie','hoody','capuche','sweat à capuche','sweat capuche'],
+  'Hoodie':['hoodie','hoody','capuche','sweat Ã  capuche','sweat capuche'],
   'Sweatshirt':['sweatshirt','sweat','sweater','pull-over','pullover'],
   'Pull':['pull','pullover','tricot','knit','knitwear'],
   'Veste':['veste','jacket','blazer','blouson','bomber','doudoune','puffer','manteau','coat','parka','windbreaker','coupe-vent','coupe vent','gilet'],
   'Chemise':['chemise','shirt','blouse','chemisette'],
   'Polo':['polo'],
-  'Pantalon':['pantalon','pants','pant','trousers','chino','chinos','cargo','jogging','jogger','joggers','survêtement','survet','survetement','trackpant','trackpants','track pant'],
+  'Pantalon':['pantalon','pants','pant','trousers','chino','chinos','cargo','jogging','jogger','joggers','survÃªtement','survet','survetement','trackpant','trackpants','track pant'],
   'Jeans':['jean','jeans','denim'],
   'Short':['short','shorts','bermuda','bermudas'],
-  'Ensemble':['ensemble','set','survêtement','survet','tracksuit','costume','suit','co-ord','coord'],
+  'Ensemble':['ensemble','set','survÃªtement','survet','tracksuit','costume','suit','co-ord','coord'],
   'Chaussures':['chaussure','chaussures','shoe','shoes','sneaker','sneakers','basket','baskets','boots','boot','botte','bottes','mule','mules','sandale','sandales','loafer','loafers','mocassin'],
   'Casquette':['casquette','cap','caps','bob','bobs','bonnet','bonnets','chapeau','hat','fitted','snapback','trucker','beanie'],
   'Sac':['sac','bag','bags','sacoche','pochette','besace','backpack','tote','clutch','messenger','banane','fanny pack','bumbag'],
   'Ceinture':['ceinture','belt','belts','ceintures'],
-  'Écharpe':['écharpe','echarpe','scarf','scarves','foulard','châle','chale','shawl','étole','etole'],
+  'Ãcharpe':['Ã©charpe','echarpe','scarf','scarves','foulard','chÃ¢le','chale','shawl','Ã©tole','etole'],
   'Lunettes':['lunettes','sunglasses','glasses','eyewear'],
-  'Accessoire':['accessoire','accessoires','bijou','bijoux','bracelet','collier','bague','ring','chain','chaîne','chaine','montre','watch','portefeuille','wallet','porte-carte','cardholder']
+  'Accessoire':['accessoire','accessoires','bijou','bijoux','bracelet','collier','bague','ring','chain','chaÃ®ne','chaine','montre','watch','portefeuille','wallet','porte-carte','cardholder']
 };
 
-/* ── Dictionnaire couleurs (canonical → synonymes) ── */
+/* ââ Dictionnaire couleurs (canonical â synonymes) ââ */
 var COLOR_DICT={
   'Noir':['noir','noire','noirs','black','blk'],
-  'Blanc':['blanc','blanche','blancs','white','wht','cream','crème','creme','ivoire','ivory','ecru','écru'],
+  'Blanc':['blanc','blanche','blancs','white','wht','cream','crÃ¨me','creme','ivoire','ivory','ecru','Ã©cru'],
   'Bleu':['bleu','bleue','bleus','blue','azur','cyan','cobalt','indigo'],
-  'Bleu marine':['bleu marine','marine','navy','dark blue','bleu foncé','bleu fonce'],
+  'Bleu marine':['bleu marine','marine','navy','dark blue','bleu foncÃ©','bleu fonce'],
   'Rouge':['rouge','rouges','red','bordeaux','burgundy','bourgogne','carmin','vermillon','cerise','cherry','crimson'],
-  'Vert':['vert','verte','verts','green','emeraude','émeraude','sapin','forest','lime'],
+  'Vert':['vert','verte','verts','green','emeraude','Ã©meraude','sapin','forest','lime'],
   'Olive':['olive','kaki','khaki','army','militaire','army green','olive green','vert olive','vert kaki'],
-  'Gris':['gris','grise','grey','gray','anthracite','charcoal','silver','argenté','argente','heather'],
+  'Gris':['gris','grise','grey','gray','anthracite','charcoal','silver','argentÃ©','argente','heather'],
   'Rose':['rose','roses','pink','fuchsia','magenta','salmon','saumon'],
-  'Orange':['orange','orangé','orange','tangerine','corail','coral'],
-  'Jaune':['jaune','jaunes','yellow','gold','doré','dore','or','moutarde','mustard'],
+  'Orange':['orange','orangÃ©','orange','tangerine','corail','coral'],
+  'Jaune':['jaune','jaunes','yellow','gold','dorÃ©','dore','or','moutarde','mustard'],
   'Violet':['violet','violette','purple','mauve','lilas','lavande','lavender','prune','plum'],
-  'Marron':['marron','brown','brun','brune','tan','camel','chocolat','chocolate','caramel','cognac','café','cafe','taupe','noisette'],
-  'Beige':['beige','sable','sand','nude','champagne','vanille','vanilla','crème','off-white','off white']
+  'Marron':['marron','brown','brun','brune','tan','camel','chocolat','chocolate','caramel','cognac','cafÃ©','cafe','taupe','noisette'],
+  'Beige':['beige','sable','sand','nude','champagne','vanille','vanilla','crÃ¨me','off-white','off white']
 };
 
-/* ── Multi-word color list (checked before single tokens) ── */
-var MULTIWORD_COLORS=['bleu marine','bleu foncé','bleu fonce','dark blue','vert olive','vert kaki','army green','olive green','off white','off-white','vert clair','bleu clair','gris clair','gris foncé'];
+/* ââ Multi-word color list (checked before single tokens) ââ */
+var MULTIWORD_COLORS=['bleu marine','bleu foncÃ©','bleu fonce','dark blue','vert olive','vert kaki','army green','olive green','off white','off-white','vert clair','bleu clair','gris clair','gris foncÃ©'];
 
-/* ── Brand alias shortcuts ── */
-var BRAND_ALIASES={'lv':'louis vuitton','si':'stone island','cp':'cp company','ysl':'yves saint laurent','ald':'aimé leon dore','cdg':'comme des garçons'};
+/* ââ Brand alias shortcuts ââ */
+var BRAND_ALIASES={'lv':'louis vuitton','si':'stone island','cp':'cp company','ysl':'yves saint laurent','ald':'aimÃ© leon dore','cdg':'comme des garÃ§ons'};
 
-/* ── Index inversé construit au chargement ── */
-var BRAND_INDEX={};/* brandNameLower → catObj */
-var BRAND_WORDS={};/* individual words → [catObj] for partial matching */
+/* ââ Index inversÃ© construit au chargement ââ */
+var BRAND_INDEX={};/* brandNameLower â catObj */
+var BRAND_WORDS={};/* individual words â [catObj] for partial matching */
 var PRODUCT_SEARCH_INDEX=[];/* [{p, bn, bnl, tl, types:[], typeConf, primaryColor, colorConf}] */
 
 function buildSearchIndex(){
@@ -326,7 +328,7 @@ function buildSearchIndex(){
   });
 
   /* Color normalization map: group sub-variants under main color */
-  var COLOR_NORMALIZE={'Bleu clair':'Bleu','Vert clair':'Vert','Vert foncé':'Vert','Gris clair':'Gris','Gris foncé':'Gris','Turquoise':'Bleu','Bordeaux':'Rouge'};
+  var COLOR_NORMALIZE={'Bleu clair':'Bleu','Vert clair':'Vert','Vert foncÃ©':'Vert','Gris clair':'Gris','Gris foncÃ©':'Gris','Turquoise':'Bleu','Bordeaux':'Rouge'};
 
   PRODUCT_SEARCH_INDEX=[];
   PRODUCTS.forEach(function(p){
@@ -334,7 +336,7 @@ function buildSearchIndex(){
     var brandName=cat?cat.n:'';
     var tl=(p.t||'').toLowerCase();
 
-    /* ── Primary color from image analysis (cl field) ── */
+    /* ââ Primary color from image analysis (cl field) ââ */
     var primaryColor=null;var colorConf=0;
     if(p.cl){
       var rawColor=p.cl;
@@ -358,7 +360,7 @@ function buildSearchIndex(){
       }
     }
 
-    /* ── Type from category tag (tp field on category) ── */
+    /* ââ Type from category tag (tp field on category) ââ */
     var detectedType=null;var typeConf=0;
     if(cat&&cat.tp&&cat.tp!=='Multi'&&cat.tp!=='Jouet'){
       detectedType=cat.tp;typeConf=0.85;/* category-level assignment = high confidence */
@@ -386,7 +388,7 @@ function buildSearchIndex(){
   });
 }
 
-/* ── Fuzzy matching (Levenshtein-based) ── */
+/* ââ Fuzzy matching (Levenshtein-based) ââ */
 function levenshtein(a,b){
   if(a===b)return 0;if(!a.length)return b.length;if(!b.length)return a.length;
   if(a.length>b.length){var tmp=a;a=b;b=tmp}
@@ -427,7 +429,7 @@ function fuzzyMatch(query,target,threshold){
   return 0;
 }
 
-/* ── Resolve a single token to type/color/brand ── */
+/* ââ Resolve a single token to type/color/brand ââ */
 function resolveToken(token){
   var result={type:null,color:null,brand:null,raw:token,score:0,conf:0};
   var bestTypeScore=0,bestType=null;
@@ -467,7 +469,7 @@ function resolveToken(token){
   return result;
 }
 
-/* ── Multi-word resolution (brands + compound colors like "bleu marine") ── */
+/* ââ Multi-word resolution (brands + compound colors like "bleu marine") ââ */
 function resolveMultiWord(tokens){
   var resolved=[];var skip={};
   for(var i=0;i<tokens.length;i++){
@@ -511,7 +513,7 @@ function resolveMultiWord(tokens){
   return resolved;
 }
 
-/* ── Main smart search v2 — strict AND filtering + result levels ── */
+/* ââ Main smart search v2 â strict AND filtering + result levels ââ */
 function smartSearch(query){
   if(!query||!query.trim())return{products:PRODUCTS,brands:CATEGORIES,info:'',level:0};
   var q=query.trim().toLowerCase().replace(/[&']/g,"'");
@@ -536,20 +538,20 @@ function smartSearch(query){
   var totalCriteria=filterTypes.length+filterColors.length+filterBrands.length;
   var hasFree=freeTokens.length>0;
 
-  /* ── Score and classify each product into levels ── */
+  /* ââ Score and classify each product into levels ââ */
   var exact=[],partial=[],fallback=[];
 
   PRODUCT_SEARCH_INDEX.forEach(function(entry){
     var typeMatch=0,brandMatch=0,colorMatch=0,textMatch=0;
     var typePassed=true,brandPassed=true,colorPassed=true;
 
-    /* ── Brand strict check ── */
+    /* ââ Brand strict check ââ */
     filterBrands.forEach(function(b){
       if(entry.p.a===b.id)brandMatch=1;
       else{brandMatch=0;brandPassed=false}
     });
 
-    /* ── Type strict check (with confidence gating) ── */
+    /* ââ Type strict check (with confidence gating) ââ */
     filterTypes.forEach(function(t){
       if(entry.types.indexOf(t)!==-1&&entry.typeConf>=CONF_THRESHOLD){
         typeMatch=1;
@@ -569,12 +571,12 @@ function smartSearch(query){
       }
     });
 
-    /* ── Color strict check — primaryColor only, confidence gated ── */
+    /* ââ Color strict check â primaryColor only, confidence gated ââ */
     filterColors.forEach(function(c){
       if(entry.primaryColor===c&&entry.colorConf>=CONF_THRESHOLD){
         colorMatch=1;
       }else{
-        /* Check if the queried color's parent matches (e.g. "bleu marine" → product has "Bleu") */
+        /* Check if the queried color's parent matches (e.g. "bleu marine" â product has "Bleu") */
         var colorParents={'Bleu marine':'Bleu','Olive':'Vert'};
         var parent=colorParents[c];
         if(parent&&entry.primaryColor===parent&&entry.colorConf>=CONF_THRESHOLD){
@@ -591,7 +593,7 @@ function smartSearch(query){
       }
     });
 
-    /* ── Free text matching ── */
+    /* ââ Free text matching ââ */
     if(hasFree){
       var ftMatched=0;
       freeTokens.forEach(function(ft){
@@ -606,7 +608,7 @@ function smartSearch(query){
       textMatch=freeTokens.length>0?ftMatched/freeTokens.length:0;
     }
 
-    /* ── Compute weighted score ── */
+    /* ââ Compute weighted score ââ */
     var typeScore=filterTypes.length>0?typeMatch:1;
     var brandScore=filterBrands.length>0?brandMatch:1;
     var colorScore=filterColors.length>0?colorMatch:1;
@@ -614,7 +616,7 @@ function smartSearch(query){
 
     var finalScore=W_TYPE*typeScore+W_BRAND*brandScore+W_COLOR*colorScore+W_TEXT*textScore;
 
-    /* ── Classify into levels based on strict AND ── */
+    /* ââ Classify into levels based on strict AND ââ */
     var allStructuredPass=typePassed&&brandPassed&&colorPassed;
     var structuredMatches=(typePassed?1:0)+(brandPassed?1:0)+(colorPassed?1:0);
     var structuredTotal=(filterTypes.length>0?1:0)+(filterBrands.length>0?1:0)+(filterColors.length>0?1:0);
@@ -638,7 +640,7 @@ function smartSearch(query){
     }
   });
 
-  /* ── Assemble results with strict priority ── */
+  /* ââ Assemble results with strict priority ââ */
   var resultLevel=1;var results;
   if(exact.length>0){
     results=exact;resultLevel=1;
@@ -672,14 +674,14 @@ function smartSearch(query){
   if(filterBrands.length)infoParts.push('Marque: '+filterBrands.map(function(b){return b.n}).join(', '));
   if(freeTokens.length)infoParts.push('Texte: '+freeTokens.join(' '));
 
-  var levelLabels={0:'Aucun résultat',1:'Résultats exacts',2:'Résultats partiels',3:'Résultats approchés'};
+  var levelLabels={0:'Aucun rÃ©sultat',1:'RÃ©sultats exacts',2:'RÃ©sultats partiels',3:'RÃ©sultats approchÃ©s'};
 
-  return{products:products,brands:brands,info:infoParts.join(' · '),count:products.length,
+  return{products:products,brands:brands,info:infoParts.join(' Â· '),count:products.length,
     filters:{types:filterTypes,colors:filterColors,brands:filterBrands,free:freeTokens},
     level:resultLevel,levelLabel:levelLabels[resultLevel]||''};
 }
 
-/* ── Suggestions / Autocomplete ── */
+/* ââ Suggestions / Autocomplete ââ */
 function buildSuggestions(query){
   if(!query||query.length<2)return[];
   var q=query.trim().toLowerCase();
@@ -689,7 +691,7 @@ function buildSuggestions(query){
     var s=fuzzyMatch(q,c.n.toLowerCase());
     if(s>0.4)suggestions.push({label:c.n,type:'Marque',score:s*1.2,count:c.c});
   });
-  /* Type suggestions — only show types that have products */
+  /* Type suggestions â only show types that have products */
   Object.keys(TYPE_DICT).forEach(function(canonical){
     var syns=TYPE_DICT[canonical];
     var bestS=0;
@@ -699,7 +701,7 @@ function buildSuggestions(query){
       if(count>0)suggestions.push({label:canonical,type:'Type',score:bestS,count:count});
     }
   });
-  /* Color suggestions — only show colors that have products */
+  /* Color suggestions â only show colors that have products */
   Object.keys(COLOR_DICT).forEach(function(canonical){
     var syns=COLOR_DICT[canonical];
     var bestS=0;
@@ -752,7 +754,7 @@ function highlightSug(items){
   for(var i=0;i<items.length;i++)items[i].classList.toggle('active',i===suggestIndex);
 }
 
-/* ── Debounced search trigger ── */
+/* ââ Debounced search trigger ââ */
 function onSmartSearch(q){
   clearTimeout(searchTimer);
   showSuggestions(q);
@@ -763,7 +765,7 @@ function executeSmartSearch(q){
   document.getElementById('searchSuggest').classList.remove('open');
   q=(q||'').trim();
   if(!q){
-    /* Clear search — restore current view */
+    /* Clear search â restore current view */
     document.getElementById('searchTags').innerHTML='';
     if(CURRENT_VIEW==='home')showHome();
     else if(CURRENT_VIEW==='nouveautes')showNouveautes();
@@ -774,9 +776,9 @@ function executeSmartSearch(q){
   /* Show search tags */
   var tagsHtml='';
   if(result.filters){
-    result.filters.types.forEach(function(t){tagsHtml+='<span class="search-tag">'+escH(t)+' <span class="tag-x" onclick="removeSearchToken(this,\'type\',\''+escH(t)+'\')">×</span></span>'});
-    result.filters.colors.forEach(function(c){tagsHtml+='<span class="search-tag">'+escH(c)+' <span class="tag-x" onclick="removeSearchToken(this,\'color\',\''+escH(c)+'\')">×</span></span>'});
-    result.filters.brands.forEach(function(b){tagsHtml+='<span class="search-tag">'+escH(b.n)+' <span class="tag-x" onclick="removeSearchToken(this,\'brand\',\''+escH(b.n)+'\')">×</span></span>'});
+    result.filters.types.forEach(function(t){tagsHtml+='<span class="search-tag">'+escH(t)+' <span class="tag-x" onclick="removeSearchToken(this,\'type\',\''+escH(t)+'\')">Ã</span></span>'});
+    result.filters.colors.forEach(function(c){tagsHtml+='<span class="search-tag">'+escH(c)+' <span class="tag-x" onclick="removeSearchToken(this,\'color\',\''+escH(c)+'\')">Ã</span></span>'});
+    result.filters.brands.forEach(function(b){tagsHtml+='<span class="search-tag">'+escH(b.n)+' <span class="tag-x" onclick="removeSearchToken(this,\'brand\',\''+escH(b.n)+'\')">Ã</span></span>'});
   }
   document.getElementById('searchTags').innerHTML=tagsHtml;
 
@@ -786,13 +788,13 @@ function executeSmartSearch(q){
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
   document.getElementById('productsSection').style.display='block';
-  var countText=result.count+' résultat'+(result.count!==1?'s':'');
+  var countText=result.count+' rÃ©sultat'+(result.count!==1?'s':'');
   var levelBadge='';
-  if(result.level===1)levelBadge='<span style="color:var(--green);font-size:11px;margin-left:8px">● '+escH(result.levelLabel)+'</span>';
-  else if(result.level===2)levelBadge='<span style="color:#ffb74d;font-size:11px;margin-left:8px">◐ '+escH(result.levelLabel)+'</span>';
-  else if(result.level===3)levelBadge='<span style="color:#ef5350;font-size:11px;margin-left:8px">○ '+escH(result.levelLabel)+'</span>';
+  if(result.level===1)levelBadge='<span style="color:var(--green);font-size:11px;margin-left:8px">â '+escH(result.levelLabel)+'</span>';
+  else if(result.level===2)levelBadge='<span style="color:#ffb74d;font-size:11px;margin-left:8px">â '+escH(result.levelLabel)+'</span>';
+  else if(result.level===3)levelBadge='<span style="color:#ef5350;font-size:11px;margin-left:8px">â '+escH(result.levelLabel)+'</span>';
   else if(result.level===0)levelBadge='<span style="color:#ef5350;font-size:11px;margin-left:8px">'+escH(result.levelLabel)+'</span>';
-  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="clearSearch()">←</button><h2>Recherche</h2><span class="search-results-info">'+countText+(result.info?' — '+escH(result.info):'')+levelBadge+'</span>';
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="clearSearch()">â</button><h2>Recherche</h2><span class="search-results-info">'+countText+(result.info?' â '+escH(result.info):'')+levelBadge+'</span>';
   FILTERED=result.products;
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
@@ -825,7 +827,10 @@ function openLightbox(idx){
 
   document.getElementById('lbImg').src=lbImg;
   var cat=CATEGORIES.find(function(c){return c.id===p.a});
-  document.getElementById('lbBrand').textContent=cat?cat.n:'';
+  var pubTitle=cleanTitle(p.t);
+  var brandText=cat?cat.n:'';
+  if(pubTitle)brandText+=(brandText?' \u2014 ':'')+pubTitle;
+  document.getElementById('lbBrand').textContent=brandText;
   var price=extractPrice(p.t);
   document.getElementById('lbPrice').textContent=price||'';
   document.getElementById('lightbox').classList.add('open');
@@ -839,7 +844,18 @@ function closeLightbox(e){
 function setupKeyboard(){document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLightbox({target:document.getElementById('lightbox')})})}
 function toggleSidebar(){document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.overlay').classList.toggle('open')}
 function closeSidebarMobile(){document.querySelector('.sidebar').classList.remove('open');document.querySelector('.overlay').classList.remove('open')}
-function extractPrice(title){if(!title)return '';var m1=title.match(/^(\d{2,})\s/);if(m1)return m1[1];var m2=title.match(/(\d+)\s*[eE€]\b/);return m2?m2[1]:''}
+function extractPrice(title){if(!title)return '';var t=title.replace(/€/g,'');var m1=t.match(/^(\d{2,})\s/);if(m1)return m1[1];var m2=t.match(/(\d+)\s*[eE]\b/);if(m2)return m2[1];var m3=t.match(/^(\d+)e?$/);if(m3)return m3[1];return ''}
+function cleanTitle(title){
+  if(!title)return '';
+  var t=title.trim();
+  t=t.replace(/€/g,'');
+  if(/^\d+e?$/.test(t))return '';
+  var m=t.match(/^\d+e?\s+(.+)$/);
+  if(m)return m[1].trim();
+  if(/^[a-f0-9]{6,}$/i.test(t))return '';
+  if(t==='/'||t==='-')return '';
+  return t;
+}
 function escH(s){if(!s)return '';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 
 function setupImageRetry(){
