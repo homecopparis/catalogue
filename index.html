@@ -560,6 +560,11 @@ function smartSearch(query){
           if(entry.tl.indexOf(syns[i].toLowerCase())!==-1){titleHit=true;break}
         }
         if(titleHit){typeMatch=0.6}
+        else if(entry.types.length===0&&entry.typeConf===0){
+          /* Product has no detected type (Multi category + no title clue):
+             treat as "unknown" rather than hard-fail. Still passes but low score. */
+          typeMatch=0.3;typePassed=true;
+        }
         else{typeMatch=0;typePassed=false}
       }
     });
