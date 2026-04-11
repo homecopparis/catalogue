@@ -123,8 +123,21 @@ function imgUrl(pid,secret,size){return PREFIX+pid+'_'+secret+'_'+size+'.jpg'}
 
 fetch('data.json').then(function(r){return r.json()}).then(function(data){
   PREFIX=data.prefix||'https://live.staticflickr.com/65535/';
-  CATEGORIES=data.categories||[];
-  PRODUCTS=data.products||[];
+  var rawCats=data.categories||[];
+  var rawProds=data.products||[];
+  /* Normalize: support both optimized (short) and full field names */
+  CATEGORIES=rawCats.map(function(c){
+    if(c.n)return c; /* already optimized */
+    var coverUrl=c.cover_image||'';
+    var parts=coverUrl.match(/\/(\d+)_(\w+)_\w+\.jpg/)||[];
+    return{id:c.album_id||c.id,n:c.album_title||c.n||'',c:c.count||c.c||0,cp:parts[1]||c.cp||'',cs:parts[2]||c.cs||''};
+  });
+  PRODUCTS=rawProds.map(function(p){
+    if(p.a!==undefined&&p.ts!==undefined)return p; /* already optimized */
+    var imgParts=(p.image_url||'').match(/\/(\d+)_(\w+)_\w+\.jpg/)||[];
+    var thumbParts=(p.thumb_url||'').match(/\/(\d+)_(\w+)_\w+\.jpg/)||[];
+    return{a:p.album_id||p.a||'',p:imgParts[1]||p.photo_id||p.p||'',s:imgParts[2]||p.s||'',ts:thumbParts[2]||p.ts||'',t:p.title||p.t||'',u:p.date_upload||p.u||0};
+  });
   CATEGORIES.sort(function(a,b){return(b.c||0)-(a.c||0)});
   init();
 }).catch(function(e){
