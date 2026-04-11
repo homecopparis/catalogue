@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="referrer" content="no-referrer">
-<title>Home Cop Paris â Catalogue</title>
+<title>Home Cop Paris — Catalogue</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -90,11 +90,52 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 }
 @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 .brand-card,.product-card{animation:fadeInUp .4s ease both}
+/* ═══ FAVORITES ═══ */
+.product-card{position:relative}
+.fav-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;opacity:0;transition:opacity .2s,transform .15s;z-index:10;line-height:1;backdrop-filter:blur(4px)}
+.product-card:hover .fav-btn,.fav-btn.active{opacity:1}
+.fav-btn.active{color:#ff4081;opacity:1}
+.fav-btn:active{transform:scale(1.25)}
+.fav-count{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.55);border-radius:10px;padding:2px 7px;font-size:10px;color:var(--text-dim);backdrop-filter:blur(4px);display:none;align-items:center;gap:3px}
+.fav-count.visible{display:flex}
+.fav-count .fc-heart{color:#ff4081;font-size:9px}
+.lb-fav{position:absolute;bottom:24px;right:24px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;width:48px;height:48px;border-radius:50%;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);transition:all .2s}
+.lb-fav.active{color:#ff4081;background:rgba(255,64,129,.15);border-color:rgba(255,64,129,.4)}
+.lb-fav:active{transform:scale(1.2)}
+/* Favorites page */
+.fav-empty{text-align:center;padding:60px 20px;color:var(--text-dim)}
+.fav-empty .fav-empty-icon{font-size:48px;margin-bottom:12px;opacity:.4}
+.fav-empty p{font-size:14px;max-width:300px;margin:0 auto}
+/* Modal overlay */
+.fav-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.fav-modal-overlay.open{display:flex}
+.fav-modal{background:#1a1a1a;border:1px solid #333;border-radius:16px;padding:28px;width:90%;max-width:380px;position:relative;animation:fadeInUp .3s ease}
+.fav-modal h3{font-family:var(--font-display);font-size:20px;margin-bottom:4px}
+.fav-modal .fav-modal-sub{color:var(--text-dim);font-size:13px;margin-bottom:20px}
+.fav-modal label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:4px;margin-top:14px}
+.fav-modal input{width:100%;padding:10px 12px;background:#111;border:1px solid #333;border-radius:8px;color:var(--text);font-size:14px;outline:none}
+.fav-modal input:focus{border-color:var(--green)}
+.fav-modal .fav-code-display{display:flex;align-items:center;gap:8px;margin-top:8px;background:#111;border:1px solid #333;border-radius:8px;padding:10px 12px}
+.fav-modal .fav-code-display .code{font-family:monospace;font-size:20px;letter-spacing:4px;color:var(--green);font-weight:700}
+.fav-modal .fav-code-display .copy-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;margin-left:auto;padding:4px 8px;border-radius:4px}
+.fav-modal .fav-code-display .copy-btn:hover{color:var(--text);background:#252525}
+.fav-modal .fav-actions{display:flex;gap:8px;margin-top:20px}
+.fav-modal .fav-btn-primary{flex:1;padding:10px;background:var(--green);color:#000;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.fav-modal .fav-btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.fav-modal .fav-btn-secondary{flex:1;padding:10px;background:#252525;color:var(--text);border:none;border-radius:8px;font-size:14px;cursor:pointer}
+.fav-modal .fav-btn-secondary:hover{background:#333}
+.fav-modal .fav-close{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer}
+.fav-modal .fav-close:hover{color:var(--text)}
+.fav-modal .fav-error{color:#ef5350;font-size:12px;margin-top:8px;display:none}
+.fav-modal .fav-success{color:var(--green);font-size:12px;margin-top:8px;display:none}
+.fav-sync-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:11px;color:var(--text-dim);border-bottom:1px solid #222}
+.fav-sync-bar button{background:none;border:none;color:var(--green);cursor:pointer;font-size:11px;text-decoration:underline}
+.menu-fav-count{background:var(--green-dim);color:var(--green);font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px}
 </style>
 </head>
 <body>
-<div id="loading"><div class="spinner"></div><p>Chargement du catalogueâ¦</p></div>
-<button class="hamburger" onclick="toggleSidebar()">â°</button>
+<div id="loading"><div class="spinner"></div><p>Chargement du catalogue…</p></div>
+<button class="hamburger" onclick="toggleSidebar()">☰</button>
 <div class="overlay" onclick="toggleSidebar()"></div>
 <aside class="sidebar">
   <div class="sidebar-header">
@@ -103,7 +144,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <span>Home<span class="cop">Cop Paris</span></span>
     </a>
     <div class="search-wrap">
-      <input class="search-box" id="searchInput" type="text" placeholder="Rechercherâ¦ ex: hoodie noir nike" oninput="onSmartSearch(this.value)" onkeydown="onSearchKey(event)" autocomplete="off">
+      <input class="search-box" id="searchInput" type="text" placeholder="Rechercher… ex: hoodie noir nike" oninput="onSmartSearch(this.value)" onkeydown="onSearchKey(event)" autocomplete="off">
       <div class="search-suggest" id="searchSuggest"></div>
     </div>
     <div class="search-tags" id="searchTags"></div>
@@ -124,17 +165,57 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   </div>
 </main>
 <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
-  <button class="lb-back" onclick="closeLightbox(event)">â Retour</button>
-  <button class="lb-close" onclick="closeLightbox(event)">â</button>
+  <button class="lb-back" onclick="closeLightbox(event)">← Retour</button>
+  <button class="lb-close" onclick="closeLightbox(event)">✕</button>
   <img id="lbImg" src="" alt="" referrerpolicy="no-referrer">
   <div class="lb-info"><div class="lb-brand" id="lbBrand"></div><div class="lb-price" id="lbPrice"></div></div>
+  <button class="lb-fav" id="lbFav" onclick="toggleLbFav(event)">♡</button>
+</div>
+<!-- Favorites Save Modal -->
+<div class="fav-modal-overlay" id="favSaveModal">
+  <div class="fav-modal">
+    <button class="fav-close" onclick="closeFavModal('favSaveModal')">✕</button>
+    <h3>Sauvegarder mes favoris</h3>
+    <p class="fav-modal-sub">Choisissez un pseudo pour retrouver vos favoris sur un autre appareil.</p>
+    <label>Pseudo</label>
+    <input id="favSavePseudo" type="text" placeholder="ex: Thomas" maxlength="30">
+    <div id="favSaveCodeWrap" style="display:none">
+      <label>Votre code secret</label>
+      <div class="fav-code-display"><span class="code" id="favSaveCode"></span><button class="copy-btn" onclick="copyFavCode()">Copier</button></div>
+      <p style="font-size:11px;color:var(--text-dim);margin-top:6px">Notez bien ce code ! Il est nécessaire pour retrouver vos favoris.</p>
+    </div>
+    <div class="fav-error" id="favSaveError"></div>
+    <div class="fav-success" id="favSaveSuccess"></div>
+    <div class="fav-actions">
+      <button class="fav-btn-secondary" onclick="closeFavModal('favSaveModal')">Annuler</button>
+      <button class="fav-btn-primary" id="favSaveBtn" onclick="doFavSave()">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+<!-- Favorites Recover Modal -->
+<div class="fav-modal-overlay" id="favRecoverModal">
+  <div class="fav-modal">
+    <button class="fav-close" onclick="closeFavModal('favRecoverModal')">✕</button>
+    <h3>Retrouver mes favoris</h3>
+    <p class="fav-modal-sub">Entrez votre pseudo et code pour restaurer vos favoris.</p>
+    <label>Pseudo</label>
+    <input id="favRecoverPseudo" type="text" placeholder="ex: Thomas" maxlength="30">
+    <label>Code secret</label>
+    <input id="favRecoverCode" type="text" placeholder="1234" maxlength="10">
+    <div class="fav-error" id="favRecoverError"></div>
+    <div class="fav-success" id="favRecoverSuccess"></div>
+    <div class="fav-actions">
+      <button class="fav-btn-secondary" onclick="closeFavModal('favRecoverModal')">Annuler</button>
+      <button class="fav-btn-primary" id="favRecoverBtn" onclick="doFavRecover()">Retrouver</button>
+    </div>
+  </div>
 </div>
 <script>
 var PREFIX='',CATEGORIES=[],PRODUCTS=[],CURRENT_VIEW='home',CURRENT_CAT=null;
 var FILTERED=[],RENDER_INDEX=0,BATCH_SIZE=48;
 var searchTimer=null;
 
-/* URL helpers â reconstruct from prefix + photo_id + secret, or return full URL */
+/* URL helpers — reconstruct from prefix + photo_id + secret, or return full URL */
 function imgUrl(pid,secret,size){if(pid&&pid.indexOf('http')===0)return pid;return PREFIX+pid+'_'+secret+'_'+size+'.jpg'}
 
 fetch('data.json').then(function(r){return r.json()}).then(function(data){
@@ -163,12 +244,18 @@ fetch('data.json').then(function(r){return r.json()}).then(function(data){
 function init(){
   document.getElementById('loading').style.display='none';
   buildSearchIndex();buildSidebar();showHome();setupInfiniteScroll();setupKeyboard();setupImageRetry();
+  updateSyncBar();
+  /* Fetch global fav counts for visible products (first batch) */
+  var pids=PRODUCTS.slice(0,200).map(function(p){return getProductPid(p)});
+  fetchGlobalCounts(pids);
 }
 
 function buildSidebar(){
-  document.getElementById('sidebarStats').textContent=PRODUCTS.length+' articles Â· '+CATEGORIES.length+' marques';
+  document.getElementById('sidebarStats').textContent=PRODUCTS.length+' articles · '+CATEGORIES.length+' marques';
+  var favCount=getFavorites().length;
   var h='<div class="menu-item active" data-cat="home" onclick="showHome()"><span>Accueil</span></div>';
-  h+='<div class="menu-item" data-cat="nouveautes" onclick="showNouveautes()"><span>NouveautÃ©s</span><span class="count">'+PRODUCTS.length+'</span></div>';
+  h+='<div class="menu-item" data-cat="favorites" onclick="showFavorites()"><span>♥ Mes Favoris</span><span class="count" id="favMenuCount">'+(favCount||'')+'</span></div>';
+  h+='<div class="menu-item" data-cat="nouveautes" onclick="showNouveautes()"><span>Nouveautés</span><span class="count">'+PRODUCTS.length+'</span></div>';
   for(var i=0;i<CATEGORIES.length;i++){
     var c=CATEGORIES[i];
     h+='<div class="menu-item" data-cat="'+c.id+'" onclick="showBrand(\''+c.id+'\')"><span>'+escH(c.n)+'</span><span class="count">'+c.c+'</span></div>';
@@ -194,7 +281,7 @@ function showNouveautes(){
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
   document.getElementById('productsSection').style.display='block';
-  document.getElementById('productsHeader').innerHTML='<h2>NouveautÃ©s</h2>';
+  document.getElementById('productsHeader').innerHTML='<h2>Nouveautés</h2>';
   FILTERED=PRODUCTS.slice().sort(function(a,b){return(b.u||0)-(a.u||0)});
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
@@ -207,7 +294,7 @@ function showBrand(albumId){
   document.getElementById('productsSection').style.display='block';
   var cat=CATEGORIES.find(function(c){return c.id===albumId});
   var catName=cat?cat.n:albumId;
-  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">â</button><h2>'+escH(catName)+'</h2>';
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>'+escH(catName)+'</h2>';
   FILTERED=PRODUCTS.filter(function(p){return p.a===albumId});
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
@@ -235,7 +322,12 @@ function renderBatch(){
 
     var price=extractPrice(p.t);
     var pubTitle=cleanTitle(p.t);
+    var pid=getProductPid(p);
+    var fav=isFavorite(pid);
+    var gc=GLOBAL_FAV_COUNTS[pid]||0;
     h+='<div class="product-card" onclick="openLightbox('+i+')">';
+    h+='<button class="fav-btn'+(fav?' active':'')+'" data-pid="'+escH(pid)+'" onclick="onFavClick(event,'+i+')">'+(fav?'♥':'♡')+'</button>';
+    h+='<div class="fav-count'+(gc>0?' visible':'')+'" data-pid="'+escH(pid)+'"><span class="fc-heart">♥</span> '+gc+'</div>';
     h+='<img src="'+escH(cardImg)+'" alt="'+escH(pubTitle||'')+'" loading="lazy" referrerpolicy="no-referrer">';
     h+='<div class="info">';
     if(pubTitle)h+='<div class="pname">'+escH(pubTitle)+'</div>';
@@ -253,65 +345,65 @@ function setupInfiniteScroll(){
   obs.observe(sentinel);
 }
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-   SMART SEARCH ENGINE v2 â strict AND filtering, confidence scoring
-   âââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ═══════════════════════════════════════════════════════
+   SMART SEARCH ENGINE v2 — strict AND filtering, confidence scoring
+   ═══════════════════════════════════════════════════════ */
 
-/* ââ Confidence threshold â below this, a match is ignored ââ */
+/* ── Confidence threshold — below this, a match is ignored ── */
 var CONF_THRESHOLD=0.6;
 
-/* ââ Scoring weights (type=0.4, brand=0.3, color=0.2, text=0.1) ââ */
+/* ── Scoring weights (type=0.4, brand=0.3, color=0.2, text=0.1) ── */
 var W_TYPE=40,W_BRAND=30,W_COLOR=20,W_TEXT=10;
 
-/* ââ Dictionnaire types produit (canonical â synonymes) ââ */
+/* ── Dictionnaire types produit (canonical → synonymes) ── */
 var TYPE_DICT={
   'T-shirt':['t-shirt','tshirt','tee shirt','tee-shirt','t shirt','teeshirt','maillot'],
-  'Hoodie':['hoodie','hoody','capuche','sweat Ã  capuche','sweat capuche'],
+  'Hoodie':['hoodie','hoody','capuche','sweat à capuche','sweat capuche'],
   'Sweatshirt':['sweatshirt','sweat','sweater','pull-over','pullover'],
   'Pull':['pull','pullover','tricot','knit','knitwear'],
   'Veste':['veste','jacket','blazer','blouson','bomber','doudoune','puffer','manteau','coat','parka','windbreaker','coupe-vent','coupe vent','gilet'],
   'Chemise':['chemise','shirt','blouse','chemisette'],
   'Polo':['polo'],
-  'Pantalon':['pantalon','pants','pant','trousers','chino','chinos','cargo','jogging','jogger','joggers','survÃªtement','survet','survetement','trackpant','trackpants','track pant'],
+  'Pantalon':['pantalon','pants','pant','trousers','chino','chinos','cargo','jogging','jogger','joggers','survêtement','survet','survetement','trackpant','trackpants','track pant'],
   'Jeans':['jean','jeans','denim'],
   'Short':['short','shorts','bermuda','bermudas'],
-  'Ensemble':['ensemble','set','survÃªtement','survet','tracksuit','costume','suit','co-ord','coord'],
+  'Ensemble':['ensemble','set','survêtement','survet','tracksuit','costume','suit','co-ord','coord'],
   'Chaussures':['chaussure','chaussures','shoe','shoes','sneaker','sneakers','basket','baskets','boots','boot','botte','bottes','mule','mules','sandale','sandales','loafer','loafers','mocassin'],
   'Casquette':['casquette','cap','caps','bob','bobs','bonnet','bonnets','chapeau','hat','fitted','snapback','trucker','beanie'],
   'Sac':['sac','bag','bags','sacoche','pochette','besace','backpack','tote','clutch','messenger','banane','fanny pack','bumbag'],
   'Ceinture':['ceinture','belt','belts','ceintures'],
-  'Ãcharpe':['Ã©charpe','echarpe','scarf','scarves','foulard','chÃ¢le','chale','shawl','Ã©tole','etole'],
+  'Écharpe':['écharpe','echarpe','scarf','scarves','foulard','châle','chale','shawl','étole','etole'],
   'Lunettes':['lunettes','sunglasses','glasses','eyewear'],
-  'Accessoire':['accessoire','accessoires','bijou','bijoux','bracelet','collier','bague','ring','chain','chaÃ®ne','chaine','montre','watch','portefeuille','wallet','porte-carte','cardholder']
+  'Accessoire':['accessoire','accessoires','bijou','bijoux','bracelet','collier','bague','ring','chain','chaîne','chaine','montre','watch','portefeuille','wallet','porte-carte','cardholder']
 };
 
-/* ââ Dictionnaire couleurs (canonical â synonymes) ââ */
+/* ── Dictionnaire couleurs (canonical → synonymes) ── */
 var COLOR_DICT={
   'Noir':['noir','noire','noirs','black','blk'],
-  'Blanc':['blanc','blanche','blancs','white','wht','cream','crÃ¨me','creme','ivoire','ivory','ecru','Ã©cru'],
+  'Blanc':['blanc','blanche','blancs','white','wht','cream','crème','creme','ivoire','ivory','ecru','écru'],
   'Bleu':['bleu','bleue','bleus','blue','azur','cyan','cobalt','indigo'],
-  'Bleu marine':['bleu marine','marine','navy','dark blue','bleu foncÃ©','bleu fonce'],
+  'Bleu marine':['bleu marine','marine','navy','dark blue','bleu foncé','bleu fonce'],
   'Rouge':['rouge','rouges','red','bordeaux','burgundy','bourgogne','carmin','vermillon','cerise','cherry','crimson'],
-  'Vert':['vert','verte','verts','green','emeraude','Ã©meraude','sapin','forest','lime'],
+  'Vert':['vert','verte','verts','green','emeraude','émeraude','sapin','forest','lime'],
   'Olive':['olive','kaki','khaki','army','militaire','army green','olive green','vert olive','vert kaki'],
-  'Gris':['gris','grise','grey','gray','anthracite','charcoal','silver','argentÃ©','argente','heather'],
+  'Gris':['gris','grise','grey','gray','anthracite','charcoal','silver','argenté','argente','heather'],
   'Rose':['rose','roses','pink','fuchsia','magenta','salmon','saumon'],
-  'Orange':['orange','orangÃ©','orange','tangerine','corail','coral'],
-  'Jaune':['jaune','jaunes','yellow','gold','dorÃ©','dore','or','moutarde','mustard'],
+  'Orange':['orange','orangé','orange','tangerine','corail','coral'],
+  'Jaune':['jaune','jaunes','yellow','gold','doré','dore','or','moutarde','mustard'],
   'Violet':['violet','violette','purple','mauve','lilas','lavande','lavender','prune','plum'],
-  'Marron':['marron','brown','brun','brune','tan','camel','chocolat','chocolate','caramel','cognac','cafÃ©','cafe','taupe','noisette'],
-  'Beige':['beige','sable','sand','nude','champagne','vanille','vanilla','crÃ¨me','off-white','off white']
+  'Marron':['marron','brown','brun','brune','tan','camel','chocolat','chocolate','caramel','cognac','café','cafe','taupe','noisette'],
+  'Beige':['beige','sable','sand','nude','champagne','vanille','vanilla','crème','off-white','off white']
 };
 
-/* ââ Multi-word color list (checked before single tokens) ââ */
-var MULTIWORD_COLORS=['bleu marine','bleu foncÃ©','bleu fonce','dark blue','vert olive','vert kaki','army green','olive green','off white','off-white','vert clair','bleu clair','gris clair','gris foncÃ©'];
+/* ── Multi-word color list (checked before single tokens) ── */
+var MULTIWORD_COLORS=['bleu marine','bleu foncé','bleu fonce','dark blue','vert olive','vert kaki','army green','olive green','off white','off-white','vert clair','bleu clair','gris clair','gris foncé'];
 
-/* ââ Brand alias shortcuts ââ */
-var BRAND_ALIASES={'lv':'louis vuitton','si':'stone island','cp':'cp company','ysl':'yves saint laurent','ald':'aimÃ© leon dore','cdg':'comme des garÃ§ons'};
+/* ── Brand alias shortcuts ── */
+var BRAND_ALIASES={'lv':'louis vuitton','si':'stone island','cp':'cp company','ysl':'yves saint laurent','ald':'aimé leon dore','cdg':'comme des garçons'};
 
-/* ââ Index inversÃ© construit au chargement ââ */
-var BRAND_INDEX={};/* brandNameLower â catObj */
-var BRAND_WORDS={};/* individual words â [catObj] for partial matching */
+/* ── Index inversé construit au chargement ── */
+var BRAND_INDEX={};/* brandNameLower → catObj */
+var BRAND_WORDS={};/* individual words → [catObj] for partial matching */
 var PRODUCT_SEARCH_INDEX=[];/* [{p, bn, bnl, tl, types:[], typeConf, primaryColor, colorConf}] */
 
 function buildSearchIndex(){
@@ -328,7 +420,7 @@ function buildSearchIndex(){
   });
 
   /* Color normalization map: group sub-variants under main color */
-  var COLOR_NORMALIZE={'Bleu clair':'Bleu','Vert clair':'Vert','Vert foncÃ©':'Vert','Gris clair':'Gris','Gris foncÃ©':'Gris','Turquoise':'Bleu','Bordeaux':'Rouge'};
+  var COLOR_NORMALIZE={'Bleu clair':'Bleu','Vert clair':'Vert','Vert foncé':'Vert','Gris clair':'Gris','Gris foncé':'Gris','Turquoise':'Bleu','Bordeaux':'Rouge'};
 
   PRODUCT_SEARCH_INDEX=[];
   PRODUCTS.forEach(function(p){
@@ -336,7 +428,7 @@ function buildSearchIndex(){
     var brandName=cat?cat.n:'';
     var tl=(p.t||'').toLowerCase();
 
-    /* ââ Primary color from image analysis (cl field) ââ */
+    /* ── Primary color from image analysis (cl field) ── */
     var primaryColor=null;var colorConf=0;
     if(p.cl){
       var rawColor=p.cl;
@@ -360,7 +452,7 @@ function buildSearchIndex(){
       }
     }
 
-    /* ââ Type from category tag (tp field on category) ââ */
+    /* ── Type from category tag (tp field on category) ── */
     var detectedType=null;var typeConf=0;
     if(cat&&cat.tp&&cat.tp!=='Multi'&&cat.tp!=='Jouet'){
       detectedType=cat.tp;typeConf=0.85;/* category-level assignment = high confidence */
@@ -388,7 +480,7 @@ function buildSearchIndex(){
   });
 }
 
-/* ââ Fuzzy matching (Levenshtein-based) ââ */
+/* ── Fuzzy matching (Levenshtein-based) ── */
 function levenshtein(a,b){
   if(a===b)return 0;if(!a.length)return b.length;if(!b.length)return a.length;
   if(a.length>b.length){var tmp=a;a=b;b=tmp}
@@ -429,7 +521,7 @@ function fuzzyMatch(query,target,threshold){
   return 0;
 }
 
-/* ââ Resolve a single token to type/color/brand ââ */
+/* ── Resolve a single token to type/color/brand ── */
 function resolveToken(token){
   var result={type:null,color:null,brand:null,raw:token,score:0,conf:0};
   var bestTypeScore=0,bestType=null;
@@ -469,7 +561,7 @@ function resolveToken(token){
   return result;
 }
 
-/* ââ Multi-word resolution (brands + compound colors like "bleu marine") ââ */
+/* ── Multi-word resolution (brands + compound colors like "bleu marine") ── */
 function resolveMultiWord(tokens){
   var resolved=[];var skip={};
   for(var i=0;i<tokens.length;i++){
@@ -513,10 +605,10 @@ function resolveMultiWord(tokens){
   return resolved;
 }
 
-/* ââ Main smart search v2 â strict AND filtering + result levels ââ */
+/* ── Main smart search v2 — strict AND filtering + result levels ── */
 function smartSearch(query){
   if(!query||!query.trim())return{products:PRODUCTS,brands:CATEGORIES,info:'',level:0};
-  var q=query.trim().toLowerCase().replace(/[&']/g,"'");
+  var q=query.trim().toLowerCase().replace(/['']/g,"'");
   /* Expand brand aliases inline */
   Object.keys(BRAND_ALIASES).forEach(function(alias){
     var re=new RegExp('\\b'+alias+'\\b','g');
@@ -538,20 +630,20 @@ function smartSearch(query){
   var totalCriteria=filterTypes.length+filterColors.length+filterBrands.length;
   var hasFree=freeTokens.length>0;
 
-  /* ââ Score and classify each product into levels ââ */
+  /* ── Score and classify each product into levels ── */
   var exact=[],partial=[],fallback=[];
 
   PRODUCT_SEARCH_INDEX.forEach(function(entry){
     var typeMatch=0,brandMatch=0,colorMatch=0,textMatch=0;
     var typePassed=true,brandPassed=true,colorPassed=true;
 
-    /* ââ Brand strict check ââ */
+    /* ── Brand strict check ── */
     filterBrands.forEach(function(b){
       if(entry.p.a===b.id)brandMatch=1;
       else{brandMatch=0;brandPassed=false}
     });
 
-    /* ââ Type strict check (with confidence gating) ââ */
+    /* ── Type strict check (with confidence gating) ── */
     filterTypes.forEach(function(t){
       if(entry.types.indexOf(t)!==-1&&entry.typeConf>=CONF_THRESHOLD){
         typeMatch=1;
@@ -571,12 +663,12 @@ function smartSearch(query){
       }
     });
 
-    /* ââ Color strict check â primaryColor only, confidence gated ââ */
+    /* ── Color strict check — primaryColor only, confidence gated ── */
     filterColors.forEach(function(c){
       if(entry.primaryColor===c&&entry.colorConf>=CONF_THRESHOLD){
         colorMatch=1;
       }else{
-        /* Check if the queried color's parent matches (e.g. "bleu marine" â product has "Bleu") */
+        /* Check if the queried color's parent matches (e.g. "bleu marine" → product has "Bleu") */
         var colorParents={'Bleu marine':'Bleu','Olive':'Vert'};
         var parent=colorParents[c];
         if(parent&&entry.primaryColor===parent&&entry.colorConf>=CONF_THRESHOLD){
@@ -593,7 +685,7 @@ function smartSearch(query){
       }
     });
 
-    /* ââ Free text matching ââ */
+    /* ── Free text matching ── */
     if(hasFree){
       var ftMatched=0;
       freeTokens.forEach(function(ft){
@@ -608,7 +700,7 @@ function smartSearch(query){
       textMatch=freeTokens.length>0?ftMatched/freeTokens.length:0;
     }
 
-    /* ââ Compute weighted score ââ */
+    /* ── Compute weighted score ── */
     var typeScore=filterTypes.length>0?typeMatch:1;
     var brandScore=filterBrands.length>0?brandMatch:1;
     var colorScore=filterColors.length>0?colorMatch:1;
@@ -616,7 +708,7 @@ function smartSearch(query){
 
     var finalScore=W_TYPE*typeScore+W_BRAND*brandScore+W_COLOR*colorScore+W_TEXT*textScore;
 
-    /* ââ Classify into levels based on strict AND ââ */
+    /* ── Classify into levels based on strict AND ── */
     var allStructuredPass=typePassed&&brandPassed&&colorPassed;
     var structuredMatches=(typePassed?1:0)+(brandPassed?1:0)+(colorPassed?1:0);
     var structuredTotal=(filterTypes.length>0?1:0)+(filterBrands.length>0?1:0)+(filterColors.length>0?1:0);
@@ -640,7 +732,7 @@ function smartSearch(query){
     }
   });
 
-  /* ââ Assemble results with strict priority ââ */
+  /* ── Assemble results with strict priority ── */
   var resultLevel=1;var results;
   if(exact.length>0){
     results=exact;resultLevel=1;
@@ -674,14 +766,14 @@ function smartSearch(query){
   if(filterBrands.length)infoParts.push('Marque: '+filterBrands.map(function(b){return b.n}).join(', '));
   if(freeTokens.length)infoParts.push('Texte: '+freeTokens.join(' '));
 
-  var levelLabels={0:'Aucun rÃ©sultat',1:'RÃ©sultats exacts',2:'RÃ©sultats partiels',3:'RÃ©sultats approchÃ©s'};
+  var levelLabels={0:'Aucun résultat',1:'Résultats exacts',2:'Résultats partiels',3:'Résultats approchés'};
 
-  return{products:products,brands:brands,info:infoParts.join(' Â· '),count:products.length,
+  return{products:products,brands:brands,info:infoParts.join(' · '),count:products.length,
     filters:{types:filterTypes,colors:filterColors,brands:filterBrands,free:freeTokens},
     level:resultLevel,levelLabel:levelLabels[resultLevel]||''};
 }
 
-/* ââ Suggestions / Autocomplete ââ */
+/* ── Suggestions / Autocomplete ── */
 function buildSuggestions(query){
   if(!query||query.length<2)return[];
   var q=query.trim().toLowerCase();
@@ -691,7 +783,7 @@ function buildSuggestions(query){
     var s=fuzzyMatch(q,c.n.toLowerCase());
     if(s>0.4)suggestions.push({label:c.n,type:'Marque',score:s*1.2,count:c.c});
   });
-  /* Type suggestions â only show types that have products */
+  /* Type suggestions — only show types that have products */
   Object.keys(TYPE_DICT).forEach(function(canonical){
     var syns=TYPE_DICT[canonical];
     var bestS=0;
@@ -701,7 +793,7 @@ function buildSuggestions(query){
       if(count>0)suggestions.push({label:canonical,type:'Type',score:bestS,count:count});
     }
   });
-  /* Color suggestions â only show colors that have products */
+  /* Color suggestions — only show colors that have products */
   Object.keys(COLOR_DICT).forEach(function(canonical){
     var syns=COLOR_DICT[canonical];
     var bestS=0;
@@ -754,7 +846,7 @@ function highlightSug(items){
   for(var i=0;i<items.length;i++)items[i].classList.toggle('active',i===suggestIndex);
 }
 
-/* ââ Debounced search trigger ââ */
+/* ── Debounced search trigger ── */
 function onSmartSearch(q){
   clearTimeout(searchTimer);
   showSuggestions(q);
@@ -765,7 +857,7 @@ function executeSmartSearch(q){
   document.getElementById('searchSuggest').classList.remove('open');
   q=(q||'').trim();
   if(!q){
-    /* Clear search â restore current view */
+    /* Clear search — restore current view */
     document.getElementById('searchTags').innerHTML='';
     if(CURRENT_VIEW==='home')showHome();
     else if(CURRENT_VIEW==='nouveautes')showNouveautes();
@@ -776,9 +868,9 @@ function executeSmartSearch(q){
   /* Show search tags */
   var tagsHtml='';
   if(result.filters){
-    result.filters.types.forEach(function(t){tagsHtml+='<span class="search-tag">'+escH(t)+' <span class="tag-x" onclick="removeSearchToken(this,\'type\',\''+escH(t)+'\')">Ã</span></span>'});
-    result.filters.colors.forEach(function(c){tagsHtml+='<span class="search-tag">'+escH(c)+' <span class="tag-x" onclick="removeSearchToken(this,\'color\',\''+escH(c)+'\')">Ã</span></span>'});
-    result.filters.brands.forEach(function(b){tagsHtml+='<span class="search-tag">'+escH(b.n)+' <span class="tag-x" onclick="removeSearchToken(this,\'brand\',\''+escH(b.n)+'\')">Ã</span></span>'});
+    result.filters.types.forEach(function(t){tagsHtml+='<span class="search-tag">'+escH(t)+' <span class="tag-x" onclick="removeSearchToken(this,\'type\',\''+escH(t)+'\')">×</span></span>'});
+    result.filters.colors.forEach(function(c){tagsHtml+='<span class="search-tag">'+escH(c)+' <span class="tag-x" onclick="removeSearchToken(this,\'color\',\''+escH(c)+'\')">×</span></span>'});
+    result.filters.brands.forEach(function(b){tagsHtml+='<span class="search-tag">'+escH(b.n)+' <span class="tag-x" onclick="removeSearchToken(this,\'brand\',\''+escH(b.n)+'\')">×</span></span>'});
   }
   document.getElementById('searchTags').innerHTML=tagsHtml;
 
@@ -788,13 +880,13 @@ function executeSmartSearch(q){
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
   document.getElementById('productsSection').style.display='block';
-  var countText=result.count+' rÃ©sultat'+(result.count!==1?'s':'');
+  var countText=result.count+' résultat'+(result.count!==1?'s':'');
   var levelBadge='';
-  if(result.level===1)levelBadge='<span style="color:var(--green);font-size:11px;margin-left:8px">â '+escH(result.levelLabel)+'</span>';
-  else if(result.level===2)levelBadge='<span style="color:#ffb74d;font-size:11px;margin-left:8px">â '+escH(result.levelLabel)+'</span>';
-  else if(result.level===3)levelBadge='<span style="color:#ef5350;font-size:11px;margin-left:8px">â '+escH(result.levelLabel)+'</span>';
+  if(result.level===1)levelBadge='<span style="color:var(--green);font-size:11px;margin-left:8px">● '+escH(result.levelLabel)+'</span>';
+  else if(result.level===2)levelBadge='<span style="color:#ffb74d;font-size:11px;margin-left:8px">◐ '+escH(result.levelLabel)+'</span>';
+  else if(result.level===3)levelBadge='<span style="color:#ef5350;font-size:11px;margin-left:8px">○ '+escH(result.levelLabel)+'</span>';
   else if(result.level===0)levelBadge='<span style="color:#ef5350;font-size:11px;margin-left:8px">'+escH(result.levelLabel)+'</span>';
-  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="clearSearch()">â</button><h2>Recherche</h2><span class="search-results-info">'+countText+(result.info?' â '+escH(result.info):'')+levelBadge+'</span>';
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="clearSearch()">←</button><h2>Recherche</h2><span class="search-results-info">'+countText+(result.info?' — '+escH(result.info):'')+levelBadge+'</span>';
   FILTERED=result.products;
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
@@ -829,10 +921,15 @@ function openLightbox(idx){
   var cat=CATEGORIES.find(function(c){return c.id===p.a});
   var pubTitle=cleanTitle(p.t);
   var brandText=cat?cat.n:'';
-  if(pubTitle)brandText+=(brandText?' \u2014 ':'')+pubTitle;
+  if(pubTitle)brandText+=(brandText?' — ':'')+pubTitle;
   document.getElementById('lbBrand').textContent=brandText;
   var price=extractPrice(p.t);
   document.getElementById('lbPrice').textContent=price||'';
+  LB_CURRENT_PID=getProductPid(p);
+  var lbFavBtn=document.getElementById('lbFav');
+  var lbFav=isFavorite(LB_CURRENT_PID);
+  lbFavBtn.classList.toggle('active',lbFav);
+  lbFavBtn.textContent=lbFav?'♥':'♡';
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow='hidden';
 }
@@ -845,15 +942,22 @@ function setupKeyboard(){document.addEventListener('keydown',function(e){if(e.ke
 function toggleSidebar(){document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.overlay').classList.toggle('open')}
 function closeSidebarMobile(){document.querySelector('.sidebar').classList.remove('open');document.querySelector('.overlay').classList.remove('open')}
 function extractPrice(title){if(!title)return '';var t=title.replace(/€/g,'');var m1=t.match(/^(\d{2,})\s/);if(m1)return m1[1];var m2=t.match(/(\d+)\s*[eE]\b/);if(m2)return m2[1];var m3=t.match(/^(\d+)e?$/);if(m3)return m3[1];return ''}
+/* ── Clean display: separate public title from internal/search data ── */
 function cleanTitle(title){
   if(!title)return '';
   var t=title.trim();
+  /* Strip € everywhere */
   t=t.replace(/€/g,'');
+  /* Pure price ("130e", "65e", "130") → no public title */
   if(/^\d+e?$/.test(t))return '';
+  /* Price + description ("380 Modèle Maya" or "210e 3en1 Beta") → keep description only */
   var m=t.match(/^\d+e?\s+(.+)$/);
   if(m)return m[1].trim();
+  /* Pure hash/code (hex-like) → no public title */
   if(/^[a-f0-9]{6,}$/i.test(t))return '';
+  /* Slash-only or garbage → no public title */
   if(t==='/'||t==='-')return '';
+  /* Otherwise return cleaned text */
   return t;
 }
 function escH(s){if(!s)return '';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -869,6 +973,281 @@ function setupImageRetry(){
     if(src.indexOf('_z.jpg')!==-1){img.src=src.replace('_z.jpg','_n.jpg');return}
     setTimeout(function(){img.src=src+'?r='+retries},1000*retries);
   },true);
+}
+
+/* ═══════════════════════════════════════════════════════
+   FAVORITES MODULE — offline-first localStorage + optional cloud sync
+   ═══════════════════════════════════════════════════════ */
+
+var FAV_API='https://homecop-favorites.arnaudbettinelli.workers.dev';
+var FAV_KEY='hcp_favorites';
+var FAV_SYNC_KEY='hcp_fav_sync';
+var FAV_COUNTS_KEY='hcp_fav_counts';
+var FAV_COUNTS_TTL=300000;/* 5 min cache */
+var GLOBAL_FAV_COUNTS={};
+var LB_CURRENT_PID=null;
+
+/* ── localStorage helpers ── */
+function getFavorites(){
+  try{var d=localStorage.getItem(FAV_KEY);return d?JSON.parse(d):[];}catch(e){return []}
+}
+function setFavorites(arr){
+  try{localStorage.setItem(FAV_KEY,JSON.stringify(arr))}catch(e){}
+}
+function isFavorite(pid){return getFavorites().indexOf(String(pid))!==-1}
+function toggleFavorite(pid){
+  pid=String(pid);
+  var favs=getFavorites();
+  var idx=favs.indexOf(pid);
+  if(idx===-1){favs.push(pid)}else{favs.splice(idx,1)}
+  setFavorites(favs);
+  updateFavCountInSidebar();
+  /* Silent cloud sync if connected */
+  silentCloudSync();
+  return idx===-1;/* true = added */
+}
+
+/* ── Sync info ── */
+function getSyncInfo(){
+  try{var d=localStorage.getItem(FAV_SYNC_KEY);return d?JSON.parse(d):null}catch(e){return null}
+}
+function setSyncInfo(pseudo,code){
+  try{localStorage.setItem(FAV_SYNC_KEY,JSON.stringify({pseudo:pseudo,code:code}))}catch(e){}
+}
+
+/* ── Silent cloud sync (fire-and-forget) ── */
+function silentCloudSync(){
+  var sync=getSyncInfo();
+  if(!sync)return;
+  var favs=getFavorites();
+  fetch(FAV_API+'/api/save',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({pseudo:sync.pseudo,code:sync.code,favorites:favs})
+  }).catch(function(){});
+}
+
+/* ── Heart button on product cards ── */
+function getProductPid(p){return p.p+'_'+p.s}
+
+function onFavClick(e,filteredIdx){
+  e.stopPropagation();
+  var p=FILTERED[filteredIdx];if(!p)return;
+  var pid=getProductPid(p);
+  var added=toggleFavorite(pid);
+  var btn=e.currentTarget;
+  btn.classList.toggle('active',added);
+  btn.textContent=added?'♥':'♡';
+  /* Update global count locally */
+  if(!GLOBAL_FAV_COUNTS[pid])GLOBAL_FAV_COUNTS[pid]=0;
+  GLOBAL_FAV_COUNTS[pid]+=(added?1:-1);
+  if(GLOBAL_FAV_COUNTS[pid]<0)GLOBAL_FAV_COUNTS[pid]=0;
+  var countEl=btn.parentElement.querySelector('.fav-count');
+  if(countEl){
+    var c=GLOBAL_FAV_COUNTS[pid]||0;
+    countEl.innerHTML='<span class="fc-heart">♥</span> '+c;
+    countEl.classList.toggle('visible',c>0);
+  }
+  /* If on favorites page, remove card with animation */
+  if(CURRENT_VIEW==='favorites'&&!added){
+    var card=btn.closest('.product-card');
+    if(card){card.style.opacity='0';card.style.transform='scale(.9)';setTimeout(function(){card.remove()},200)}
+    /* Update header count */
+    var favs=getFavorites();
+    var hdr=document.getElementById('productsHeader');
+    if(hdr)hdr.querySelector('h2').textContent='Mes Favoris ('+favs.length+')';
+    if(favs.length===0)showFavEmpty();
+    updateFavCountInSidebar();
+  }
+}
+
+/* ── Lightbox favorite ── */
+function toggleLbFav(e){
+  e.stopPropagation();
+  if(!LB_CURRENT_PID)return;
+  var added=toggleFavorite(LB_CURRENT_PID);
+  var btn=document.getElementById('lbFav');
+  btn.classList.toggle('active',added);
+  btn.textContent=added?'♥':'♡';
+  /* Sync card button if visible */
+  refreshVisibleHearts();
+}
+
+/* ── Refresh heart states on visible cards ── */
+function refreshVisibleHearts(){
+  var btns=document.querySelectorAll('.fav-btn[data-pid]');
+  btns.forEach(function(btn){
+    var pid=btn.getAttribute('data-pid');
+    var fav=isFavorite(pid);
+    btn.classList.toggle('active',fav);
+    btn.textContent=fav?'♥':'♡';
+  });
+}
+
+/* ── Global favorite counts (from API) ── */
+function fetchGlobalCounts(pids){
+  if(!pids||!pids.length)return;
+  /* Check cache */
+  try{
+    var cached=localStorage.getItem(FAV_COUNTS_KEY);
+    if(cached){
+      var d=JSON.parse(cached);
+      if(Date.now()-d.ts<FAV_COUNTS_TTL){
+        Object.keys(d.counts).forEach(function(k){GLOBAL_FAV_COUNTS[k]=d.counts[k]});
+        applyGlobalCounts();
+        return;
+      }
+    }
+  }catch(e){}
+  fetch(FAV_API+'/api/counts',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({pids:pids})
+  }).then(function(r){return r.json()}).then(function(data){
+    if(data.ok&&data.counts){
+      Object.keys(data.counts).forEach(function(k){GLOBAL_FAV_COUNTS[k]=data.counts[k]});
+      try{localStorage.setItem(FAV_COUNTS_KEY,JSON.stringify({ts:Date.now(),counts:GLOBAL_FAV_COUNTS}))}catch(e){}
+      applyGlobalCounts();
+    }
+  }).catch(function(){});
+}
+
+function applyGlobalCounts(){
+  var els=document.querySelectorAll('.fav-count[data-pid]');
+  els.forEach(function(el){
+    var pid=el.getAttribute('data-pid');
+    var c=GLOBAL_FAV_COUNTS[pid]||0;
+    el.innerHTML='<span class="fc-heart">♥</span> '+c;
+    el.classList.toggle('visible',c>0);
+  });
+}
+
+/* ── Sidebar: Mes Favoris menu item ── */
+function updateFavCountInSidebar(){
+  var el=document.getElementById('favMenuCount');
+  if(el)el.textContent=getFavorites().length||'';
+}
+
+/* ── Show Favorites page ── */
+function showFavorites(){
+  CURRENT_VIEW='favorites';CURRENT_CAT=null;setActiveMenu('favorites');
+  document.getElementById('hero').style.display='none';
+  document.getElementById('brandsGrid').style.display='none';
+  document.getElementById('productsSection').style.display='block';
+  var favs=getFavorites();
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>Mes Favoris ('+favs.length+')</h2>'
+    +'<span style="margin-left:auto;display:flex;gap:8px">'
+    +'<button style="background:none;border:1px solid #333;color:var(--text-dim);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer" onclick="openFavModal(\'favSaveModal\')">Sauvegarder</button>'
+    +'<button style="background:none;border:1px solid #333;color:var(--text-dim);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer" onclick="openFavModal(\'favRecoverModal\')">Retrouver</button>'
+    +'</span>';
+  if(favs.length===0){showFavEmpty();closeSidebarMobile();return}
+  /* Build FILTERED from favorites */
+  var favSet={};favs.forEach(function(f){favSet[f]=true});
+  FILTERED=PRODUCTS.filter(function(p){return favSet[getProductPid(p)]});
+  RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
+  renderBatch();closeSidebarMobile();
+}
+function showFavEmpty(){
+  document.getElementById('productsGrid').innerHTML='<div class="fav-empty"><div class="fav-empty-icon">♡</div><p>Aucun favori pour le moment.<br>Appuyez sur le cœur d\'un article pour le sauvegarder ici.</p></div>';
+}
+
+/* ── Modals ── */
+function openFavModal(id){
+  document.getElementById(id).classList.add('open');
+  /* Pre-fill pseudo if synced */
+  var sync=getSyncInfo();
+  if(sync){
+    if(id==='favSaveModal')document.getElementById('favSavePseudo').value=sync.pseudo;
+    if(id==='favRecoverModal')document.getElementById('favRecoverPseudo').value=sync.pseudo;
+  }
+}
+function closeFavModal(id){
+  document.getElementById(id).classList.remove('open');
+  /* Reset state */
+  var errEls=document.querySelectorAll('#'+id+' .fav-error, #'+id+' .fav-success');
+  errEls.forEach(function(el){el.style.display='none'});
+  if(id==='favSaveModal')document.getElementById('favSaveCodeWrap').style.display='none';
+}
+
+/* ── Save flow ── */
+function doFavSave(){
+  var pseudo=document.getElementById('favSavePseudo').value.trim();
+  if(!pseudo||pseudo.length<2){showFavMsg('favSaveError','Pseudo trop court (min 2 caractères)');return}
+  var btn=document.getElementById('favSaveBtn');btn.disabled=true;btn.textContent='…';
+  var sync=getSyncInfo();
+  var favs=getFavorites();
+  var payload={pseudo:pseudo,favorites:favs};
+  if(sync&&sync.pseudo.toLowerCase()===pseudo.toLowerCase()&&sync.code)payload.code=sync.code;
+  fetch(FAV_API+'/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  .then(function(r){return r.json()}).then(function(data){
+    btn.disabled=false;btn.textContent='Sauvegarder';
+    if(data.error){showFavMsg('favSaveError',data.error);return}
+    if(data.ok){
+      setSyncInfo(pseudo,data.code);
+      document.getElementById('favSaveCode').textContent=data.code;
+      document.getElementById('favSaveCodeWrap').style.display='block';
+      showFavMsg('favSaveSuccess',data.count+' favoris sauvegardés !');
+      updateSyncBar();
+    }
+  }).catch(function(){
+    btn.disabled=false;btn.textContent='Sauvegarder';
+    showFavMsg('favSaveError','Erreur réseau, réessayez plus tard.');
+  });
+}
+
+/* ── Recover flow ── */
+function doFavRecover(){
+  var pseudo=document.getElementById('favRecoverPseudo').value.trim();
+  var code=document.getElementById('favRecoverCode').value.trim();
+  if(!pseudo||!code){showFavMsg('favRecoverError','Pseudo et code requis');return}
+  var btn=document.getElementById('favRecoverBtn');btn.disabled=true;btn.textContent='…';
+  fetch(FAV_API+'/api/recover',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({pseudo:pseudo,code:code})
+  }).then(function(r){return r.json()}).then(function(data){
+    btn.disabled=false;btn.textContent='Retrouver';
+    if(data.error){showFavMsg('favRecoverError',data.error);return}
+    if(data.ok){
+      /* Merge remote favorites with local */
+      var local=getFavorites();
+      var merged=[].concat(local);
+      (data.favorites||[]).forEach(function(f){if(merged.indexOf(f)===-1)merged.push(f)});
+      setFavorites(merged);
+      setSyncInfo(pseudo,code);
+      showFavMsg('favRecoverSuccess',data.count+' favoris retrouvés ! ('+merged.length+' au total)');
+      updateFavCountInSidebar();
+      updateSyncBar();
+      /* If on favorites page, refresh */
+      if(CURRENT_VIEW==='favorites')showFavorites();
+    }
+  }).catch(function(){
+    btn.disabled=false;btn.textContent='Retrouver';
+    showFavMsg('favRecoverError','Erreur réseau, réessayez plus tard.');
+  });
+}
+
+function showFavMsg(elId,msg){
+  var el=document.getElementById(elId);el.textContent=msg;el.style.display='block';
+  /* Hide sibling */
+  var sibling=el.parentElement.querySelector(elId.indexOf('Error')!==-1?'.fav-success':'.fav-error');
+  if(sibling)sibling.style.display='none';
+}
+
+function copyFavCode(){
+  var code=document.getElementById('favSaveCode').textContent;
+  if(navigator.clipboard){navigator.clipboard.writeText(code).then(function(){
+    var btn=document.querySelector('#favSaveCodeWrap .copy-btn');btn.textContent='Copié !';
+    setTimeout(function(){btn.textContent='Copier'},1500);
+  })}
+}
+
+/* ── Sync bar in sidebar ── */
+function updateSyncBar(){
+  var existing=document.getElementById('favSyncBar');
+  var sync=getSyncInfo();
+  if(!sync){if(existing)existing.remove();return}
+  if(!existing){
+    var bar=document.createElement('div');bar.id='favSyncBar';bar.className='fav-sync-bar';
+    var menu=document.getElementById('sidebarMenu');
+    menu.parentNode.insertBefore(bar,menu);
+  }
+  document.getElementById('favSyncBar').innerHTML='Connecté: <strong>'+escH(sync.pseudo)+'</strong>'
+    +'<button onclick="openFavModal(\'favSaveModal\')">Sync</button>';
 }
 </script>
 </body>
