@@ -177,7 +177,7 @@ function showNouveautes(){
   CURRENT_VIEW='nouveautes';CURRENT_CAT=null;setActiveMenu('nouveautes');
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
-  document.getElementById('productsSection').style.display='';
+  document.getElementById('productsSection').style.display='block';
   document.getElementById('productsHeader').innerHTML='<h2>Nouveautés</h2>';
   FILTERED=PRODUCTS.slice().sort(function(a,b){return(b.u||0)-(a.u||0)});
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
@@ -188,7 +188,7 @@ function showBrand(albumId){
   CURRENT_VIEW='brand';CURRENT_CAT=albumId;setActiveMenu(albumId);
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
-  document.getElementById('productsSection').style.display='';
+  document.getElementById('productsSection').style.display='block';
   var cat=CATEGORIES.find(function(c){return c.id===albumId});
   var catName=cat?cat.n:albumId;
   document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>'+escH(catName)+'</h2>';
