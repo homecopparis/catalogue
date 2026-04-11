@@ -252,8 +252,14 @@ function setupInfiniteScroll(){
 }
 
 /* ═══════════════════════════════════════════════════════
-   SMART SEARCH ENGINE — fuzzy, synonymes, combiné
+   SMART SEARCH ENGINE v2 — strict AND filtering, confidence scoring
    ═══════════════════════════════════════════════════════ */
+
+/* ── Confidence threshold — below this, a match is ignored ── */
+var CONF_THRESHOLD=0.6;
+
+/* ── Scoring weights (type=0.4, brand=0.3, color=0.2, text=0.1) ── */
+var W_TYPE=40,W_BRAND=30,W_COLOR=20,W_TEXT=10;
 
 /* ── Dictionnaire types produit (canonical → synonymes) ── */
 var TYPE_DICT={
@@ -295,58 +301,88 @@ var COLOR_DICT={
   'Beige':['beige','sable','sand','nude','champagne','vanille','vanilla','crème','off-white','off white']
 };
 
+/* ── Multi-word color list (checked before single tokens) ── */
+var MULTIWORD_COLORS=['bleu marine','bleu foncé','bleu fonce','dark blue','vert olive','vert kaki','army green','olive green','off white','off-white','vert clair','bleu clair','gris clair','gris foncé'];
+
+/* ── Brand alias shortcuts ── */
+var BRAND_ALIASES={'lv':'louis vuitton','si':'stone island','cp':'cp company','ysl':'yves saint laurent','ald':'aimé leon dore','cdg':'comme des garçons'};
+
 /* ── Index inversé construit au chargement ── */
 var BRAND_INDEX={};/* brandNameLower → catObj */
-var PRODUCT_SEARCH_INDEX=[];/* [{product, brandName, titleLower, detectedTypes:[], detectedColors:[]}] */
+var BRAND_WORDS={};/* individual words → [catObj] for partial matching */
+var PRODUCT_SEARCH_INDEX=[];/* [{p, bn, bnl, tl, types:[], typeConf, primaryColor, colorConf}] */
 
 function buildSearchIndex(){
-  BRAND_INDEX={};
-  /* Build category lookup + type map */
+  BRAND_INDEX={};BRAND_WORDS={};
   var CAT_MAP={};
   CATEGORIES.forEach(function(c){
-    BRAND_INDEX[c.n.toLowerCase()]=c;
+    var bnl=c.n.toLowerCase();
+    BRAND_INDEX[bnl]=c;
+    /* Also index individual words for partial brand matching */
+    bnl.split(/\s+/).forEach(function(w){
+      if(w.length>=3){if(!BRAND_WORDS[w])BRAND_WORDS[w]=[];BRAND_WORDS[w].push(c)}
+    });
     CAT_MAP[c.id]=c;
   });
-  PRODUCT_SEARCH_INDEX=[];
 
-  /* Color normalization map: group variants under main color for broader matching */
+  /* Color normalization map: group sub-variants under main color */
   var COLOR_NORMALIZE={'Bleu clair':'Bleu','Vert clair':'Vert','Vert foncé':'Vert','Gris clair':'Gris','Gris foncé':'Gris','Turquoise':'Bleu','Bordeaux':'Rouge'};
 
+  PRODUCT_SEARCH_INDEX=[];
   PRODUCTS.forEach(function(p){
     var cat=CAT_MAP[p.a];
     var brandName=cat?cat.n:'';
     var tl=(p.t||'').toLowerCase();
 
-    /* ── Color from image analysis (cl field) ── */
-    var colors=[];
+    /* ── Primary color from image analysis (cl field) ── */
+    var primaryColor=null;var colorConf=0;
     if(p.cl){
       var rawColor=p.cl;
       var normalized=COLOR_NORMALIZE[rawColor]||rawColor;
-      if(colors.indexOf(normalized)===-1)colors.push(normalized);
-      /* Keep original too if different for precise matching */
-      if(rawColor!==normalized&&colors.indexOf(rawColor)===-1)colors.push(rawColor);
+      primaryColor=normalized;
+      /* Confidence: image-derived = 0.8 base (we trust pixel analysis) */
+      colorConf=0.8;
     }
-
-    /* ── Type from category tag (tp field on category) ── */
-    var types=[];
-    if(cat&&cat.tp&&cat.tp!=='Multi'&&cat.tp!=='Jouet'){
-      types.push(cat.tp);
-    }
-    /* Also try title-based detection as fallback for Multi categories */
-    if(!types.length){
-      var typeKeys=Object.keys(TYPE_DICT);
-      for(var ti=0;ti<typeKeys.length;ti++){
-        var syns=TYPE_DICT[typeKeys[ti]];
+    /* Fallback: try title text for color clues (lower confidence) */
+    if(!primaryColor){
+      var colorKeys=Object.keys(COLOR_DICT);
+      for(var ci=0;ci<colorKeys.length;ci++){
+        var syns=COLOR_DICT[colorKeys[ci]];
         for(var si=0;si<syns.length;si++){
           if(tl.indexOf(syns[si].toLowerCase())!==-1){
-            if(types.indexOf(typeKeys[ti])===-1)types.push(typeKeys[ti]);
+            primaryColor=colorKeys[ci];colorConf=0.6;
             break;
           }
         }
+        if(primaryColor)break;
       }
     }
 
-    PRODUCT_SEARCH_INDEX.push({p:p,bn:brandName,bnl:brandName.toLowerCase(),tl:tl,types:types,colors:colors});
+    /* ── Type from category tag (tp field on category) ── */
+    var detectedType=null;var typeConf=0;
+    if(cat&&cat.tp&&cat.tp!=='Multi'&&cat.tp!=='Jouet'){
+      detectedType=cat.tp;typeConf=0.85;/* category-level assignment = high confidence */
+    }
+    /* Fallback: title-based detection (lower confidence) */
+    if(!detectedType){
+      var typeKeys=Object.keys(TYPE_DICT);
+      for(var ti=0;ti<typeKeys.length;ti++){
+        var syns2=TYPE_DICT[typeKeys[ti]];
+        for(var si2=0;si2<syns2.length;si2++){
+          if(tl.indexOf(syns2[si2].toLowerCase())!==-1){
+            detectedType=typeKeys[ti];typeConf=0.65;
+            break;
+          }
+        }
+        if(detectedType)break;
+      }
+    }
+
+    PRODUCT_SEARCH_INDEX.push({
+      p:p,bn:brandName,bnl:brandName.toLowerCase(),tl:tl,
+      types:detectedType?[detectedType]:[],typeConf:typeConf,
+      primaryColor:primaryColor,colorConf:colorConf
+    });
   });
 }
 
@@ -367,22 +403,20 @@ function levenshtein(a,b){
 }
 function fuzzyMatch(query,target,threshold){
   if(!threshold)threshold=0.3;
+  if(target===query)return 1;
   if(target.indexOf(query)!==-1)return 1;
   if(query.length<=2)return target.indexOf(query)!==-1?1:0;
-  /* Check if query is a prefix */
   if(target.substring(0,query.length)===query)return 0.95;
-  /* Word-level check */
   var words=target.split(/[\s\-_'/]+/);
   for(var i=0;i<words.length;i++){
+    if(words[i]===query)return 1;
     if(words[i].indexOf(query)===0)return 0.9;
     if(words[i].indexOf(query)!==-1)return 0.8;
   }
-  /* Levenshtein on short strings */
   if(query.length>=3){
     var dist=levenshtein(query,target.substring(0,Math.max(query.length+2,target.length)));
     var maxDist=Math.floor(query.length*threshold);
     if(dist<=maxDist)return 1-(dist/query.length);
-    /* Try against each word */
     for(var j=0;j<words.length;j++){
       if(words[j].length>=2){
         var d2=levenshtein(query,words[j]);
@@ -393,10 +427,9 @@ function fuzzyMatch(query,target,threshold){
   return 0;
 }
 
-/* ── Resolve a token to type/color/brand ── */
+/* ── Resolve a single token to type/color/brand ── */
 function resolveToken(token){
-  var result={type:null,color:null,brand:null,raw:token,score:0};
-  /* Check types */
+  var result={type:null,color:null,brand:null,raw:token,score:0,conf:0};
   var bestTypeScore=0,bestType=null;
   Object.keys(TYPE_DICT).forEach(function(canonical){
     TYPE_DICT[canonical].forEach(function(syn){
@@ -404,7 +437,6 @@ function resolveToken(token){
       if(s>bestTypeScore){bestTypeScore=s;bestType=canonical}
     });
   });
-  /* Check colors */
   var bestColorScore=0,bestColor=null;
   Object.keys(COLOR_DICT).forEach(function(canonical){
     COLOR_DICT[canonical].forEach(function(syn){
@@ -412,40 +444,65 @@ function resolveToken(token){
       if(s>bestColorScore){bestColorScore=s;bestColor=canonical}
     });
   });
-  /* Check brands */
   var bestBrandScore=0,bestBrand=null;
-  Object.keys(BRAND_INDEX).forEach(function(bnl){
-    var s=fuzzyMatch(token,bnl);
-    if(s>bestBrandScore){bestBrandScore=s;bestBrand=BRAND_INDEX[bnl]}
-  });
-  /* Pick the best match */
-  if(bestTypeScore>=bestColorScore&&bestTypeScore>=bestBrandScore&&bestTypeScore>0.5){
-    result.type=bestType;result.score=bestTypeScore;
-  }else if(bestColorScore>=bestTypeScore&&bestColorScore>=bestBrandScore&&bestColorScore>0.5){
-    result.color=bestColor;result.score=bestColorScore;
-  }else if(bestBrandScore>0.5){
-    result.brand=bestBrand;result.score=bestBrandScore;
+  /* Check brand aliases first */
+  if(BRAND_ALIASES[token]){
+    var aliasTarget=BRAND_ALIASES[token];
+    if(BRAND_INDEX[aliasTarget]){bestBrandScore=1;bestBrand=BRAND_INDEX[aliasTarget]}
+  }
+  if(!bestBrand){
+    Object.keys(BRAND_INDEX).forEach(function(bnl){
+      var s=fuzzyMatch(token,bnl);
+      if(s>bestBrandScore){bestBrandScore=s;bestBrand=BRAND_INDEX[bnl]}
+    });
+  }
+  /* Pick best with minimum threshold 0.6 */
+  if(bestTypeScore>=bestColorScore&&bestTypeScore>=bestBrandScore&&bestTypeScore>=CONF_THRESHOLD){
+    result.type=bestType;result.score=bestTypeScore;result.conf=bestTypeScore;
+  }else if(bestColorScore>=bestTypeScore&&bestColorScore>=bestBrandScore&&bestColorScore>=CONF_THRESHOLD){
+    result.color=bestColor;result.score=bestColorScore;result.conf=bestColorScore;
+  }else if(bestBrandScore>=CONF_THRESHOLD){
+    result.brand=bestBrand;result.score=bestBrandScore;result.conf=bestBrandScore;
   }
   return result;
 }
 
-/* ── Multi-word brand matching (e.g. "stone island", "ralph lauren") ── */
-function resolveMultiWordBrands(tokens){
+/* ── Multi-word resolution (brands + compound colors like "bleu marine") ── */
+function resolveMultiWord(tokens){
   var resolved=[];var skip={};
   for(var i=0;i<tokens.length;i++){
     if(skip[i])continue;
     var found=false;
-    /* Try 3-word, then 2-word combinations */
+
+    /* Try 3-word, then 2-word combinations for brands AND compound colors */
     for(var len=Math.min(3,tokens.length-i);len>=2;len--){
       var combo=tokens.slice(i,i+len).join(' ');
+
+      /* Check compound colors first (e.g. "bleu marine") */
+      var comboColor=null,comboColorScore=0;
+      Object.keys(COLOR_DICT).forEach(function(canonical){
+        COLOR_DICT[canonical].forEach(function(syn){
+          if(syn.indexOf(' ')!==-1||syn.indexOf('-')!==-1){
+            var s=fuzzyMatch(combo,syn.toLowerCase());
+            if(s>comboColorScore){comboColorScore=s;comboColor=canonical}
+          }
+        });
+      });
+      if(comboColorScore>=0.8){
+        resolved.push({type:null,color:comboColor,brand:null,raw:combo,score:comboColorScore,conf:comboColorScore});
+        for(var k=i;k<i+len;k++)skip[k]=true;
+        found=true;break;
+      }
+
+      /* Check multi-word brands */
       var bestS=0,bestB=null;
       Object.keys(BRAND_INDEX).forEach(function(bnl){
         var s=fuzzyMatch(combo,bnl);
         if(s>bestS){bestS=s;bestB=BRAND_INDEX[bnl]}
       });
       if(bestS>0.6){
-        resolved.push({type:null,color:null,brand:bestB,raw:combo,score:bestS});
-        for(var k=i;k<i+len;k++)skip[k]=true;
+        resolved.push({type:null,color:null,brand:bestB,raw:combo,score:bestS,conf:bestS});
+        for(var k2=i;k2<i+len;k2++)skip[k2]=true;
         found=true;break;
       }
     }
@@ -454,89 +511,148 @@ function resolveMultiWordBrands(tokens){
   return resolved;
 }
 
-/* ── Main smart search ── */
+/* ── Main smart search v2 — strict AND filtering + result levels ── */
 function smartSearch(query){
-  if(!query||!query.trim())return{products:PRODUCTS,brands:CATEGORIES,info:''};
-  var q=query.trim().toLowerCase().replace(/['']/g,"'");
+  if(!query||!query.trim())return{products:PRODUCTS,brands:CATEGORIES,info:'',level:0};
+  var q=query.trim().toLowerCase().replace(/[&']/g,"'");
+  /* Expand brand aliases inline */
+  Object.keys(BRAND_ALIASES).forEach(function(alias){
+    var re=new RegExp('\\b'+alias+'\\b','g');
+    q=q.replace(re,BRAND_ALIASES[alias]);
+  });
   var tokens=q.split(/\s+/).filter(function(t){return t.length>0});
-  if(!tokens.length)return{products:PRODUCTS,brands:CATEGORIES,info:''};
-  var resolved=resolveMultiWordBrands(tokens);
+  if(!tokens.length)return{products:PRODUCTS,brands:CATEGORIES,info:'',level:0};
+  var resolved=resolveMultiWord(tokens);
 
-  /* Collect detected filters */
+  /* Collect detected structured filters */
   var filterTypes=[],filterColors=[],filterBrands=[],freeTokens=[];
   resolved.forEach(function(r){
-    if(r.type)filterTypes.push(r.type);
-    else if(r.color)filterColors.push(r.color);
-    else if(r.brand)filterBrands.push(r.brand);
+    if(r.type&&r.conf>=CONF_THRESHOLD)filterTypes.push(r.type);
+    else if(r.color&&r.conf>=CONF_THRESHOLD)filterColors.push(r.color);
+    else if(r.brand&&r.conf>=CONF_THRESHOLD)filterBrands.push(r.brand);
     else freeTokens.push(r.raw);
   });
 
-  /* Score each product */
-  var scored=PRODUCT_SEARCH_INDEX.map(function(entry){
-    var score=0;var matches=0;var total=filterTypes.length+filterColors.length+filterBrands.length+freeTokens.length;
-    /* Brand match */
+  var totalCriteria=filterTypes.length+filterColors.length+filterBrands.length;
+  var hasFree=freeTokens.length>0;
+
+  /* ── Score and classify each product into levels ── */
+  var exact=[],partial=[],fallback=[];
+
+  PRODUCT_SEARCH_INDEX.forEach(function(entry){
+    var typeMatch=0,brandMatch=0,colorMatch=0,textMatch=0;
+    var typePassed=true,brandPassed=true,colorPassed=true;
+
+    /* ── Brand strict check ── */
     filterBrands.forEach(function(b){
-      if(entry.p.a===b.id){score+=30;matches++}
-      else if(entry.bnl.indexOf(b.n.toLowerCase())!==-1){score+=20;matches++}
+      if(entry.p.a===b.id)brandMatch=1;
+      else{brandMatch=0;brandPassed=false}
     });
-    /* Type match */
+
+    /* ── Type strict check (with confidence gating) ── */
     filterTypes.forEach(function(t){
-      if(entry.types.indexOf(t)!==-1){score+=25;matches++}
-      else{
-        /* Fallback: check title text */
-        var syns=TYPE_DICT[t]||[];
+      if(entry.types.indexOf(t)!==-1&&entry.typeConf>=CONF_THRESHOLD){
+        typeMatch=1;
+      }else{
+        /* Soft fallback: check title text but lower score */
+        var syns=TYPE_DICT[t]||[];var titleHit=false;
         for(var i=0;i<syns.length;i++){
-          if(entry.tl.indexOf(syns[i].toLowerCase())!==-1){score+=15;matches++;break}
+          if(entry.tl.indexOf(syns[i].toLowerCase())!==-1){titleHit=true;break}
         }
+        if(titleHit){typeMatch=0.6}
+        else{typeMatch=0;typePassed=false}
       }
     });
-    /* Color match */
+
+    /* ── Color strict check — primaryColor only, confidence gated ── */
     filterColors.forEach(function(c){
-      if(entry.colors.indexOf(c)!==-1){score+=25;matches++}
-      else{
-        var syns=COLOR_DICT[c]||[];
-        for(var i=0;i<syns.length;i++){
-          if(entry.tl.indexOf(syns[i].toLowerCase())!==-1){score+=15;matches++;break}
+      if(entry.primaryColor===c&&entry.colorConf>=CONF_THRESHOLD){
+        colorMatch=1;
+      }else{
+        /* Check if the queried color's parent matches (e.g. "bleu marine" → product has "Bleu") */
+        var colorParents={'Bleu marine':'Bleu','Olive':'Vert'};
+        var parent=colorParents[c];
+        if(parent&&entry.primaryColor===parent&&entry.colorConf>=CONF_THRESHOLD){
+          colorMatch=0.7;/* acceptable but not perfect */
+        }else{
+          /* Soft: title mention only */
+          var syns2=COLOR_DICT[c]||[];var titleHit2=false;
+          for(var j=0;j<syns2.length;j++){
+            if(entry.tl.indexOf(syns2[j].toLowerCase())!==-1){titleHit2=true;break}
+          }
+          if(titleHit2){colorMatch=0.5}
+          else{colorMatch=0;colorPassed=false}
         }
       }
     });
-    /* Free text tokens — search in title + brand name */
-    freeTokens.forEach(function(ft){
-      if(entry.tl.indexOf(ft)!==-1){score+=10;matches++}
-      else if(entry.bnl.indexOf(ft)!==-1){score+=20;matches++}
-      else{
-        var fs=fuzzyMatch(ft,entry.tl);
-        if(fs>0.5){score+=fs*8;matches++}
+
+    /* ── Free text matching ── */
+    if(hasFree){
+      var ftMatched=0;
+      freeTokens.forEach(function(ft){
+        if(entry.tl.indexOf(ft)!==-1)ftMatched++;
+        else if(entry.bnl.indexOf(ft)!==-1)ftMatched++;
         else{
-          var fb=fuzzyMatch(ft,entry.bnl);
-          if(fb>0.5){score+=fb*15;matches++}
+          var fs=fuzzyMatch(ft,entry.tl);
+          if(fs>0.5)ftMatched+=fs;
+          else{var fb=fuzzyMatch(ft,entry.bnl);if(fb>0.5)ftMatched+=fb}
         }
-      }
-    });
+      });
+      textMatch=freeTokens.length>0?ftMatched/freeTokens.length:0;
+    }
 
-    return{entry:entry,score:score,matches:matches,total:total};
+    /* ── Compute weighted score ── */
+    var typeScore=filterTypes.length>0?typeMatch:1;
+    var brandScore=filterBrands.length>0?brandMatch:1;
+    var colorScore=filterColors.length>0?colorMatch:1;
+    var textScore=hasFree?textMatch:1;
+
+    var finalScore=W_TYPE*typeScore+W_BRAND*brandScore+W_COLOR*colorScore+W_TEXT*textScore;
+
+    /* ── Classify into levels based on strict AND ── */
+    var allStructuredPass=typePassed&&brandPassed&&colorPassed;
+    var structuredMatches=(typePassed?1:0)+(brandPassed?1:0)+(colorPassed?1:0);
+    var structuredTotal=(filterTypes.length>0?1:0)+(filterBrands.length>0?1:0)+(filterColors.length>0?1:0);
+
+    if(totalCriteria===0){
+      /* Free text only search */
+      if(textMatch>0.3){exact.push({entry:entry,score:finalScore,level:1})}
+      else if(textMatch>0){fallback.push({entry:entry,score:finalScore,level:3})}
+    }else if(allStructuredPass&&(!hasFree||textMatch>0.3)){
+      /* LEVEL 1: ALL structured criteria pass + free text matches */
+      exact.push({entry:entry,score:finalScore,level:1});
+    }else if(structuredTotal>1&&structuredMatches>=structuredTotal-1&&(typeMatch>0||brandMatch>0||colorMatch>0)){
+      /* LEVEL 2: N-1 structured criteria pass */
+      partial.push({entry:entry,score:finalScore*0.6,level:2});
+    }
   });
 
-  /* Filter: require at least 1 match, prefer more matches */
-  var results=scored.filter(function(s){return s.score>0});
-  /* Boost products matching ALL criteria */
-  results.forEach(function(r){
-    if(r.total>1&&r.matches>=r.total)r.score*=2;/* full match bonus */
-    else if(r.total>1&&r.matches===r.total-1)r.score*=1.3;
-  });
-  results.sort(function(a,b){return b.score-a.score||b.matches-a.matches});
+  /* ── Assemble results with strict priority ── */
+  var resultLevel=1;var results;
+  if(exact.length>0){
+    results=exact;resultLevel=1;
+  }else if(partial.length>0){
+    results=partial;resultLevel=2;
+  }else if(fallback.length>0){
+    results=fallback;resultLevel=3;
+  }else{
+    results=[];resultLevel=0;
+  }
+
+  results.sort(function(a,b){return b.score-a.score});
   var products=results.map(function(r){return r.entry.p});
 
   /* Also filter brands for home view */
   var brandIds={};
   results.forEach(function(r){brandIds[r.entry.p.a]=true});
-  /* Add explicitly matched brands */
   filterBrands.forEach(function(b){brandIds[b.id]=true});
   var brands=CATEGORIES.filter(function(c){return brandIds[c.id]});
-  /* If only brand filter, keep brand order */
+
+  /* If only brand filter, return all brand products sorted */
   if(filterBrands.length>0&&filterTypes.length===0&&filterColors.length===0&&freeTokens.length===0){
     brands=filterBrands.map(function(b){return CATEGORIES.find(function(c){return c.id===b.id})}).filter(Boolean);
     products=PRODUCTS.filter(function(p){return filterBrands.some(function(b){return p.a===b.id})});
+    resultLevel=1;
   }
 
   var infoParts=[];
@@ -545,8 +661,11 @@ function smartSearch(query){
   if(filterBrands.length)infoParts.push('Marque: '+filterBrands.map(function(b){return b.n}).join(', '));
   if(freeTokens.length)infoParts.push('Texte: '+freeTokens.join(' '));
 
+  var levelLabels={0:'Aucun résultat',1:'Résultats exacts',2:'Résultats partiels',3:'Résultats approchés'};
+
   return{products:products,brands:brands,info:infoParts.join(' · '),count:products.length,
-    filters:{types:filterTypes,colors:filterColors,brands:filterBrands,free:freeTokens}};
+    filters:{types:filterTypes,colors:filterColors,brands:filterBrands,free:freeTokens},
+    level:resultLevel,levelLabel:levelLabels[resultLevel]||''};
 }
 
 /* ── Suggestions / Autocomplete ── */
@@ -565,7 +684,7 @@ function buildSuggestions(query){
     var bestS=0;
     syns.forEach(function(syn){var s=fuzzyMatch(q,syn.toLowerCase());if(s>bestS)bestS=s});
     if(bestS>0.4){
-      var count=PRODUCT_SEARCH_INDEX.filter(function(e){return e.types.indexOf(canonical)!==-1}).length;
+      var count=PRODUCT_SEARCH_INDEX.filter(function(e){return e.types.indexOf(canonical)!==-1&&e.typeConf>=CONF_THRESHOLD}).length;
       if(count>0)suggestions.push({label:canonical,type:'Type',score:bestS,count:count});
     }
   });
@@ -575,7 +694,7 @@ function buildSuggestions(query){
     var bestS=0;
     syns.forEach(function(syn){var s=fuzzyMatch(q,syn.toLowerCase());if(s>bestS)bestS=s});
     if(bestS>0.4){
-      var count=PRODUCT_SEARCH_INDEX.filter(function(e){return e.colors.indexOf(canonical)!==-1}).length;
+      var count=PRODUCT_SEARCH_INDEX.filter(function(e){return e.primaryColor===canonical&&e.colorConf>=CONF_THRESHOLD}).length;
       if(count>0)suggestions.push({label:canonical,type:'Couleur',score:bestS,count:count});
     }
   });
@@ -657,7 +776,12 @@ function executeSmartSearch(q){
   document.getElementById('brandsGrid').style.display='none';
   document.getElementById('productsSection').style.display='block';
   var countText=result.count+' résultat'+(result.count!==1?'s':'');
-  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="clearSearch()">←</button><h2>Recherche</h2><span class="search-results-info">'+countText+(result.info?' — '+escH(result.info):'')+'</span>';
+  var levelBadge='';
+  if(result.level===1)levelBadge='<span style="color:var(--green);font-size:11px;margin-left:8px">● '+escH(result.levelLabel)+'</span>';
+  else if(result.level===2)levelBadge='<span style="color:#ffb74d;font-size:11px;margin-left:8px">◐ '+escH(result.levelLabel)+'</span>';
+  else if(result.level===3)levelBadge='<span style="color:#ef5350;font-size:11px;margin-left:8px">○ '+escH(result.levelLabel)+'</span>';
+  else if(result.level===0)levelBadge='<span style="color:#ef5350;font-size:11px;margin-left:8px">'+escH(result.levelLabel)+'</span>';
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="clearSearch()">←</button><h2>Recherche</h2><span class="search-results-info">'+countText+(result.info?' — '+escH(result.info):'')+levelBadge+'</span>';
   FILTERED=result.products;
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
