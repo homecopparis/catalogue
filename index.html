@@ -621,9 +621,15 @@ function smartSearch(query){
     }else if(allStructuredPass&&(!hasFree||textMatch>0.3)){
       /* LEVEL 1: ALL structured criteria pass + free text matches */
       exact.push({entry:entry,score:finalScore,level:1});
-    }else if(structuredTotal>1&&structuredMatches>=structuredTotal-1&&(typeMatch>0||brandMatch>0||colorMatch>0)){
-      /* LEVEL 2: N-1 structured criteria pass */
-      partial.push({entry:entry,score:finalScore*0.6,level:2});
+    }else if(structuredTotal>1&&structuredMatches>=structuredTotal-1){
+      /* LEVEL 2: N-1 structured criteria pass, BUT missing criterion must have weak signal > 0 */
+      var weakOk=true;
+      if(filterTypes.length>0&&!typePassed&&typeMatch===0)weakOk=false;
+      if(filterBrands.length>0&&!brandPassed&&brandMatch===0)weakOk=false;
+      if(filterColors.length>0&&!colorPassed&&colorMatch===0)weakOk=false;
+      if(weakOk&&(typeMatch>0||brandMatch>0||colorMatch>0)){
+        partial.push({entry:entry,score:finalScore*0.6,level:2});
+      }
     }
   });
 
