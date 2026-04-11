@@ -138,7 +138,7 @@ fetch('data.json').then(function(r){return r.json()}).then(function(data){
     var thumbParts=(p.thumb_url||'').match(/\/(\d+)_(\w+)_\w+\.jpg/)||[];
     return{a:p.album_id||p.a||'',p:imgParts[1]||p.photo_id||p.p||'',s:imgParts[2]||p.s||'',ts:thumbParts[2]||p.ts||'',t:p.title||p.t||'',u:p.date_upload||p.u||0};
   });
-  CATEGORIES.sort(function(a,b){return(b.c||0)-(a.c||0)});
+  CATEGORIES.sort(function(a,b){return(a.n||'').toLowerCase().localeCompare((b.n||'').toLowerCase())});
   init();
 }).catch(function(e){
   document.getElementById('loading').innerHTML='<p style="color:#f44">Erreur: '+e.message+'</p>';
@@ -277,7 +277,7 @@ function setupImageRetry(){
   document.addEventListener('error',function(e){
     if(e.target.tagName!=='IMG')return;var img=e.target;
     var retries=parseInt(img.getAttribute('data-retry')||'0');
-    if(retries>=2)return;img.setAttribute('data-retry', retries+1);
+    if(retries>=2)return;img.setAttribute('data-retry',retries+1);
     var src=img.src;
     if(src.indexOf('_b.jpg')!==-1){img.src=src.replace('_b.jpg','_z.jpg');return}
     if(src.indexOf('_n.jpg')!==-1){img.src=src.replace('_n.jpg','_q.jpg');return}
