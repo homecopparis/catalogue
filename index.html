@@ -270,14 +270,14 @@ function closeLightbox(e){
 function setupKeyboard(){document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLightbox({target:document.getElementById('lightbox')})})}
 function toggleSidebar(){document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.overlay').classList.toggle('open')}
 function closeSidebarMobile(){document.querySelector('.sidebar').classList.remove('open');document.querySelector('.overlay').classList.remove('open')}
-function extractPrice(title){if(!title)return '';var m=title.match(/(\d+)\s*[eE€]/);if(m)return m[1];var m2=title.match(/^(\d{2,})\s/);return m2?m2[1]:''}
+function extractPrice(title){if(!title)return '';var m1=title.match(/^(\d{2,})\s/);if(m1)return m1[1];var m2=title.match(/(\d+)\s*[eE€]\b/);return m2?m2[1]:''}
 function escH(s){if(!s)return '';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 
 function setupImageRetry(){
   document.addEventListener('error',function(e){
     if(e.target.tagName!=='IMG')return;var img=e.target;
     var retries=parseInt(img.getAttribute('data-retry')||'0');
-    if(retries>=2)return;img.setAttribute('data-retry',retries+1);
+    if(retries>=2)return;img.setAttribute('data-retry', retries+1);
     var src=img.src;
     if(src.indexOf('_b.jpg')!==-1){img.src=src.replace('_b.jpg','_z.jpg');return}
     if(src.indexOf('_n.jpg')!==-1){img.src=src.replace('_n.jpg','_q.jpg');return}
