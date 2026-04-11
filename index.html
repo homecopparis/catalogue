@@ -147,7 +147,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <span>Home<span class="cop">Cop Paris</span></span>
     </a>
     <div class="search-wrap">
-      <input class="search-box" id="searchInput" type="text" placeholder="Rechercher… ex: hoodie noir nike" oninput="onSmartSearch(this.value)" onkeydown="onSearchKey(event)" autocomplete="off">
+      <input class="search-box" id="searchInput" type="search" placeholder="Rechercher… ex: hoodie noir nike" oninput="onSearchInput(this.value)" onkeydown="onSearchKey(event)" autocomplete="off">
       <div class="search-suggest" id="searchSuggest"></div>
     </div>
     <div class="search-tags" id="searchTags"></div>
@@ -610,7 +610,7 @@ function resolveMultiWord(tokens){
 /* ── Main smart search v2 — strict AND filtering + result levels ── */
 function smartSearch(query){
   if(!query||!query.trim())return{products:PRODUCTS,brands:CATEGORIES,info:'',level:0};
-  var q=query.trim().toLowerCase().replace(/['']/g,"'");
+  var q=query.trim().toLowerCase().replace(/[&']/g,"'");
   /* Expand brand aliases inline */
   Object.keys(BRAND_ALIASES).forEach(function(alias){
     var re=new RegExp('\\b'+alias+'\\b','g');
@@ -848,12 +848,16 @@ function highlightSug(items){
   for(var i=0;i<items.length;i++)items[i].classList.toggle('active',i===suggestIndex);
 }
 
-/* ── Debounced search trigger ── */
-function onSmartSearch(q){
+/* ── Search input: suggestions only, NO auto-search ── */
+function onSearchInput(q){
   clearTimeout(searchTimer);
-  showSuggestions(q);
-  searchTimer=setTimeout(function(){executeSmartSearch(q)},300);
+  searchTimer=setTimeout(function(){showSuggestions(q)},150);
 }
+/* Mobile: type="search" fires 'search' event on keyboard "Rechercher" button */
+document.addEventListener('DOMContentLoaded',function(){
+  var si=document.getElementById('searchInput');
+  if(si)si.addEventListener('search',function(){executeSmartSearch(this.value)});
+});
 
 function executeSmartSearch(q){
   document.getElementById('searchSuggest').classList.remove('open');
