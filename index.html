@@ -118,8 +118,8 @@ var PREFIX='',CATEGORIES=[],PRODUCTS=[],CURRENT_VIEW='home',CURRENT_CAT=null;
 var FILTERED=[],RENDER_INDEX=0,BATCH_SIZE=48;
 var searchTimer=null;
 
-/* URL helpers — reconstruct from prefix + photo_id + secret */
-function imgUrl(pid,secret,size){return PREFIX+pid+'_'+secret+'_'+size+'.jpg'}
+/* URL helpers — reconstruct from prefix + photo_id + secret, or return full URL */
+function imgUrl(pid,secret,size){if(pid&&pid.indexOf('http')===0)return pid;return PREFIX+pid+'_'+secret+'_'+size+'.jpg'}
 
 fetch('data.json').then(function(r){return r.json()}).then(function(data){
   PREFIX=data.prefix||'https://live.staticflickr.com/65535/';
@@ -201,7 +201,8 @@ function renderBrandCards(cats){
   var g=document.getElementById('brandsGrid');var h='';
   for(var i=0;i<cats.length;i++){
     var c=cats[i];
-    var cover=(c.cp&&c.cs)?imgUrl(c.cp,c.cs,'z'):'';
+    var cover=c.cp?(c.cp.indexOf('http')===0?c.cp:((c.cs)?imgUrl(c.cp,c.cs,'z'):'')):'';
+
     h+='<div class="brand-card" onclick="showBrand(\''+c.id+'\')">';
     h+='<img src="'+escH(cover)+'" alt="'+escH(c.n)+'" loading="lazy" referrerpolicy="no-referrer">';
     h+='<div class="brand-overlay"><div class="name">'+escH(c.n)+'</div><div class="cnt">'+c.c+' articles</div></div></div>';
@@ -214,7 +215,8 @@ function renderBatch(){
   var end=Math.min(RENDER_INDEX+BATCH_SIZE,FILTERED.length);var h='';
   for(var i=RENDER_INDEX;i<end;i++){
     var p=FILTERED[i];
-    var cardImg=(p.p&&p.ts)?imgUrl(p.p,p.ts,'n'):'';
+    var cardImg=p.p?(p.p.indexOf('http')===0?p.p:((p.ts)?imgUrl(p.p,p.ts,'n'):'')):'';
+
     var price=extractPrice(p.t);
     h+='<div class="product-card" onclick="openLightbox('+i+')">';
     h+='<img src="'+escH(cardImg)+'" alt="'+escH(p.t||'')+'" loading="lazy" referrerpolicy="no-referrer">';
@@ -250,7 +252,8 @@ function doSearch(q){
 
 function openLightbox(idx){
   var p=FILTERED[idx];if(!p)return;
-  var lbImg=(p.p&&p.s)?imgUrl(p.p,p.s,'b'):'';
+  var lbImg=p.p?(p.p.indexOf('http')===0?p.p:((p.s)?imgUrl(p.p,p.s,'b'):'')):'';
+
   document.getElementById('lbImg').src=lbImg;
   var cat=CATEGORIES.find(function(c){return c.id===p.a});
   document.getElementById('lbBrand').textContent=cat?cat.n:'';
@@ -277,7 +280,7 @@ function setupImageRetry(){
     if(retries>=2)return;img.setAttribute('data-retry',retries+1);
     var src=img.src;
     if(src.indexOf('_b.jpg')!==-1){img.src=src.replace('_b.jpg','_z.jpg');return}
-    if(src.indexOf('_n.jpg')!==-1){img.src=src.replace('_n.jpg','_q.jpg');return}
+    if(src.indexOf('_n.jpg')!==-1){img.src=src.replace('_n.jpg','_q.jpg');return;}
     if(src.indexOf('_z.jpg')!==-1){img.src=src.replace('_z.jpg','_n.jpg');return}
     setTimeout(function(){img.src=src+'?r='+retries},1000*retries);
   },true);
