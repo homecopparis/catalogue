@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="referrer" content="no-referrer">
-<title>Home Cop Paris — Catalogue</title>
+<title>Home Cop Paris â Catalogue</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -94,7 +94,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 }
 @keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .brand-card,.product-card{animation:fadeInUp .35s ease both}
-/* ═══ FILTER BAR ═══ */
+/* âââ FILTER BAR âââ */
 .filter-bar{margin-bottom:20px;display:none}
 .filter-bar.visible{display:block}
 .filter-group{margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -109,7 +109,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .filter-reset:hover{border-color:var(--green);color:var(--green)}
 .filter-active-info{font-size:11px;color:var(--green);margin-bottom:8px}
 @media(max-width:768px){.filter-pill{padding:4px 8px;font-size:11px}.filter-group{gap:4px}}
-/* ═══ FAVORITES ═══ */
+/* âââ FAVORITES âââ */
 .fav-btn{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);border:none;width:30px;height:30px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:rgba(255,255,255,.7);opacity:0;transition:opacity .22s ease,transform .15s,color .2s;z-index:12;line-height:1}
 .product-card:hover .fav-btn,.fav-btn.active{opacity:1}
 .fav-btn.active{color:#ff4757;opacity:1}
@@ -152,8 +152,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 </style>
 </head>
 <body>
-<div id="loading"><div class="spinner"></div><p>Chargement du catalogue…</p></div>
-<button class="hamburger" onclick="toggleSidebar()">☰</button>
+<div id="loading"><div class="spinner"></div><p>Chargement du catalogueâ¦</p></div>
+<button class="hamburger" onclick="toggleSidebar()">â°</button>
 <div class="overlay" onclick="toggleSidebar()"></div>
 <aside class="sidebar">
   <div class="sidebar-header">
@@ -162,7 +162,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <span>Home<span class="cop">Cop Paris</span></span>
     </a>
     <div class="search-wrap">
-      <input class="search-box" id="searchInput" type="search" placeholder="Rechercher… ex: hoodie noir nike" oninput="onSearchInput(this.value)" onkeydown="onSearchKey(event)" autocomplete="off">
+      <input class="search-box" id="searchInput" type="search" placeholder="Rechercherâ¦ ex: hoodie noir nike" oninput="onSearchInput(this.value)" onkeydown="onSearchKey(event)" autocomplete="off">
       <div class="search-suggest" id="searchSuggest"></div>
     </div>
     <div class="search-tags" id="searchTags"></div>
@@ -184,16 +184,16 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   </div>
 </main>
 <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
-  <button class="lb-back" onclick="closeLightbox(event)">← Retour</button>
-  <button class="lb-close" onclick="closeLightbox(event)">✕</button>
+  <button class="lb-back" onclick="closeLightbox(event)">â Retour</button>
+  <button class="lb-close" onclick="closeLightbox(event)">â</button>
   <img id="lbImg" src="" alt="" referrerpolicy="no-referrer">
   <div class="lb-info"><div class="lb-brand" id="lbBrand"></div><div class="lb-price" id="lbPrice"></div></div>
-  <button class="lb-fav" id="lbFav" onclick="toggleLbFav(event)">♡</button>
+  <button class="lb-fav" id="lbFav" onclick="toggleLbFav(event)">â¡</button>
 </div>
 <!-- Favorites Save Modal -->
 <div class="fav-modal-overlay" id="favSaveModal">
   <div class="fav-modal">
-    <button class="fav-close" onclick="closeFavModal('favSaveModal')">✕</button>
+    <button class="fav-close" onclick="closeFavModal('favSaveModal')">â</button>
     <h3>Sauvegarder mes favoris</h3>
     <p class="fav-modal-sub">Choisissez un pseudo pour retrouver vos favoris sur un autre appareil.</p>
     <label>Pseudo</label>
@@ -201,7 +201,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <div id="favSaveCodeWrap" style="display:none">
       <label>Votre code secret</label>
       <div class="fav-code-display"><span class="code" id="favSaveCode"></span><button class="copy-btn" onclick="copyFavCode()">Copier</button></div>
-      <p style="font-size:11px;color:var(--text-dim);margin-top:6px">Notez bien ce code ! Il est nécessaire pour retrouver vos favoris.</p>
+      <p style="font-size:11px;color:var(--text-dim);margin-top:6px">Notez bien ce code ! Il est nÃ©cessaire pour retrouver vos favoris.</p>
     </div>
     <div class="fav-error" id="favSaveError"></div>
     <div class="fav-success" id="favSaveSuccess"></div>
@@ -214,7 +214,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <!-- Favorites Recover Modal -->
 <div class="fav-modal-overlay" id="favRecoverModal">
   <div class="fav-modal">
-    <button class="fav-close" onclick="closeFavModal('favRecoverModal')">✕</button>
+    <button class="fav-close" onclick="closeFavModal('favRecoverModal')">â</button>
     <h3>Retrouver mes favoris</h3>
     <p class="fav-modal-sub">Entrez votre pseudo et code pour restaurer vos favoris.</p>
     <label>Pseudo</label>
@@ -234,10 +234,10 @@ var PREFIX='',CATEGORIES=[],PRODUCTS=[],CURRENT_VIEW='home',CURRENT_CAT=null;
 var FILTERED=[],RENDER_INDEX=0,BATCH_SIZE=48;
 var searchTimer=null;
 
-/* URL helpers — reconstruct from prefix + photo_id + secret, or return full URL */
+/* URL helpers â reconstruct from prefix + photo_id + secret, or return full URL */
 function imgUrl(pid,secret,size){if(pid&&pid.indexOf('http')===0)return pid;return PREFIX+pid+'_'+secret+'_'+size+'.jpg'}
 
-fetch('data.json?v=20260412b').then(function(r){return r.json()}).then(function(data){
+fetch('data.json?v=20260412c').then(function(r){return r.json()}).then(function(data){
   PREFIX=data.prefix||'https://live.staticflickr.com/65535/';
   var rawCats=data.categories||[];
   var rawProds=data.products||[];
@@ -270,11 +270,11 @@ function init(){
 }
 
 function buildSidebar(){
-  document.getElementById('sidebarStats').textContent=PRODUCTS.length+' articles · '+CATEGORIES.length+' marques';
+  document.getElementById('sidebarStats').textContent=PRODUCTS.length+' articles Â· '+CATEGORIES.length+' marques';
   var favCount=getFavorites().length;
   var h='<div class="menu-item active" data-cat="home" onclick="showHome()"><span>Accueil</span></div>';
-  h+='<div class="menu-item" data-cat="favorites" onclick="showFavorites()"><span>♥ Mes Favoris</span><span class="count" id="favMenuCount">'+(favCount||'')+'</span></div>';
-  h+='<div class="menu-item" data-cat="nouveautes" onclick="showNouveautes()"><span>Nouveautés</span><span class="count">'+PRODUCTS.length+'</span></div>';
+  h+='<div class="menu-item" data-cat="favorites" onclick="showFavorites()"><span>â¥ Mes Favoris</span><span class="count" id="favMenuCount">'+(favCount||'')+'</span></div>';
+  h+='<div class="menu-item" data-cat="nouveautes" onclick="showNouveautes()"><span>NouveautÃ©s</span><span class="count">'+PRODUCTS.length+'</span></div>';
   for(var i=0;i<CATEGORIES.length;i++){
     var c=CATEGORIES[i];
     h+='<div class="menu-item" data-cat="'+c.id+'" onclick="showBrand(\''+c.id+'\')"><span>'+escH(c.n)+'</span><span class="count">'+c.c+'</span></div>';
@@ -300,14 +300,14 @@ function showNouveautes(){
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
   document.getElementById('productsSection').style.display='block';
-  document.getElementById('productsHeader').innerHTML='<h2>Nouveautés</h2>';
+  document.getElementById('productsHeader').innerHTML='<h2>NouveautÃ©s</h2>';
   hideFilterBar();
   FILTERED=PRODUCTS.slice().sort(function(a,b){return(b.u||0)-(a.u||0)});
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
 }
 
-/* ═══ FILTER SYSTEM ═══ */
+/* âââ FILTER SYSTEM âââ */
 var ACTIVE_FILTERS={types:[],colors:[]};
 var BRAND_PRODUCTS=[];
 var COLOR_HEX={'Rouge':'#e53935','Bleu':'#1e88e5','Vert':'#43a047','Jaune':'#fdd835','Orange':'#fb8c00','Violet':'#8e24aa','Rose':'#ec407a','Marron':'#6d4c41','Noir':'#333','Blanc':'#f5f5f5','Gris':'#9e9e9e','Beige':'#d7ccc8','Multicolore':'conic-gradient(red,yellow,green,blue,violet,red)'};
@@ -430,8 +430,8 @@ function renderBatch(){
     var gc=GLOBAL_FAV_COUNTS[pid]||0;
     h+='<div class="product-card" onclick="openLightbox('+i+')">';
     if(price)h+='<div class="price-overlay">'+price+'</div>';
-    h+='<button class="fav-btn'+(fav?' active':'')+'" data-pid="'+escH(pid)+'" onclick="onFavClick(event,'+i+')">'+(fav?'♥':'♡')+'</button>';
-    h+='<div class="fav-count'+(gc>0?' visible':'')+'" data-pid="'+escH(pid)+'"><span class="fc-heart">♥</span> '+gc+'</div>';
+    h+='<button class="fav-btn'+(fav?' active':'')+'" data-pid="'+escH(pid)+'" onclick="onFavClick(event,'+i+')">'+(fav?'â¥':'â¡')+'</button>';
+    h+='<div class="fav-count'+(gc>0?' visible':'')+'" data-pid="'+escH(pid)+'"><span class="fc-heart">â¥</span> '+gc+'</div>';
     h+='<div class="card-dim"></div>';
     h+='<img src="'+escH(cardImg)+'" alt="'+escH(pubTitle||'')+'" loading="lazy" referrerpolicy="no-referrer">';
     h+='</div>';
@@ -448,42 +448,42 @@ function setupInfiniteScroll(){
 }
 
 
-/* ═══════════════════════════════════════════════════════
-   SMART SEARCH ENGINE v4 — 3-level: strict → family → discovery
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SMART SEARCH ENGINE v4 â 3-level: strict â family â discovery
    Precision when precise, recall when general, zero absurd voids.
    Brand from Flickr = trusted. Type/color = rebuilt autonomously.
-   ═══════════════════════════════════════════════════════ */
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
-/* ── Confidence thresholds ── */
+/* ââ Confidence thresholds ââ */
 var CONF_CONFIRMED=0.7;
 var CONF_SUGGESTED=0.4;
 
-/* ── Scoring weights ── */
+/* ââ Scoring weights ââ */
 var W_TYPE=35,W_BRAND=30,W_COLOR=20,W_TEXT=15;
 
-/* ── Dictionnaire types produit (canonical → synonymes) ── */
+/* ââ Dictionnaire types produit (canonical â synonymes) ââ */
 var TYPE_DICT={
   'T-shirt':['t-shirt','tshirt','tee shirt','tee-shirt','t shirt','teeshirt','tee','maillot','t shirt'],
   'Polo':['polo','polo shirt'],
   'Chemise':['chemise','shirt','blouse','chemisette','surchemise','overshirt','sur-chemise'],
-  'Hoodie':['hoodie','hoody','capuche','sweat à capuche','sweat capuche','pull capuche','hoodie zip','hoodie sans zip','hooded','sweat a capuche'],
+  'Hoodie':['hoodie','hoody','capuche','sweat Ã  capuche','sweat capuche','pull capuche','hoodie zip','hoodie sans zip','hooded','sweat a capuche'],
   'Sweatshirt':['sweatshirt','sweater','crewneck','crew neck','crew-neck'],
   'Pull':['pull','pullover','pull-over','tricot','knit','knitwear','maille','cardigan','gilet maille'],
-  'Veste':['veste','jacket','blazer','blouson','bomber','doudoune','puffer','down jacket','parka','manteau','coat','windbreaker','coupe-vent','coupe vent','shell','goretex','gore-tex','gore tex','matelassé','matelasse','quilted','anorak','softshell','hardshell','imperméable','impermeable','gilet','body warmer','sans manche','2en1','3en1','reversible','réversible'],
+  'Veste':['veste','jacket','blazer','blouson','bomber','doudoune','puffer','down jacket','parka','manteau','coat','windbreaker','coupe-vent','coupe vent','shell','goretex','gore-tex','gore tex','matelassÃ©','matelasse','quilted','anorak','softshell','hardshell','impermÃ©able','impermeable','gilet','body warmer','sans manche','2en1','3en1','reversible','rÃ©versible'],
   'Pantalon':['pantalon','pants','pant','trousers','chino','chinos','cargo','jogging','jogger','joggers','trackpant','trackpants','track pant','baggy','flare','wide leg'],
   'Jeans':['jean','jeans','denim'],
   'Short':['short','shorts','bermuda','bermudas'],
-  'Ensemble':['ensemble','set','tracksuit','le set','set complet','co-ord','coord','survet','survêtement','survetement'],
+  'Ensemble':['ensemble','set','tracksuit','le set','set complet','co-ord','coord','survet','survÃªtement','survetement'],
   'Chaussures':['chaussure','chaussures','shoe','shoes','sneaker','sneakers','basket','baskets','boots','boot','botte','bottes','mule','mules','sandale','sandales','loafer','loafers','mocassin'],
   'Casquette':['casquette','cap','caps','bob','bobs','bonnet','bonnets','chapeau','hat','fitted','snapback','trucker','beanie'],
   'Sac':['sac','bag','bags','sacoche','pochette','besace','backpack','tote','clutch','messenger','banane','fanny pack','bumbag'],
   'Ceinture':['ceinture','belt','belts','ceintures'],
-  'Écharpe':['écharpe','echarpe','scarf','scarves','foulard','châle','chale','shawl','étole','etole'],
+  'Ãcharpe':['Ã©charpe','echarpe','scarf','scarves','foulard','chÃ¢le','chale','shawl','Ã©tole','etole'],
   'Lunettes':['lunettes','sunglasses','glasses','eyewear'],
-  'Accessoire':['accessoire','accessoires','bijou','bijoux','bracelet','collier','bague','ring','chain','chaîne','chaine','montre','watch','portefeuille','wallet','porte-carte','cardholder']
+  'Accessoire':['accessoire','accessoires','bijou','bijoux','bracelet','collier','bague','ring','chain','chaÃ®ne','chaine','montre','watch','portefeuille','wallet','porte-carte','cardholder']
 };
 
-/* ── Reverse index: synonym word → canonical type (built once) ── */
+/* ââ Reverse index: synonym word â canonical type (built once) ââ */
 var TYPE_WORD_INDEX={};
 (function(){
   Object.keys(TYPE_DICT).forEach(function(canon){
@@ -491,31 +491,31 @@ var TYPE_WORD_INDEX={};
   });
 })();
 
-/* ── Dictionnaire couleurs (canonical → synonymes) ── */
+/* ââ Dictionnaire couleurs (canonical â synonymes) ââ */
 var COLOR_DICT={
   'Noir':['noir','noire','noirs','black','blk'],
-  'Blanc':['blanc','blanche','blancs','white','wht','cream','crème','creme','ivoire','ivory','ecru','écru'],
+  'Blanc':['blanc','blanche','blancs','white','wht','cream','crÃ¨me','creme','ivoire','ivory','ecru','Ã©cru'],
   'Bleu':['bleu','bleue','bleus','blue','azur','cyan','cobalt','indigo'],
-  'Bleu marine':['bleu marine','marine','navy','dark blue','bleu foncé','bleu fonce'],
+  'Bleu marine':['bleu marine','marine','navy','dark blue','bleu foncÃ©','bleu fonce'],
   'Rouge':['rouge','rouges','red','bordeaux','burgundy','bourgogne','carmin','vermillon','cerise','cherry','crimson'],
-  'Vert':['vert','verte','verts','green','emeraude','émeraude','sapin','forest','lime'],
+  'Vert':['vert','verte','verts','green','emeraude','Ã©meraude','sapin','forest','lime'],
   'Olive':['olive','kaki','khaki','army','militaire','army green','olive green','vert olive','vert kaki'],
-  'Gris':['gris','grise','grey','gray','anthracite','charcoal','silver','argenté','argente','heather'],
+  'Gris':['gris','grise','grey','gray','anthracite','charcoal','silver','argentÃ©','argente','heather'],
   'Rose':['rose','roses','pink','fuchsia','magenta','salmon','saumon'],
-  'Orange':['orange','orangé','tangerine','corail','coral'],
-  'Jaune':['jaune','jaunes','yellow','gold','doré','dore','or','moutarde','mustard'],
+  'Orange':['orange','orangÃ©','tangerine','corail','coral'],
+  'Jaune':['jaune','jaunes','yellow','gold','dorÃ©','dore','or','moutarde','mustard'],
   'Violet':['violet','violette','purple','mauve','lilas','lavande','lavender','prune','plum'],
-  'Marron':['marron','brown','brun','brune','tan','camel','chocolat','chocolate','caramel','cognac','café','cafe','taupe','noisette'],
+  'Marron':['marron','brown','brun','brune','tan','camel','chocolat','chocolate','caramel','cognac','cafÃ©','cafe','taupe','noisette'],
   'Beige':['beige','sable','sand','nude','champagne','vanille','vanilla','off-white','off white']
 };
 
-/* ── Multi-word color list ── */
-var MULTIWORD_COLORS=['bleu marine','bleu foncé','bleu fonce','dark blue','vert olive','vert kaki','army green','olive green','off white','off-white'];
+/* ââ Multi-word color list ââ */
+var MULTIWORD_COLORS=['bleu marine','bleu foncÃ©','bleu fonce','dark blue','vert olive','vert kaki','army green','olive green','off white','off-white'];
 
-/* ── Brand alias shortcuts ── */
-var BRAND_ALIASES={'lv':'louis vuitton','si':'stone island','cp':'cp company','ysl':'yves saint laurent','ald':'aimé leon dore','cdg':'comme des garçons','fog':'fear of god','ow':'off white','pa':'palm angels','bp':'broken planet','rl':'ralph lauren'};
+/* ââ Brand alias shortcuts ââ */
+var BRAND_ALIASES={'lv':'louis vuitton','si':'stone island','cp':'cp company','ysl':'yves saint laurent','ald':'aimÃ© leon dore','cdg':'comme des garÃ§ons','fog':'fear of god','ow':'off white','pa':'palm angels','bp':'broken planet','rl':'ralph lauren'};
 
-/* ── Product family hierarchy ── */
+/* ââ Product family hierarchy ââ */
 var TYPE_FAMILIES={
   'outerwear':['Veste'],
   'tops':['T-shirt','Polo','Chemise'],
@@ -526,7 +526,7 @@ var TYPE_FAMILIES={
   'headwear':['Casquette'],
   'bags':['Sac'],
   'belts':['Ceinture'],
-  'scarves':['Écharpe'],
+  'scarves':['Ãcharpe'],
   'eyewear':['Lunettes'],
   'misc':['Accessoire']
 };
@@ -537,7 +537,7 @@ var TYPE_TO_FAMILY={};
   });
 })();
 
-/* ── Family expansion: type → primary (level 1-2) + secondary (level 2-3) ── */
+/* ââ Family expansion: type â primary (level 1-2) + secondary (level 2-3) ââ */
 var FAMILY_EXPAND={
   'Veste':{primary:['Veste'],secondary:[]},
   'T-shirt':{primary:['T-shirt'],secondary:['Polo']},
@@ -554,20 +554,20 @@ var FAMILY_EXPAND={
   'Casquette':{primary:['Casquette'],secondary:[]},
   'Sac':{primary:['Sac'],secondary:[]},
   'Ceinture':{primary:['Ceinture'],secondary:[]},
-  'Écharpe':{primary:['Écharpe'],secondary:[]},
+  'Ãcharpe':{primary:['Ãcharpe'],secondary:[]},
   'Lunettes':{primary:['Lunettes'],secondary:[]},
   'Accessoire':{primary:['Accessoire'],secondary:[]}
 };
 
-/* ── Categories considered pure single-type (high confidence) ── */
-var PURE_TYPE_CATS={'Casquette':true,'Ceinture':true,'Écharpe':true,'Jouet':true};
+/* ââ Categories considered pure single-type (high confidence) ââ */
+var PURE_TYPE_CATS={'Casquette':true,'Ceinture':true,'Ãcharpe':true,'Jouet':true};
 
-/* ── Index structures ── */
+/* ââ Index structures ââ */
 var BRAND_INDEX={};
 var BRAND_WORDS={};
 var PRODUCT_SEARCH_INDEX=[];
 
-/* ── Build search index at load ── */
+/* ââ Build search index at load ââ */
 function buildSearchIndex(){
   BRAND_INDEX={};BRAND_WORDS={};
   var CAT_MAP={};
@@ -580,7 +580,7 @@ function buildSearchIndex(){
     CAT_MAP[c.id]=c;
   });
 
-  var COLOR_NORMALIZE={'Bleu clair':'Bleu','Vert clair':'Vert','Vert foncé':'Vert','Gris clair':'Gris','Gris foncé':'Gris','Turquoise':'Bleu','Bordeaux':'Rouge'};
+  var COLOR_NORMALIZE={'Bleu clair':'Bleu','Vert clair':'Vert','Vert foncÃ©':'Vert','Gris clair':'Gris','Gris foncÃ©':'Gris','Turquoise':'Bleu','Bordeaux':'Rouge'};
 
   PRODUCT_SEARCH_INDEX=[];
   PRODUCTS.forEach(function(p){
@@ -588,7 +588,7 @@ function buildSearchIndex(){
     var brandName=cat?cat.n:'';
     var tl=(p.t||'').toLowerCase();
 
-    /* ── Color from image analysis (cl field) ── */
+    /* ââ Color from image analysis (cl field) ââ */
     var primaryColor=null;var colorConf=0;
     if(p.cl){
       var normalized=COLOR_NORMALIZE[p.cl]||p.cl;
@@ -609,7 +609,7 @@ function buildSearchIndex(){
       }
     }
 
-    /* ── Type detection — multi-source ── */
+    /* ââ Type detection â multi-source ââ */
     var detectedTypes=[];
     var dtSet={};
 
@@ -653,13 +653,13 @@ function buildSearchIndex(){
   });
 }
 
-/* ── Extract types from title text ── */
+/* ââ Extract types from title text ââ */
 function detectTypesFromTitle(tl){
   var found=[];
   var fSet={};
 
   /* Multi-product: "hoodie : 85 jogging : 80" */
-  var multiRe=/\b([a-zéèêàùûîïôç][\w\-]*)\s*:\s*\d+/gi;
+  var multiRe=/\b([a-zÃ©Ã¨ÃªÃ Ã¹Ã»Ã®Ã¯Ã´Ã§][\w\-]*)\s*:\s*\d+/gi;
   var mm;
   while((mm=multiRe.exec(tl))!==null){
     var w=mm[1].toLowerCase();
@@ -668,7 +668,7 @@ function detectTypesFromTitle(tl){
   }
 
   /* "la veste", "le pants", "le set" patterns */
-  var artRe=/\b(?:la|le|les|un|une)\s+([a-zéèêàùûîïôç][\w\-]*)/gi;
+  var artRe=/\b(?:la|le|les|un|une)\s+([a-zÃ©Ã¨ÃªÃ Ã¹Ã»Ã®Ã¯Ã´Ã§][\w\-]*)/gi;
   var am;
   while((am=artRe.exec(tl))!==null){
     var aw=am[1].toLowerCase();
@@ -676,7 +676,7 @@ function detectTypesFromTitle(tl){
     if(ar&&!fSet[ar]){fSet[ar]=true;found.push({type:ar,conf:0.55})}
   }
 
-  /* Direct keyword scan — word-boundary match */
+  /* Direct keyword scan â word-boundary match */
   var typeKeys=Object.keys(TYPE_DICT);
   for(var i=0;i<typeKeys.length;i++){
     if(fSet[typeKeys[i]])continue;
@@ -696,7 +696,7 @@ function detectTypesFromTitle(tl){
 
   /* Special composite patterns */
   if(!fSet['Veste']){
-    if(/\b(2en1|3en1|réversible|reversible|manches amovibles|duvet d[\'\u2019]oie|matelassé)\b/i.test(tl)){
+    if(/\b(2en1|3en1|rÃ©versible|reversible|manches amovibles|duvet d[\'\u2019]oie|matelassÃ©)\b/i.test(tl)){
       found.push({type:'Veste',conf:0.75});fSet['Veste']=true;
     }
   }
@@ -707,7 +707,7 @@ function detectTypesFromTitle(tl){
   }
   if(!fSet['Hoodie']&&!fSet['Sweatshirt']){
     if(/\bsweat\b/i.test(tl)&&!/\bsweatshirt\b/i.test(tl)){
-      /* "sweat" alone → could be hoodie or sweatshirt. Map to Sweatshirt */
+      /* "sweat" alone â could be hoodie or sweatshirt. Map to Sweatshirt */
       found.push({type:'Sweatshirt',conf:0.55});fSet['Sweatshirt']=true;
     }
   }
@@ -715,7 +715,7 @@ function detectTypesFromTitle(tl){
   return found;
 }
 
-/* ═══ Fuzzy matching (Levenshtein) ═══ */
+/* âââ Fuzzy matching (Levenshtein) âââ */
 function levenshtein(a,b){
   if(a===b)return 0;if(!a.length)return b.length;if(!b.length)return a.length;
   if(a.length>b.length){var tmp=a;a=b;b=tmp}
@@ -756,7 +756,7 @@ function fuzzyMatch(query,target,threshold){
   return 0;
 }
 
-/* ═══ Token resolution ═══ */
+/* âââ Token resolution âââ */
 function resolveToken(token){
   var result={type:null,color:null,brand:null,raw:token,score:0,conf:0};
   var bestTypeScore=0,bestType=null;
@@ -784,7 +784,7 @@ function resolveToken(token){
       if(s>bestBrandScore){bestBrandScore=s;bestBrand=BRAND_INDEX[bnl]}
     });
   }
-  /* Pick best — type and color require higher bar, brand is slightly preferred */
+  /* Pick best â type and color require higher bar, brand is slightly preferred */
   var typeMin=0.6,colorMin=0.6,brandMin=0.55;
   if(bestBrandScore>=brandMin&&bestBrandScore>=bestTypeScore&&bestBrandScore>=bestColorScore){
     result.brand=bestBrand;result.score=bestBrandScore;result.conf=bestBrandScore;
@@ -796,7 +796,7 @@ function resolveToken(token){
   return result;
 }
 
-/* ── Multi-word resolution ── */
+/* ââ Multi-word resolution ââ */
 function resolveMultiWord(tokens){
   var resolved=[];var skip={};
   for(var i=0;i<tokens.length;i++){
@@ -836,9 +836,9 @@ function resolveMultiWord(tokens){
   return resolved;
 }
 
-/* ═══════════════════════════════════════════════════════
-   SMART SEARCH v4 — 3-level: strict → family → discovery
-   ═══════════════════════════════════════════════════════ */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SMART SEARCH v4 â 3-level: strict â family â discovery
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 function smartSearch(query){
   if(!query||!query.trim())return{products:PRODUCTS,brands:CATEGORIES,info:'',level:0,count:PRODUCTS.length,filters:{types:[],colors:[],brands:[],free:[]},levelLabel:'',hint:''};
   var q=query.trim().toLowerCase().replace(/[\u2018\u2019']/g,"'");
@@ -882,14 +882,14 @@ function smartSearch(query){
   });
   var queryFamily=hasType?TYPE_TO_FAMILY[filterTypes[0]]||null:null;
 
-  /* ── Score each product ── */
+  /* ââ Score each product ââ */
   var level1=[],level2=[],level3=[];
 
   PRODUCT_SEARCH_INDEX.forEach(function(entry){
     var brandScore=1,typeScore=0,colorScore=0,textScore=1;
     var brandOk=true,typeClass='none';
 
-    /* ── Brand ── */
+    /* ââ Brand ââ */
     if(hasBrand){
       var bMatch=false;
       for(var bi=0;bi<filterBrands.length;bi++){if(entry.p.a===filterBrands[bi].id){bMatch=true;break}}
@@ -897,7 +897,7 @@ function smartSearch(query){
       brandScore=1;
     }
 
-    /* ── Type ── */
+    /* ââ Type ââ */
     if(hasType){
       var prodConfirmed=entry.typeConf>=CONF_CONFIRMED;
       var prodSuggested=entry.typeConf>=CONF_SUGGESTED;
@@ -915,7 +915,7 @@ function smartSearch(query){
       }else if(secondaryHit){
         typeScore=0.4;typeClass='family';
       }else if(!prodSuggested){
-        /* No type info at all → neutral only if brand is specified */
+        /* No type info at all â neutral only if brand is specified */
         if(hasBrand){typeScore=0.2;typeClass='neutral'}
         else{typeScore=0;typeClass='none'}
       }else{
@@ -924,13 +924,13 @@ function smartSearch(query){
           /* Hard family conflict: outerwear vs tops, etc. */
           typeScore=0;typeClass='conflict';
         }else{
-          /* Same family but not exact match → mild mismatch */
+          /* Same family but not exact match â mild mismatch */
           typeScore=0.15;typeClass='neutral';
         }
       }
     }else{typeScore=1;typeClass='match'}
 
-    /* ── Color ── */
+    /* ââ Color ââ */
     if(hasColor){
       var cMatch=false;
       for(var ci=0;ci<filterColors.length;ci++){
@@ -938,7 +938,7 @@ function smartSearch(query){
         if(entry.primaryColor===fc&&entry.colorConf>=CONF_SUGGESTED){
           colorScore=entry.colorConf>=CONF_CONFIRMED?1:0.7;cMatch=true;break;
         }
-        /* Color parent check: "bleu marine" → "Bleu" */
+        /* Color parent check: "bleu marine" â "Bleu" */
         var colorParents={'Bleu marine':'Bleu','Olive':'Vert'};
         if(colorParents[fc]&&entry.primaryColor===colorParents[fc]&&entry.colorConf>=CONF_SUGGESTED){
           colorScore=0.6;cMatch=true;break;
@@ -948,13 +948,13 @@ function smartSearch(query){
         if(entry.primaryColor&&entry.colorConf>=CONF_SUGGESTED){
           colorScore=0;/* Different confirmed color */
         }else{
-          /* No color info → neutral only with brand */
+          /* No color info â neutral only with brand */
           colorScore=hasBrand?0.15:0;
         }
       }
     }else{colorScore=1}
 
-    /* ── Free text ── */
+    /* ââ Free text ââ */
     if(hasFree){
       var ftMatched=0;
       freeTokens.forEach(function(ft){
@@ -969,12 +969,12 @@ function smartSearch(query){
       textScore=ftMatched/freeTokens.length;
     }
 
-    /* ── Weighted score ── */
+    /* ââ Weighted score ââ */
     var finalScore=W_TYPE*typeScore+W_BRAND*brandScore+W_COLOR*colorScore+W_TEXT*textScore;
 
-    /* ── Bucket into levels ── */
+    /* ââ Bucket into levels ââ */
     if(typeClass==='conflict'){
-      /* Hard conflict — only level 3 fallback if brand matches */
+      /* Hard conflict â only level 3 fallback if brand matches */
       if(hasBrand)level3.push({entry:entry,score:finalScore*0.3,level:3});
       return;
     }
@@ -987,7 +987,7 @@ function smartSearch(query){
     else if(hasBrand){level3.push({entry:entry,score:finalScore*0.5,level:3})}
   });
 
-  /* ── Assemble results ── */
+  /* ââ Assemble results ââ */
   var MIN_RESULTS=3;
   var results,resultLevel;
 
@@ -1031,23 +1031,23 @@ function smartSearch(query){
   if(filterBrands.length)infoParts.push('Marque: '+filterBrands.map(function(b){return b.n}).join(', '));
   if(freeTokens.length)infoParts.push('Texte: '+freeTokens.join(' '));
 
-  var levelLabels={0:'Aucun résultat',1:'Filtrage strict',2:'Résultats étendus',3:'Résultats approchés'};
+  var levelLabels={0:'Aucun rÃ©sultat',1:'Filtrage strict',2:'RÃ©sultats Ã©tendus',3:'RÃ©sultats approchÃ©s'};
   var hint='';
   if(resultLevel>=2&&level1.length>0){
-    hint=level1.length+' résultats exacts + '+(results.length-level1.length)+' résultats étendus par famille';
+    hint=level1.length+' rÃ©sultats exacts + '+(results.length-level1.length)+' rÃ©sultats Ã©tendus par famille';
   }else if(resultLevel===2){
-    hint='Résultats étendus par famille de produits';
+    hint='RÃ©sultats Ã©tendus par famille de produits';
   }else if(resultLevel===3&&hasBrand){
-    hint='Type non confirmé pour cette marque — tous les produits affichés';
+    hint='Type non confirmÃ© pour cette marque â tous les produits affichÃ©s';
   }else if(resultLevel===3&&!hasBrand){
-    hint='Résultats approchés par correspondance texte';
+    hint='RÃ©sultats approchÃ©s par correspondance texte';
   }
 
-  return{products:products,brands:brands,info:infoParts.join(' · '),count:products.length,
+  return{products:products,brands:brands,info:infoParts.join(' Â· '),count:products.length,
     filters:{types:filterTypes,colors:filterColors,brands:filterBrands,free:freeTokens},
     level:resultLevel,levelLabel:levelLabels[resultLevel]||'',hint:hint};
 }
-/* ═══ Suggestions / Autocomplete ═══ */
+/* âââ Suggestions / Autocomplete âââ */
 function buildSuggestions(query){
   if(!query||query.length<2)return[];
   var q=query.trim().toLowerCase();
@@ -1057,7 +1057,7 @@ function buildSuggestions(query){
     var s=fuzzyMatch(q,c.n.toLowerCase());
     if(s>0.4)suggestions.push({label:c.n,type:'Marque',score:s*1.2,count:c.c});
   });
-  /* Type suggestions — count includes family expansion */
+  /* Type suggestions â count includes family expansion */
   Object.keys(TYPE_DICT).forEach(function(canonical){
     var syns=TYPE_DICT[canonical];
     var bestS=0;
@@ -1129,7 +1129,7 @@ function highlightSug(items){
   for(var i=0;i<items.length;i++)items[i].classList.toggle('active',i===suggestIndex);
 }
 
-/* ── Search input: suggestions only, NO auto-search ── */
+/* ââ Search input: suggestions only, NO auto-search ââ */
 function onSearchInput(q){
   clearTimeout(searchTimer);
   searchTimer=setTimeout(function(){showSuggestions(q)},150);
@@ -1153,9 +1153,9 @@ function executeSmartSearch(q){
   var result=smartSearch(q);
   var tagsHtml='';
   if(result.filters){
-    result.filters.types.forEach(function(t){tagsHtml+='<span class="search-tag">'+escH(t)+' <span class="tag-x" onclick="removeSearchToken(this,\'type\',\''+escH(t)+'\')">×</span></span>'});
-    result.filters.colors.forEach(function(c){tagsHtml+='<span class="search-tag">'+escH(c)+' <span class="tag-x" onclick="removeSearchToken(this,\'color\',\''+escH(c)+'\')">×</span></span>'});
-    result.filters.brands.forEach(function(b){tagsHtml+='<span class="search-tag">'+escH(b.n)+' <span class="tag-x" onclick="removeSearchToken(this,\'brand\',\''+escH(b.n)+'\')">×</span></span>'});
+    result.filters.types.forEach(function(t){tagsHtml+='<span class="search-tag">'+escH(t)+' <span class="tag-x" onclick="removeSearchToken(this,\'type\',\''+escH(t)+'\')">Ã</span></span>'});
+    result.filters.colors.forEach(function(c){tagsHtml+='<span class="search-tag">'+escH(c)+' <span class="tag-x" onclick="removeSearchToken(this,\'color\',\''+escH(c)+'\')">Ã</span></span>'});
+    result.filters.brands.forEach(function(b){tagsHtml+='<span class="search-tag">'+escH(b.n)+' <span class="tag-x" onclick="removeSearchToken(this,\'brand\',\''+escH(b.n)+'\')">Ã</span></span>'});
   }
   document.getElementById('searchTags').innerHTML=tagsHtml;
 
@@ -1165,15 +1165,15 @@ function executeSmartSearch(q){
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
   document.getElementById('productsSection').style.display='block';
-  var countText=result.count+' résultat'+(result.count!==1?'s':'');
+  var countText=result.count+' rÃ©sultat'+(result.count!==1?'s':'');
   var levelBadge='';
-  if(result.level===1)levelBadge='<span style="color:var(--green);font-size:11px;margin-left:8px">● '+escH(result.levelLabel)+'</span>';
-  else if(result.level===2)levelBadge='<span style="color:#ffb74d;font-size:11px;margin-left:8px">◐ '+escH(result.levelLabel)+'</span>';
-  else if(result.level===3)levelBadge='<span style="color:#ef5350;font-size:11px;margin-left:8px">○ '+escH(result.levelLabel)+'</span>';
+  if(result.level===1)levelBadge='<span style="color:var(--green);font-size:11px;margin-left:8px">â '+escH(result.levelLabel)+'</span>';
+  else if(result.level===2)levelBadge='<span style="color:#ffb74d;font-size:11px;margin-left:8px">â '+escH(result.levelLabel)+'</span>';
+  else if(result.level===3)levelBadge='<span style="color:#ef5350;font-size:11px;margin-left:8px">â '+escH(result.levelLabel)+'</span>';
   else if(result.level===0)levelBadge='<span style="color:#ef5350;font-size:11px;margin-left:8px">'+escH(result.levelLabel)+'</span>';
   var hintHtml='';
   if(result.hint){hintHtml='<div style="font-size:11px;color:var(--text-dim);margin-top:4px;padding:6px 10px;background:rgba(255,255,255,.04);border-radius:6px;border-left:2px solid var(--green)">'+escH(result.hint)+'</div>'}
-  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="clearSearch()">←</button><h2>Recherche</h2><span class="search-results-info">'+countText+(result.info?' — '+escH(result.info):'')+levelBadge+'</span>'+hintHtml;
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="clearSearch()">â</button><h2>Recherche</h2><span class="search-results-info">'+countText+(result.info?' â '+escH(result.info):'')+levelBadge+'</span>'+hintHtml;
   FILTERED=result.products;
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
@@ -1206,7 +1206,7 @@ function openLightbox(idx){
   var cat=CATEGORIES.find(function(c){return c.id===p.a});
   var pubTitle=cleanTitle(p.t);
   var brandText=cat?cat.n:'';
-  if(pubTitle)brandText+=(brandText?' — ':'')+pubTitle;
+  if(pubTitle)brandText+=(brandText?' â ':'')+pubTitle;
   document.getElementById('lbBrand').textContent=brandText;
   var price=extractPrice(p.t);
   document.getElementById('lbPrice').textContent=price||'';
@@ -1214,7 +1214,7 @@ function openLightbox(idx){
   var lbFavBtn=document.getElementById('lbFav');
   var lbFav=isFavorite(LB_CURRENT_PID);
   lbFavBtn.classList.toggle('active',lbFav);
-  lbFavBtn.textContent=lbFav?'♥':'♡';
+  lbFavBtn.textContent=lbFav?'â¥':'â¡';
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow='hidden';
 }
@@ -1226,21 +1226,21 @@ function closeLightbox(e){
 function setupKeyboard(){document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLightbox({target:document.getElementById('lightbox')})})}
 function toggleSidebar(){document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.overlay').classList.toggle('open')}
 function closeSidebarMobile(){document.querySelector('.sidebar').classList.remove('open');document.querySelector('.overlay').classList.remove('open')}
-function extractPrice(title){if(!title)return '';var t=title.replace(/€/g,'');var m1=t.match(/^(\d{2,})\s/);if(m1)return m1[1];var m2=t.match(/(\d+)\s*[eE]\b/);if(m2)return m2[1];var m3=t.match(/^(\d+)e?$/);if(m3)return m3[1];return ''}
-/* ── Clean display: separate public title from internal/search data ── */
+function extractPrice(title){if(!title)return '';var t=title.replace(/â¬/g,'');var m1=t.match(/^(\d{2,})\s/);if(m1)return m1[1];var m2=t.match(/(\d+)\s*[eE]\b/);if(m2)return m2[1];var m3=t.match(/^(\d+)e?$/);if(m3)return m3[1];return ''}
+/* ââ Clean display: separate public title from internal/search data ââ */
 function cleanTitle(title){
   if(!title)return '';
   var t=title.trim();
-  /* Strip € everywhere */
-  t=t.replace(/€/g,'');
-  /* Pure price ("130e", "65e", "130") → no public title */
+  /* Strip â¬ everywhere */
+  t=t.replace(/â¬/g,'');
+  /* Pure price ("130e", "65e", "130") â no public title */
   if(/^\d+e?$/.test(t))return '';
-  /* Price + description ("380 Modèle Maya" or "210e 3en1 Beta") → keep description only */
+  /* Price + description ("380 ModÃ¨le Maya" or "210e 3en1 Beta") â keep description only */
   var m=t.match(/^\d+e?\s+(.+)$/);
   if(m)return m[1].trim();
-  /* Pure hash/code (hex-like) → no public title */
+  /* Pure hash/code (hex-like) â no public title */
   if(/^[a-f0-9]{6,}$/i.test(t))return '';
-  /* Slash-only or garbage → no public title */
+  /* Slash-only or garbage â no public title */
   if(t==='/'||t==='-')return '';
   /* Otherwise return cleaned text */
   return t;
@@ -1260,9 +1260,9 @@ function setupImageRetry(){
   },true);
 }
 
-/* ═══════════════════════════════════════════════════════
-   FAVORITES MODULE — offline-first localStorage + optional cloud sync
-   ═══════════════════════════════════════════════════════ */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   FAVORITES MODULE â offline-first localStorage + optional cloud sync
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 var FAV_API='https://homecop-favorites.arnaudbettinelli.workers.dev';
 var FAV_KEY='hcp_favorites';
@@ -1272,7 +1272,7 @@ var FAV_COUNTS_TTL=300000;/* 5 min cache */
 var GLOBAL_FAV_COUNTS={};
 var LB_CURRENT_PID=null;
 
-/* ── localStorage helpers ── */
+/* ââ localStorage helpers ââ */
 function getFavorites(){
   try{var d=localStorage.getItem(FAV_KEY);return d?JSON.parse(d):[];}catch(e){return []}
 }
@@ -1292,7 +1292,7 @@ function toggleFavorite(pid){
   return idx===-1;/* true = added */
 }
 
-/* ── Sync info ── */
+/* ââ Sync info ââ */
 function getSyncInfo(){
   try{var d=localStorage.getItem(FAV_SYNC_KEY);return d?JSON.parse(d):null}catch(e){return null}
 }
@@ -1300,7 +1300,7 @@ function setSyncInfo(pseudo,code){
   try{localStorage.setItem(FAV_SYNC_KEY,JSON.stringify({pseudo:pseudo,code:code}))}catch(e){}
 }
 
-/* ── Silent cloud sync (fire-and-forget) ── */
+/* ââ Silent cloud sync (fire-and-forget) ââ */
 function silentCloudSync(){
   var sync=getSyncInfo();
   if(!sync)return;
@@ -1310,7 +1310,7 @@ function silentCloudSync(){
   }).catch(function(){});
 }
 
-/* ── Heart button on product cards ── */
+/* ââ Heart button on product cards ââ */
 function getProductPid(p){return p.p+'_'+p.s}
 
 function onFavClick(e,filteredIdx){
@@ -1320,7 +1320,7 @@ function onFavClick(e,filteredIdx){
   var added=toggleFavorite(pid);
   var btn=e.currentTarget;
   btn.classList.toggle('active',added);
-  btn.textContent=added?'♥':'♡';
+  btn.textContent=added?'â¥':'â¡';
   /* Update global count locally */
   if(!GLOBAL_FAV_COUNTS[pid])GLOBAL_FAV_COUNTS[pid]=0;
   GLOBAL_FAV_COUNTS[pid]+=(added?1:-1);
@@ -1328,7 +1328,7 @@ function onFavClick(e,filteredIdx){
   var countEl=btn.parentElement.querySelector('.fav-count');
   if(countEl){
     var c=GLOBAL_FAV_COUNTS[pid]||0;
-    countEl.innerHTML='<span class="fc-heart">♥</span> '+c;
+    countEl.innerHTML='<span class="fc-heart">â¥</span> '+c;
     countEl.classList.toggle('visible',c>0);
   }
   /* If on favorites page, remove card with animation */
@@ -1344,30 +1344,30 @@ function onFavClick(e,filteredIdx){
   }
 }
 
-/* ── Lightbox favorite ── */
+/* ââ Lightbox favorite ââ */
 function toggleLbFav(e){
   e.stopPropagation();
   if(!LB_CURRENT_PID)return;
   var added=toggleFavorite(LB_CURRENT_PID);
   var btn=document.getElementById('lbFav');
   btn.classList.toggle('active',added);
-  btn.textContent=added?'♥':'♡';
+  btn.textContent=added?'â¥':'â¡';
   /* Sync card button if visible */
   refreshVisibleHearts();
 }
 
-/* ── Refresh heart states on visible cards ── */
+/* ââ Refresh heart states on visible cards ââ */
 function refreshVisibleHearts(){
   var btns=document.querySelectorAll('.fav-btn[data-pid]');
   btns.forEach(function(btn){
     var pid=btn.getAttribute('data-pid');
     var fav=isFavorite(pid);
     btn.classList.toggle('active',fav);
-    btn.textContent=fav?'♥':'♡';
+    btn.textContent=fav?'â¥':'â¡';
   });
 }
 
-/* ── Global favorite counts (from API) ── */
+/* ââ Global favorite counts (from API) ââ */
 function fetchGlobalCounts(pids){
   if(!pids||!pids.length)return;
   /* Check cache */
@@ -1398,18 +1398,18 @@ function applyGlobalCounts(){
   els.forEach(function(el){
     var pid=el.getAttribute('data-pid');
     var c=GLOBAL_FAV_COUNTS[pid]||0;
-    el.innerHTML='<span class="fc-heart">♥</span> '+c;
+    el.innerHTML='<span class="fc-heart">â¥</span> '+c;
     el.classList.toggle('visible',c>0);
   });
 }
 
-/* ── Sidebar: Mes Favoris menu item ── */
+/* ââ Sidebar: Mes Favoris menu item ââ */
 function updateFavCountInSidebar(){
   var el=document.getElementById('favMenuCount');
   if(el)el.textContent=getFavorites().length||'';
 }
 
-/* ── Show Favorites page ── */
+/* ââ Show Favorites page ââ */
 function showFavorites(){
   CURRENT_VIEW='favorites';CURRENT_CAT=null;setActiveMenu('favorites');
   document.getElementById('hero').style.display='none';
@@ -1417,7 +1417,7 @@ function showFavorites(){
   document.getElementById('productsSection').style.display='block';
   hideFilterBar();
   var favs=getFavorites();
-  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>Mes Favoris ('+favs.length+')</h2>'
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">â</button><h2>Mes Favoris ('+favs.length+')</h2>'
     +'<span style="margin-left:auto;display:flex;gap:8px">'
     +'<button style="background:none;border:1px solid #333;color:var(--text-dim);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer" onclick="openFavModal(\'favSaveModal\')">Sauvegarder</button>'
     +'<button style="background:none;border:1px solid #333;color:var(--text-dim);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer" onclick="openFavModal(\'favRecoverModal\')">Retrouver</button>'
@@ -1430,10 +1430,10 @@ function showFavorites(){
   renderBatch();closeSidebarMobile();
 }
 function showFavEmpty(){
-  document.getElementById('productsGrid').innerHTML='<div class="fav-empty"><div class="fav-empty-icon">♡</div><p>Aucun favori pour le moment.<br>Appuyez sur le cœur d\'un article pour le sauvegarder ici.</p></div>';
+  document.getElementById('productsGrid').innerHTML='<div class="fav-empty"><div class="fav-empty-icon">â¡</div><p>Aucun favori pour le moment.<br>Appuyez sur le cÅur d\'un article pour le sauvegarder ici.</p></div>';
 }
 
-/* ── Modals ── */
+/* ââ Modals ââ */
 function openFavModal(id){
   document.getElementById(id).classList.add('open');
   /* Pre-fill pseudo if synced */
@@ -1451,11 +1451,11 @@ function closeFavModal(id){
   if(id==='favSaveModal')document.getElementById('favSaveCodeWrap').style.display='none';
 }
 
-/* ── Save flow ── */
+/* ââ Save flow ââ */
 function doFavSave(){
   var pseudo=document.getElementById('favSavePseudo').value.trim();
-  if(!pseudo||pseudo.length<2){showFavMsg('favSaveError','Pseudo trop court (min 2 caractères)');return}
-  var btn=document.getElementById('favSaveBtn');btn.disabled=true;btn.textContent='…';
+  if(!pseudo||pseudo.length<2){showFavMsg('favSaveError','Pseudo trop court (min 2 caractÃ¨res)');return}
+  var btn=document.getElementById('favSaveBtn');btn.disabled=true;btn.textContent='â¦';
   var sync=getSyncInfo();
   var favs=getFavorites();
   var payload={pseudo:pseudo,favorites:favs};
@@ -1468,21 +1468,21 @@ function doFavSave(){
       setSyncInfo(pseudo,data.code);
       document.getElementById('favSaveCode').textContent=data.code;
       document.getElementById('favSaveCodeWrap').style.display='block';
-      showFavMsg('favSaveSuccess',data.count+' favoris sauvegardés !');
+      showFavMsg('favSaveSuccess',data.count+' favoris sauvegardÃ©s !');
       updateSyncBar();
     }
   }).catch(function(){
     btn.disabled=false;btn.textContent='Sauvegarder';
-    showFavMsg('favSaveError','Erreur réseau, réessayez plus tard.');
+    showFavMsg('favSaveError','Erreur rÃ©seau, rÃ©essayez plus tard.');
   });
 }
 
-/* ── Recover flow ── */
+/* ââ Recover flow ââ */
 function doFavRecover(){
   var pseudo=document.getElementById('favRecoverPseudo').value.trim();
   var code=document.getElementById('favRecoverCode').value.trim();
   if(!pseudo||!code){showFavMsg('favRecoverError','Pseudo et code requis');return}
-  var btn=document.getElementById('favRecoverBtn');btn.disabled=true;btn.textContent='…';
+  var btn=document.getElementById('favRecoverBtn');btn.disabled=true;btn.textContent='â¦';
   fetch(FAV_API+'/api/recover',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({pseudo:pseudo,code:code})
   }).then(function(r){return r.json()}).then(function(data){
@@ -1495,7 +1495,7 @@ function doFavRecover(){
       (data.favorites||[]).forEach(function(f){if(merged.indexOf(f)===-1)merged.push(f)});
       setFavorites(merged);
       setSyncInfo(pseudo,code);
-      showFavMsg('favRecoverSuccess',data.count+' favoris retrouvés ! ('+merged.length+' au total)');
+      showFavMsg('favRecoverSuccess',data.count+' favoris retrouvÃ©s ! ('+merged.length+' au total)');
       updateFavCountInSidebar();
       updateSyncBar();
       /* If on favorites page, refresh */
@@ -1503,7 +1503,7 @@ function doFavRecover(){
     }
   }).catch(function(){
     btn.disabled=false;btn.textContent='Retrouver';
-    showFavMsg('favRecoverError','Erreur réseau, réessayez plus tard.');
+    showFavMsg('favRecoverError','Erreur rÃ©seau, rÃ©essayez plus tard.');
   });
 }
 
@@ -1517,12 +1517,12 @@ function showFavMsg(elId,msg){
 function copyFavCode(){
   var code=document.getElementById('favSaveCode').textContent;
   if(navigator.clipboard){navigator.clipboard.writeText(code).then(function(){
-    var btn=document.querySelector('#favSaveCodeWrap .copy-btn');btn.textContent='Copié !';
+    var btn=document.querySelector('#favSaveCodeWrap .copy-btn');btn.textContent='CopiÃ© !';
     setTimeout(function(){btn.textContent='Copier'},1500);
   })}
 }
 
-/* ── Sync bar in sidebar ── */
+/* ââ Sync bar in sidebar ââ */
 function updateSyncBar(){
   var existing=document.getElementById('favSyncBar');
   var sync=getSyncInfo();
@@ -1532,7 +1532,7 @@ function updateSyncBar(){
     var menu=document.getElementById('sidebarMenu');
     menu.parentNode.insertBefore(bar,menu);
   }
-  document.getElementById('favSyncBar').innerHTML='Connecté: <strong>'+escH(sync.pseudo)+'</strong>'
+  document.getElementById('favSyncBar').innerHTML='ConnectÃ©: <strong>'+escH(sync.pseudo)+'</strong>'
     +'<button onclick="openFavModal(\'favSaveModal\')">Sync</button>';
 }
 </script>
