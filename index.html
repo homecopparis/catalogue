@@ -94,7 +94,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 }
 @keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .brand-card,.product-card{animation:fadeInUp .35s ease both}
-/* ══ FAVORITES ═══ */
+/* ═══ FAVORITES ═══ */
 .fav-btn{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);border:none;width:30px;height:30px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:rgba(255,255,255,.7);opacity:0;transition:opacity .22s ease,transform .15s,color .2s;z-index:12;line-height:1}
 .product-card:hover .fav-btn,.fav-btn.active{opacity:1}
 .fav-btn.active{color:#ff4757;opacity:1}
@@ -275,7 +275,7 @@ function showHome(){
   CURRENT_VIEW='home';CURRENT_CAT=null;setActiveMenu('home');
   document.getElementById('hero').style.display='';
   document.getElementById('brandsGrid').style.display='';
-  docwment.getElementById('productsSection').style.display='none';
+  document.getElementById('productsSection').style.display='none';
   renderBrandCards(CATEGORIES);closeSidebarMobile();
 }
 
@@ -661,18 +661,11 @@ function smartSearch(query){
       if(entry.types.indexOf(t)!==-1&&entry.typeConf>=CONF_THRESHOLD){
         typeMatch=1;
       }else{
-        /* Soft fallback: check title text but lower score */
-        var syns=TYPE_DICT[t]||[];var titleHit=false;
-        for(var i=0;i<syns.length;i++){
-          if(entry.tl.indexOf(syns[i].toLowerCase())!==-1){titleHit=true;break}
-        }
-        if(titleHit){typeMatch=0.6}
-        else if(entry.types.length===0&&entry.typeConf===0){
-          /* STRICT v3: unknown type = EXCLUDED from type-filtered results.
-             Precision > recall. Product must have confirmed type to pass. */
-          typeMatch=0;typePassed=false;
-        }
-        else{typeMatch=0;typePassed=false}
+        /* STRICT v3: if the indexed type doesn't match, EXCLUDE.
+           No title-based fallback — titles like "hoodie : 85 jogging : 80"
+           are multi-product listings; trusting title synonyms creates false positives.
+           Precision > recall. Only pre-indexed confirmed types pass. */
+        typeMatch=0;typePassed=false;
       }
     });
 
