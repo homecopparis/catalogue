@@ -94,6 +94,21 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 }
 @keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .brand-card,.product-card{animation:fadeInUp .35s ease both}
+/* ═══ FILTER BAR ═══ */
+.filter-bar{margin-bottom:20px;display:none}
+.filter-bar.visible{display:block}
+.filter-group{margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.filter-group-label{font-size:11px;color:var(--text-dim);margin-right:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.filter-pill{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;background:#1a1a1a;border:1px solid #333;border-radius:20px;font-size:12px;color:var(--text-dim);cursor:pointer;transition:all .15s;user-select:none}
+.filter-pill:hover{border-color:#555;color:var(--text)}
+.filter-pill.active{background:var(--green-dim);border-color:var(--green);color:var(--green)}
+.filter-pill .fp-count{font-size:10px;opacity:.6}
+.filter-pill.color-pill{padding-left:8px}
+.filter-pill .color-dot{width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,255,255,.2);flex-shrink:0}
+.filter-reset{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;background:none;border:1px solid #444;border-radius:20px;font-size:11px;color:var(--text-dim);cursor:pointer;transition:all .15s}
+.filter-reset:hover{border-color:var(--green);color:var(--green)}
+.filter-active-info{font-size:11px;color:var(--green);margin-bottom:8px}
+@media(max-width:768px){.filter-pill{padding:4px 8px;font-size:11px}.filter-group{gap:4px}}
 /* ═══ FAVORITES ═══ */
 .fav-btn{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);border:none;width:30px;height:30px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:rgba(255,255,255,.7);opacity:0;transition:opacity .22s ease,transform .15s,color .2s;z-index:12;line-height:1}
 .product-card:hover .fav-btn,.fav-btn.active{opacity:1}
@@ -163,6 +178,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <div class="brands-grid" id="brandsGrid"></div>
   <div class="products-section" id="productsSection">
     <div class="products-header" id="productsHeader"></div>
+    <div class="filter-bar" id="filterBar"></div>
     <div class="products-grid" id="productsGrid"></div>
     <div id="sentinel"></div>
   </div>
@@ -276,7 +292,7 @@ function showHome(){
   document.getElementById('hero').style.display='';
   document.getElementById('brandsGrid').style.display='';
   document.getElementById('productsSection').style.display='none';
-  renderBrandCards(CATEGORIES);closeSidebarMobile();
+  hideFilterBar();renderBrandCards(CATEGORIES);closeSidebarMobile();
 }
 
 function showNouveautes(){
@@ -285,10 +301,16 @@ function showNouveautes(){
   document.getElementById('brandsGrid').style.display='none';
   document.getElementById('productsSection').style.display='block';
   document.getElementById('productsHeader').innerHTML='<h2>Nouveautés</h2>';
+  hideFilterBar();
   FILTERED=PRODUCTS.slice().sort(function(a,b){return(b.u||0)-(a.u||0)});
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
 }
+
+/* ═══ FILTER SYSTEM ═══ */
+var ACTIVE_FILTERS={types:[],colors:[]};
+var BRAND_PRODUCTS=[];
+var COLOR_HEX={'Rouge':'#e53935','Bleu':'#1e88e5','Vert':'#43a047','Jaune':'#fdd835','Orange':'#fb8c00','Violet':'#8e24aa','Rose':'#ec407a','Marron':'#6d4c41','Noir':'#333','Blanc':'#f5f5f5','Gris':'#9e9e9e','Beige':'#d7ccc8','Multicolore':'conic-gradient(red,yellow,green,blue,violet,red)'};
 
 function showBrand(albumId){
   CURRENT_VIEW='brand';CURRENT_CAT=albumId;setActiveMenu(albumId);
@@ -297,11 +319,89 @@ function showBrand(albumId){
   document.getElementById('productsSection').style.display='block';
   var cat=CATEGORIES.find(function(c){return c.id===albumId});
   var catName=cat?cat.n:albumId;
-  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>'+escH(catName)+'</h2>';
-  FILTERED=PRODUCTS.filter(function(p){return p.a===albumId});
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">\u2190</button><h2>'+escH(catName)+'</h2>';
+  BRAND_PRODUCTS=PRODUCTS.filter(function(p){return p.a===albumId});
+  ACTIVE_FILTERS={types:[],colors:[]};
+  buildFilterBar(BRAND_PRODUCTS);
+  FILTERED=BRAND_PRODUCTS;
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
 }
+
+function buildFilterBar(prods){
+  var bar=document.getElementById('filterBar');
+  var typeCounts={},colorCounts={};
+  prods.forEach(function(p){
+    var ft=p.ft||'Autres';typeCounts[ft]=(typeCounts[ft]||0)+1;
+    if(p.fc){colorCounts[p.fc]=(colorCounts[p.fc]||0)+1;}
+  });
+  var types=Object.keys(typeCounts).sort(function(a,b){return typeCounts[b]-typeCounts[a]});
+  var colors=Object.keys(colorCounts).sort(function(a,b){return colorCounts[b]-colorCounts[a]});
+  if(types.length<=1&&colors.length<=1){bar.className='filter-bar';bar.innerHTML='';return;}
+  bar.className='filter-bar visible';
+  var h='';
+  if(types.length>1){
+    h+='<div class="filter-group" id="filterTypes"><span class="filter-group-label">Type</span>';
+    types.forEach(function(t){
+      h+='<span class="filter-pill" data-filter-type="type" data-value="'+escH(t)+'" onclick="toggleFilter(\'type\',\''+escH(t)+'\')">';
+      h+=escH(t)+' <span class="fp-count">'+typeCounts[t]+'</span></span>';
+    });
+    h+='</div>';
+  }
+  if(colors.length>1){
+    h+='<div class="filter-group" id="filterColors"><span class="filter-group-label">Couleur</span>';
+    colors.forEach(function(c){
+      var dotStyle=c==='Multicolore'?'background:'+COLOR_HEX[c]:'background:'+(COLOR_HEX[c]||'#666');
+      h+='<span class="filter-pill color-pill" data-filter-type="color" data-value="'+escH(c)+'" onclick="toggleFilter(\'color\',\''+escH(c)+'\')">';
+      h+='<span class="color-dot" style="'+dotStyle+'"></span>'+escH(c)+' <span class="fp-count">'+colorCounts[c]+'</span></span>';
+    });
+    h+='</div>';
+  }
+  h+='<div id="filterInfo" class="filter-active-info" style="display:none"></div>';
+  bar.innerHTML=h;
+}
+
+function toggleFilter(group,value){
+  var arr=group==='type'?ACTIVE_FILTERS.types:ACTIVE_FILTERS.colors;
+  var idx=arr.indexOf(value);
+  if(idx===-1)arr.push(value);else arr.splice(idx,1);
+  applyFilters();
+}
+
+function applyFilters(){
+  var hasType=ACTIVE_FILTERS.types.length>0;
+  var hasColor=ACTIVE_FILTERS.colors.length>0;
+  document.querySelectorAll('#filterBar .filter-pill').forEach(function(el){
+    var g=el.getAttribute('data-filter-type');
+    var v=el.getAttribute('data-value');
+    var arr=g==='type'?ACTIVE_FILTERS.types:ACTIVE_FILTERS.colors;
+    el.classList.toggle('active',arr.indexOf(v)!==-1);
+  });
+  FILTERED=BRAND_PRODUCTS.filter(function(p){
+    if(hasType){var ft=p.ft||'Autres';if(ACTIVE_FILTERS.types.indexOf(ft)===-1)return false;}
+    if(hasColor){if(!p.fc||ACTIVE_FILTERS.colors.indexOf(p.fc)===-1)return false;}
+    return true;
+  });
+  var info=document.getElementById('filterInfo');
+  if(hasType||hasColor){
+    info.style.display='';
+    info.innerHTML=FILTERED.length+' article'+(FILTERED.length>1?'s':'')+' \u2014 <span style="cursor:pointer;text-decoration:underline" onclick="resetFilters()">R\u00e9initialiser</span>';
+  }else{info.style.display='none';}
+  RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
+  renderBatch();
+}
+
+function resetFilters(){
+  ACTIVE_FILTERS={types:[],colors:[]};
+  applyFilters();
+}
+
+function hideFilterBar(){
+  document.getElementById('filterBar').className='filter-bar';
+  document.getElementById('filterBar').innerHTML='';
+  ACTIVE_FILTERS={types:[],colors:[]};
+}
+
 
 function renderBrandCards(cats){
   var g=document.getElementById('brandsGrid');var h='';
@@ -1061,6 +1161,7 @@ function executeSmartSearch(q){
 
   CURRENT_VIEW='search';CURRENT_CAT=null;
   setActiveMenu('');
+  hideFilterBar();
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
   document.getElementById('productsSection').style.display='block';
@@ -1314,6 +1415,7 @@ function showFavorites(){
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
   document.getElementById('productsSection').style.display='block';
+  hideFilterBar();
   var favs=getFavorites();
   document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>Mes Favoris ('+favs.length+')</h2>'
     +'<span style="margin-left:auto;display:flex;gap:8px">'
