@@ -237,7 +237,7 @@ var searchTimer=null;
 /* URL helpers — reconstruct from prefix + photo_id + secret, or return full URL */
 function imgUrl(pid,secret,size){if(pid&&pid.indexOf('http')===0)return pid;return PREFIX+pid+'_'+secret+'_'+size+'.jpg'}
 
-fetch('data.json').then(function(r){return r.json()}).then(function(data){
+fetch('data.json?v=20260412b').then(function(r){return r.json()}).then(function(data){
   PREFIX=data.prefix||'https://live.staticflickr.com/65535/';
   var rawCats=data.categories||[];
   var rawProds=data.products||[];
