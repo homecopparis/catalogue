@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Triple Analysis Batch Processor — HomeCop Paris</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; padding: 20px; }
+  h1 { color: #e94560; margin-bottom: 10px; }
+  .status { background: #16213e; border-radius: 8px; padding: 15px; margin: 10px 0; }
+  .progress-bar { width: 100%; height: 30px; background: #0f3460; border-radius: 15px; overflow: hidden; margin: 10px 0; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #e94560, #0f3460); transition: width 0.3s; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 10px 0; }
+  .stat { background: #0f3460; padding: 10px; border-radius: 8px; text-align: center; }
+  .stat .num { font-size: 24px; font-weight: bold; color: #e94560; }
+  .stat .label { font-size: 12px; color: #aaa; }
+  .controls { margin: 15px 0; display: flex; gap: 10px; flex-wrap: wrap; }
+  button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; }
+  .btn-start { background: #e94560; color: white; }
+  .btn-pause { background: #f5a623; color: black; }
+  .btn-download { background: #27ae60; color: white; }
+  .btn-resume { background: #3498db; color: white; }
+  .log { background: #0a0a1a; border-radius: 8px; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; margin: 10px 0; }
+  .log-entry { padding: 2px 0; border-bottom: 1px solid #1a1a2e; }
+  .log-ok { color: #27ae60; }
+  .log-warn { color: #f5a623; }
+  .log-err { color: #e94560; }
+  .config { background: #16213e; border-radius: 8px; padding: 15px; margin: 10px 0; }
+  .config label { display: block; margin: 5px 0; }
+  .config input, .config select { background: #0f3460; color: #eee; border: 1px solid #333; padding: 5px 10px; border-radius: 4px; }
+  #speedChart { width: 100%; height: 60px; background: #0a0a1a; border-radius: 8px; }
+</style>
+</head>
+<body>
+<h1>🔬 Triple Analysis — CLIP + SigLIP</h1>
+<p>Processeur batch autonome pour le catalogue HomeCop Paris</p>
+
+<div class="status" id="modelStatus">
+  ⏳ Modèles non chargés. Cliquez "Démarrer" pour commencer.
+</div>
+
+<div class="progress-bar">
+  <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="num" id="statProcessed">0</div><div class="label">Traités</div></div>
+  <div class="stat"><div class="num" id="statTotal">—</div><div class="label">Total</div></div>
+  <div class="stat"><div class="num" id="statAgree">0</div><div class="label">Accord</div></div>
+  <div class="stat"><div class="num" id="statDisagree">0</div><div class="label">Désaccord</div></div>
+  <div class="stat"><div class="num" id="statErrors">0</div><div class="label">Erreurs</div></div>
+  <div class="stat"><div class="num" id="statSpeed">—</div><div class="label">Prod/min</div></div>
+  <div class="stat"><div class="num" id="statETA">—</div><div class="label">ETA</div></div>
+  <div class="stat"><div class="num" id="statSaved">0</div><div class="label">Sauvegardés</div></div>
+</div>
+
+<div class="controls">
+  <button class="btn-start" id="btnStart" onclick="startProcessing()">▶ Démarrer</button>
+  <button class="btn-pause" id="btnPause" onclick="pauseProcessing()" style="display:none">⏸ Pause</button>
+  <button class="btn-resume" id="btnResume" onclick="resumeProcessing()" style="display:none">▶ Reprendre</button>
+  <button class="btn-download" id="btnDownload" onclick="downloadResults()">💾 Télécharger résultats</button>
+  <button class="btn-download" onclick="downloadPartial()" style="background:#3498db">💾 Télécharger partiel</button>
+</div>
+
+<div class="config">
+  <label>Reprendre à partir du produit # <input type="number" id="startFrom" value="0" min="0" style="width:80px"></label>
+  <label>Batch size (sauvegarde auto tous les N produits) <input type="number" id="batchSize" value="100" min="10" style="width:80px"></label>
+</div>
+
+<div class="log" id="logDiv"></div>
+
+<script type="module">
+// ══════════════════════════════════════════════════════════════
+// TRIPLE CLASSIFICATION BATCH PROCESSOR
+// CLIP + SigLIP zero-shot via transformers.js v3.4.1
+// ═══════════════════════════════════════════════════════════════
+
+const PREFIX = 'https://live.staticflickr.com/65535/';
+
+// ─── Labels ─────────────────────────────────────────────────
+const CLIP_LABELS = [
+  'a t-shirt with short sleeves', 'a hooded sweatshirt hoodie',
+  'a crewneck sweatshirt without hood', 'a zip-up jacket or bomber jacket',
+  'a long coat or overcoat', 'a quilted puffer down jacket',
+  'a button-down dress shirt', 'a knit sweater or pullover',
+  'a pair of denim jeans', 'a pair of trousers or pants',
+  'a pair of shorts', 'a polo shirt with collar',
+  'a baseball cap or bucket hat', 'a scarf or bandana',
+  'a leather belt', 'a handbag backpack or tote bag',
+  'shoes or sneakers', 'a toy or LEGO figurine'
+];
+
+const SIGLIP_LABELS = [
+  'a plain cotton t-shirt', 'a hoodie with hood and kangaroo pocket',
+  'a crewneck sweatshirt', 'a zip jacket or bomber',
+  'a long winter coat', 'a puffer jacket or down jacket',
+  'a button-up shirt or dress shirt', 'a knitted pullover sweater',
+  'blue denim jeans', 'casual trousers or chinos',
+  'short pants or bermuda shorts', 'a polo shirt',
+  'a cap hat or beanie', 'a scarf or neck accessory',
+  'a leather or fabric belt', 'a bag purse or backpack',
+  'sneakers boots or shoes', 'a toy figurine or non-clothing item'
+];
+
+const MAP = {
+  'a t-shirt with short sleeves': 'T-Shirts', 'a plain cotton t-shirt': 'T-Shirts',
+  'a hooded sweatshirt hoodie': 'Pulls à capuche', 'a hoodie with hood and kangaroo pocket': 'Pulls à capuche',
+  'a crewneck sweatshirt without hood': 'Sweats', 'a crewneck sweatshirt': 'Sweats',
+  'a zip-up jacket or bomber jacket': 'Vestes', 'a zip jacket or bomber': 'Vestes',
+  'a long coat or overcoat': 'Manteaux', 'a long winter coat': 'Manteaux',
+  'a quilted puffer down jacket': 'Doudounes', 'a puffer jacket or down jacket': 'Doudounes',
+  'a button-down dress shirt': 'Chemises', 'a button-up shirt or dress shirt': 'Chemises',
+  'a knit sweater or pullover': 'Pulls & Mailles', 'a knitted pullover sweater': 'Pulls & Mailles',
+  'a pair of denim jeans': 'Jeans', 'blue denim jeans': 'Jeans',
+  'a pair of trousers or pants': 'Pantalons', 'casual trousers or chinos': 'Pantalons',
+  'a pair of shorts': 'Shorts', 'short pants or bermuda shorts': 'Shorts',
+  'a polo shirt with collar': 'Polos', 'a polo shirt': 'Polos',
+  'a baseball cap or bucket hat': 'Casquettes', 'a cap hat or beanie': 'Casquettes',
+  'a scarf or bandana': 'Écharpes', 'a scarf or neck accessory': 'Écharpes',
+  'a leather belt': 'Ceintures', 'a leather or fabric belt': 'Ceintures',
+  'a handbag backpack or tote bag': 'Sacs', 'a bag purse or backpack': 'Sacs',
+  'shoes or sneakers': 'Chaussures', 'sneakers boots or shoes': 'Chaussures',
+  'a toy or LEGO figurine': 'Jouets', 'a toy figurine or non-clothing item': 'Jouets'
+};
+
+// ─── State ─────────────────────────────────────────────────
+let PRODUCTS = [];
+let clip = null, siglip = null;
+let results = [];
+let running = false, paused = false;
+let processed = 0, errors = 0, agree = 0, disagree = 0;
+let startTime = null;
+let savedCount = 0;
+
+// Make accessible from console
+window._allResults = results;
+window._state = { processed: 0, errors: 0, agree: 0, disagree: 0 };
+
+// ─── UI helpers ─────────────────────────────────────────────
+function log(msg, cls = '') {
+  const div = document.getElementById('logDiv');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry ' + cls;
+  entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  div.appendChild(entry);
+  div.scrollTop = div.scrollHeight;
+}
+
+function updateStats() {
+  document.getElementById('statProcessed').textContent = processed;
+  document.getElementById('statAgree').textContent = agree;
+  document.getElementById('statDisagree').textContent = disagree;
+  document.getElementById('statErrors').textContent = errors;
+  document.getElementById('statSaved').textContent = savedCount;
+
+  const total = PRODUCTS.length;
+  const pct = total > 0 ? Math.round(processed / total * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressFill').textContent = pct + '%';
+
+  if (startTime && processed > 0) {
+    const elapsed = (Date.now() - startTime) / 1000 / 60; // minutes
+    const speed = processed / elapsed;
+    document.getElementById('statSpeed').textContent = speed.toFixed(1);
+
+    const remaining = total - processed - parseInt(document.getElementById('startFrom').value || 0);
+    const etaMin = remaining / speed;
+    if (etaMin > 60) {
+      document.getElementById('statETA').textContent = (etaMin / 60).toFixed(1) + 'h';
+    } else {
+      document.getElementById('statETA').textContent = Math.round(etaMin) + 'min';
+    }
+  }
+
+  document.title = `TRIPLE: ${processed}/${total} (${agree} accord, ${pct}%)`;
+  window._state = { processed, errors, agree, disagree };
+}
+
+// ─── Auto-save to localStorage ──────────────────────────────
+function autoSave() {
+  try {
+    localStorage.setItem('triple_results', JSON.stringify(results));
+    localStorage.setItem('triple_progress', JSON.stringify({
+      processed, errors, agree, disagree,
+      lastIndex: parseInt(document.getElementById('startFrom').value || 0) + processed
+    }));
+    savedCount = results.length;
+    log(`💾 Auto-sauvegarde: ${results.length} résultats`, 'log-ok');
+  } catch(e) {
+    log(`⚠ Erreur sauvegarde: ${e.message}`, 'log-warn');
+  }
+}
+
+// ─── Load previous results ─────────────────────────────────
+function loadPrevious() {
+  try {
+    const prev = localStorage.getItem('triple_results');
+    const prog = localStorage.getItem('triple_progress');
+    if (prev && prog) {
+      const prevResults = JSON.parse(prev);
+      const progress = JSON.parse(prog);
+      results = prevResults;
+      window._allResults = results;
+      savedCount = results.length;
+      document.getElementById('startFrom').value = progress.lastIndex || 0;
+      log(`📂 Chargé ${results.length} résultats précédents (reprend à #${progress.lastIndex})`, 'log-ok');
+      updateStats();
+    }
+  } catch(e) {}
+}
+
+// ─── Load products JSON ─────────────────────────────────────
+async function loadProducts() {
+  log('📦 Chargement de la liste des produits depuis data.json...');
+  try {
+    const resp = await fetch('data.json');
+    const data = await resp.json();
+    // data.products is an array of {a, p, s, ts, t, u, cl, ft, fc, ...}
+    PRODUCTS = data.products.map(p => ({ p: p.p, s: p.s, ts: p.ts || '' }));
+    document.getElementById('statTotal').textContent = PRODUCTS.length;
+    log(`✅ ${PRODUCTS.length} produits chargés depuis data.json`, 'log-ok');
+    return true;
+  } catch(e) {
+    log(`❌ Erreur chargement produits: ${e.message}`, 'log-err');
+    return false;
+  }
+}
+
+// ─── Load models ────────────────────────────────────────────
+async function loadModels() {
+  const status = document.getElementById('modelStatus');
+
+  log('🧠 Chargement de transformers.js...');
+  status.innerHTML = '⏳ Chargement de transformers.js...';
+  const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.1');
+
+  log('🧠 Chargement CLIP (Xenova/clip-vit-base-patch32)...');
+  status.innerHTML = '⏳ Chargement CLIP...';
+  clip = await pipeline('zero-shot-image-classification', 'Xenova/clip-vit-base-patch32', { device: 'wasm', dtype: 'q8' });
+  log('✅ CLIP chargé', 'log-ok');
+
+  log('🧠 Chargement SigLIP (Xenova/siglip-base-patch16-224)...');
+  status.innerHTML = '⏳ Chargement SigLIP...';
+  siglip = await pipeline('zero-shot-image-classification', 'Xenova/siglip-base-patch16-224', { device: 'wasm', dtype: 'q8' });
+  log('✅ SigLIP chargé', 'log-ok');
+
+  status.innerHTML = '✅ Modèles prêts ! CLIP + SigLIP chargés.';
+  window._clip = clip;
+  window._siglip = siglip;
+}
+
+// ─── Process one product ─────────────────────────────────────
+async function processProduct(prod) {
+  const imgUrl = PREFIX + prod.p + '_' + (prod.ts || prod.s) + '_n.jpg';
+
+  let bType = '', bConf = 0, bRaw = '';
+  let cType = '', cConf = 0, cRaw = '';
+
+  // CLIP
+  try {
+    const cr = await clip(imgUrl, CLIP_LABELS, { topk: 1 });
+    bRaw = cr[0].label; bConf = cr[0].score; bType = MAP[bRaw] || '';
+  } catch(e) {
+    log(`⚠ CLIP ${prod.p}: ${e.message}`, 'log-warn');
+  }
+
+  // SigLIP
+  try {
+    const sr = await siglip(imgUrl, SIGLIP_LABELS, { topk: 1 });
+    cRaw = sr[0].label; cConf = sr[0].score; cType = MAP[cRaw] || '';
+  } catch(e) {
+    log(`⚠ SigLIP ${prod.p}: ${e.message}`, 'log-warn');
+  }
+
+  const isAgree = bType && cType && bType === cType ? 1 : 0;
+
+  return {
+    photo_id: prod.p,
+    b_type: bType, b_conf: Math.round(bConf * 1000) / 1000, b_raw: bRaw,
+    c_type: cType, c_conf: Math.round(cConf * 1000) / 1000, c_raw: cRaw,
+    agree: isAgree
+  };
+}
+
+// ─── Main processing loop ───────────────────────────────────
+async function startProcessing() {
+  if (running) return;
+
+  document.getElementById('btnStart').style.display = 'none';
+  document.getElementById('btnPause').style.display = '';
+  document.getElementById('btnResume').style.display = 'none';
+
+  // Load products if not loaded
+  if (PRODUCTS.length === 0) {
+    const ok = await loadProducts();
+    if (!ok) return;
+  }
+
+  // Load models if not loaded
+  if (!clip || !siglip) {
+    await loadModels();
+  }
+
+  running = true;
+  paused = false;
+  startTime = Date.now();
+  processed = 0;
+  errors = 0;
+  agree = 0;
+  disagree = 0;
+
+  const startIdx = parseInt(document.getElementById('startFrom').value || 0);
+  const batchSaveEvery = parseInt(document.getElementById('batchSize').value || 100);
+
+  log(`🚀 Démarrage à partir du produit #${startIdx}, sauvegarde tous les ${batchSaveEvery} produits`);
+
+  for (let i = startIdx; i < PRODUCTS.length; i++) {
+    if (paused) {
+      log(`⏸ Pause à #${i}`, 'log-warn');
+      document.getElementById('startFrom').value = i;
+      break;
+    }
+
+    try {
+      const result = await processProduct(PRODUCTS[i]);
+      results.push(result);
+      window._allResults = results;
+      processed++;
+
+      if (result.agree) agree++;
+      else disagree++;
+
+      if (processed % 10 === 0) {
+        updateStats();
+      }
+
+      if (processed % batchSaveEvery === 0) {
+        autoSave();
+      }
+
+    } catch(e) {
+      errors++;
+      log(`❌ Erreur produit ${PRODUCTS[i].p}: ${e.message}`, 'log-err');
+    }
+  }
+
+  // Final save
+  autoSave();
+  updateStats();
+
+  if (!paused) {
+    log(`🎉 TERMINÉ ! ${processed} produits traités, ${agree} accords, ${errors} erreurs`, 'log-ok');
+    document.getElementById('modelStatus').innerHTML = `🎉 Terminé ! ${processed} produits traités.`;
+    document.getElementById('btnStart').style.display = '';
+    document.getElementById('btnPause').style.display = 'none';
+  }
+
+  running = false;
+}
+
+function pauseProcessing() {
+  paused = true;
+  document.getElementById('btnPause').style.display = 'none';
+  document.getElementById('btnResume').style.display = '';
+}
+
+function resumeProcessing() {
+  document.getElementById('btnResume').style.display = 'none';
+  startProcessing();
+}
+
+// ─── Download results ────────────────────────────────────────
+window.downloadResults = function() {
+  const allResults = results.length > 0 ? results : JSON.parse(localStorage.getItem('triple_results') || '[]');
+  if (allResults.length === 0) {
+    log('⚠ Aucun résultat à télécharger', 'log-warn');
+    return;
+  }
+  const blob = new Blob([JSON.stringify(allResults, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `triple_results_all_${allResults.length}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  log(`💾 Téléchargé ${allResults.length} résultats`, 'log-ok');
+};
+
+window.downloadPartial = function() {
+  if (results.length === 0) {
+    log('⚠ Aucun résultat partiel', 'log-warn');
+    return;
+  }
+  const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `triple_results_partial_${results.length}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  log(`💾 Téléchargé ${results.length} résultats partiels`, 'log-ok');
+};
+
+window.startProcessing = startProcessing;
+window.pauseProcessing = pauseProcessing;
+window.resumeProcessing = resumeProcessing;
+
+// ─── Init ────────────────────────────────────────────────────
+loadPrevious();
+</script>
+</body>
+</html>
