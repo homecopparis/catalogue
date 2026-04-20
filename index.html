@@ -260,13 +260,20 @@ fetch('data.json').then(function(r){return r.json()}).then(function(data){
     if(c.n)return c; /* already optimized */
     var coverUrl=c.cover_image||'';
     var parts=coverUrl.match(/\/(\d+)_(\w+)_\w+\.jpg/)||[];
-    return{id:c.album_id||c.id,n:c.album_title||c.n||'',c:c.count||c.c||0,cp:parts[1]||c.cp||'',cs:parts[2]||c.cs||''};
+    var out={id:c.album_id||c.id,n:c.album_title||c.n||'',c:c.count||c.c||0,cp:parts[1]||c.cp||'',cs:parts[2]||c.cs||''};
+    if(c.tp)out.tp=c.tp;
+    if(c.cp&&c.cp.indexOf('http')===0)out.cp=c.cp; /* cover URL directe si fournie */
+    return out;
   });
   PRODUCTS=rawProds.map(function(p){
     if(p.a!==undefined&&p.ts!==undefined)return p; /* already optimized */
     var imgParts=(p.image_url||'').match(/\/(\d+)_(\w+)_\w+\.jpg/)||[];
     var thumbParts=(p.thumb_url||'').match(/\/(\d+)_(\w+)_\w+\.jpg/)||[];
-    return{a:p.album_id||p.a||'',p:imgParts[1]||p.photo_id||p.p||'',s:imgParts[2]||p.s||'',ts:thumbParts[2]||p.ts||'',t:p.title||p.t||'',u:p.date_upload||p.u||0};
+    var out={a:p.album_id||p.a||'',p:imgParts[1]||p.photo_id||p.p||'',s:imgParts[2]||p.s||'',ts:thumbParts[2]||p.ts||'',t:p.title||p.t||'',u:p.date_upload||p.u||0};
+    if(p.ft)out.ft=p.ft;
+    if(p.ct)out.ct=p.ct;
+    if(p.cs)out.cs=p.cs;
+    return out;
   });
   CATEGORIES.sort(function(a,b){return(a.n||'').toLowerCase().localeCompare((b.n||'').toLowerCase())});
   init();
@@ -284,22 +291,29 @@ function init(){
 }
 
 /* ═══ GROUP CATEGORIES BY TOP-LEVEL ═══
-   Chaussures: cat.tp === 'Chaussure' OR name-match (sneakers, chaussures, shoes...)
-   Maroquinerie: cat.tp === 'Sac' OR name-match (sac, maroquinerie, bag...)
-   Vetements: everything else */
+   Matches cat.tp first, then falls back to name regex */
 var CHAUSSURES_RX=/\b(sneaker|sneakers|chaussure|chaussures|shoe|shoes|boot|boots|trainer|trainers|basket|baskets)\b/i;
 var MAROQUINERIE_RX=/\b(sac|sacs|maroquinerie|bag|bags|backpack|pochette|sacoche|cartable|handbag|tote)\b/i;
+var BIJOUX_RX=/\b(bijou|bijoux|jewelry|jewellery|bague|bagues|collier|colliers|bracelet|bracelets|boucles?|pendentif|pendentifs|chaine|cha\u00eene)\b/i;
+var ELECTRO_RX=/\b(electronique|\u00e9lectronique|electronic|electronics|airpods|iphone|ipad|apple[-\s]?watch|smartphone|ecouteurs|\u00e9couteurs|casque|tech)\b/i;
+var VALISES_RX=/\b(valise|valises|rimowa|luggage|suitcase|trolley|bagage)\b/i;
 function getGroupForCat(c){
   var tp=c.tp||'';
   if(tp==='Chaussure')return 'chaussures';
   if(tp==='Sac')return 'maroquinerie';
+  if(tp==='Bijou'||tp==='Bijoux')return 'bijoux';
+  if(tp==='Electronique'||tp==='Electronic')return 'electronique';
+  if(tp==='Valise'||tp==='Valises')return 'valises';
   var n=(c.n||'');
+  if(VALISES_RX.test(n))return 'valises';
+  if(BIJOUX_RX.test(n))return 'bijoux';
+  if(ELECTRO_RX.test(n))return 'electronique';
   if(CHAUSSURES_RX.test(n))return 'chaussures';
   if(MAROQUINERIE_RX.test(n))return 'maroquinerie';
   return 'vetements';
 }
-var GROUP_LABELS={'vetements':'V\u00eatements','chaussures':'Chaussures','maroquinerie':'Maroquinerie'};
-var GROUP_COLLAPSED={'vetements':false,'chaussures':true,'maroquinerie':true};
+var GROUP_LABELS={'vetements':'V\u00eatements','chaussures':'Chaussures','maroquinerie':'Maroquinerie','bijoux':'Bijoux','electronique':'\u00c9lectronique','valises':'Valises'};
+var GROUP_COLLAPSED={'vetements':false,'chaussures':true,'maroquinerie':true,'bijoux':true,'electronique':true,'valises':true};
 
 function buildSidebar(){
   var totalProds=PRODUCTS.length;
@@ -310,13 +324,13 @@ function buildSidebar(){
   h+='<div class="menu-item" data-cat="favorites" onclick="showFavorites()"><span>\u2665 Mes Favoris</span><span class="count" id="favMenuCount">'+(favCount||'')+'</span></div>';
   h+='<div class="menu-item" data-cat="nouveautes" onclick="showNouveautes()"><span>Nouveaut\u00e9s</span><span class="count">'+totalProds+'</span></div>';
   /* Group categories */
-  var groups={vetements:[],chaussures:[],maroquinerie:[]};
-  var groupCounts={vetements:0,chaussures:0,maroquinerie:0};
+  var groups={vetements:[],chaussures:[],maroquinerie:[],bijoux:[],electronique:[],valises:[]};
+  var groupCounts={vetements:0,chaussures:0,maroquinerie:0,bijoux:0,electronique:0,valises:0};
   for(var i=0;i<CATEGORIES.length;i++){
     var c=CATEGORIES[i];var g=getGroupForCat(c);
     groups[g].push(c);groupCounts[g]+=(c.c||0);
   }
-  var order=['vetements','chaussures','maroquinerie'];
+  var order=['vetements','chaussures','maroquinerie','bijoux','electronique','valises'];
   for(var k=0;k<order.length;k++){
     var gk=order[k];var list=groups[gk];if(list.length===0)continue;
     var cls='menu-group'+(GROUP_COLLAPSED[gk]?' collapsed':'');
