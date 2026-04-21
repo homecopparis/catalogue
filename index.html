@@ -377,12 +377,23 @@ function setActiveMenu(catId){
   for(var i=0;i<items.length;i++){items[i].classList.toggle('active',items[i].getAttribute('data-cat')===catId)}
 }
 
+/* Home grid order: Vêtements → Chaussures → Maroquinerie → Valises → Bijoux → Électronique,
+   alphabetical within each group. */
+var HOME_GROUP_ORDER={'vetements':0,'chaussures':1,'maroquinerie':2,'valises':3,'bijoux':4,'electronique':5};
+function sortCategoriesForHome(cats){
+  return cats.slice().sort(function(a,b){
+    var ga=HOME_GROUP_ORDER[getGroupForCat(a)];if(ga==null)ga=99;
+    var gb=HOME_GROUP_ORDER[getGroupForCat(b)];if(gb==null)gb=99;
+    if(ga!==gb)return ga-gb;
+    return(a.n||'').toLowerCase().localeCompare((b.n||'').toLowerCase());
+  });
+}
 function showHome(){
   CURRENT_VIEW='home';CURRENT_CAT=null;setActiveMenu('home');
   document.getElementById('hero').style.display='';
   document.getElementById('brandsGrid').style.display='';
   document.getElementById('productsSection').style.display='none';
-  hideFilterBar();renderBrandCards(CATEGORIES);closeSidebarMobile();
+  hideFilterBar();renderBrandCards(sortCategoriesForHome(CATEGORIES));closeSidebarMobile();
 }
 
 function showNouveautes(){
