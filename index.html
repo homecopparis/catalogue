@@ -134,6 +134,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .lb-fav{position:absolute;bottom:24px;right:24px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;width:48px;height:48px;border-radius:50%;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);transition:all .2s}
 .lb-fav.active{color:#ff4081;background:rgba(255,64,129,.15);border-color:rgba(255,64,129,.4)}
 .lb-fav:active{transform:scale(1.2)}
+.lb-copy{position:absolute;bottom:24px;left:24px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;height:44px;padding:0 16px;border-radius:22px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;backdrop-filter:blur(8px);transition:all .2s;font-family:var(--font-body);font-weight:500}
+.lb-copy:hover{background:rgba(0,230,118,.15);border-color:rgba(0,230,118,.4);color:var(--green)}
+.lb-copy.copied{background:rgba(0,230,118,.2);color:var(--green);border-color:var(--green)}
+.lb-copy:active{transform:scale(.97)}
 /* Favorites page */
 .fav-empty{text-align:center;padding:60px 20px;color:var(--text-dim)}
 .fav-empty .fav-empty-icon{font-size:48px;margin-bottom:12px;opacity:.4}
@@ -202,6 +206,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <button class="lb-close" onclick="closeLightbox(event)">✕</button>
   <img id="lbImg" src="" alt="" referrerpolicy="no-referrer">
   <div class="lb-info"><div class="lb-brand" id="lbBrand"></div><div class="lb-price" id="lbPrice"></div></div>
+  <button class="lb-copy" id="lbCopy" onclick="copyProductLink(event)" title="Copier le lien de ce produit">🔗 Copier le lien</button>
   <button class="lb-fav" id="lbFav" onclick="toggleLbFav(event)">♡</button>
 </div>
 <!-- Favorites Save Modal -->
@@ -283,7 +288,10 @@ fetch('data.json').then(function(r){return r.json()}).then(function(data){
 
 function init(){
   document.getElementById('loading').style.display='none';
-  buildSearchIndex();buildSidebar();showHome();setupInfiniteScroll();setupKeyboard();setupImageRetry();
+  buildSearchIndex();buildSidebar();
+  /* Route from initial URL hash (supports deep links #/p/... #/cat/... ) */
+  if(window.location.hash&&window.location.hash.length>1)routeFromHash();else showHome();
+  setupInfiniteScroll();setupKeyboard();setupImageRetry();
   updateSyncBar();
   /* Fetch global fav counts for visible products (first batch) */
   var pids=PRODUCTS.slice(0,200).map(function(p){return getProductPid(p)});
@@ -377,6 +385,56 @@ function setActiveMenu(catId){
   for(var i=0;i<items.length;i++){items[i].classList.toggle('active',items[i].getAttribute('data-cat')===catId)}
 }
 
+/* ═══ HASH ROUTER (URLs partageables) ═══
+   Formats supportés :
+     #/                     → home
+     #/cat/<albumId>        → catégorie
+     #/cat/<albumId>/ft/<slug> → catégorie + sous-type actif
+     #/p/<photo_id>         → produit (ouvre la lightbox sur sa catégorie)
+*/
+var _routing=false;
+function _slugifyFt(s){return(s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')}
+function _slugToFt(slug,prods){var seen={};for(var i=0;i<prods.length;i++){var ft=prods[i].ft;if(ft)seen[ft]=1}for(var ft in seen){if(_slugifyFt(ft)===slug)return ft}return null}
+function _setHash(h){if(window.location.hash===h)return;_routing=true;try{history.replaceState?history.replaceState(null,'',h):(window.location.hash=h)}finally{setTimeout(function(){_routing=false},0)}}
+function _pushHash(h){if(window.location.hash===h)return;_routing=true;try{window.location.hash=h}finally{setTimeout(function(){_routing=false},0)}}
+function routeFromHash(){
+  if(_routing)return;
+  var h=window.location.hash||'';var m;
+  if((m=h.match(/^#\/p\/([^\/]+)$/))){
+    var pid=m[1];var prod=PRODUCTS.find(function(p){return p.p===pid});
+    if(!prod){showHome({_q:1});return}
+    _routing=true;
+    try{
+      showBrand(prod.a,{_q:1});
+      var idx=FILTERED.findIndex(function(p){return p.p===pid});
+      if(idx>=0){openLightbox(idx,{_q:1})}
+    }finally{_routing=false}
+  }else if((m=h.match(/^#\/cat\/([^\/]+)\/ft\/([^\/]+)$/))){
+    _routing=true;
+    try{
+      showBrand(m[1],{_q:1});
+      var ft=_slugToFt(m[2],BRAND_PRODUCTS);
+      if(ft){ACTIVE_FILTERS.types=[ft];applyFilters({_q:1})}
+    }finally{_routing=false}
+  }else if((m=h.match(/^#\/cat\/([^\/]+)$/))){
+    showBrand(m[1],{_q:1});
+  }else{
+    showHome({_q:1});
+  }
+}
+window.addEventListener('hashchange',routeFromHash);
+
+function copyProductLink(e){
+  if(e&&e.stopPropagation)e.stopPropagation();
+  var url=window.location.href;
+  var btn=document.getElementById('lbCopy');
+  var done=function(){btn.classList.add('copied');btn.textContent='✓ Lien copié';setTimeout(function(){btn.classList.remove('copied');btn.textContent='🔗 Copier le lien'},2000)};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done,function(){_fallbackCopy(url);done()});
+  }else{_fallbackCopy(url);done()}
+}
+function _fallbackCopy(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(_){}document.body.removeChild(ta)}
+
 /* Home grid order: Vêtements → Chaussures → Maroquinerie → Valises → Bijoux → Électronique,
    alphabetical within each group. */
 var HOME_GROUP_ORDER={'vetements':0,'chaussures':1,'maroquinerie':2,'valises':3,'bijoux':4,'electronique':5};
@@ -388,12 +446,13 @@ function sortCategoriesForHome(cats){
     return(a.n||'').toLowerCase().localeCompare((b.n||'').toLowerCase());
   });
 }
-function showHome(){
+function showHome(opts){
   CURRENT_VIEW='home';CURRENT_CAT=null;setActiveMenu('home');
   document.getElementById('hero').style.display='';
   document.getElementById('brandsGrid').style.display='';
   document.getElementById('productsSection').style.display='none';
   hideFilterBar();renderBrandCards(sortCategoriesForHome(CATEGORIES));closeSidebarMobile();
+  if(!opts||!opts._q)_pushHash('#/');
 }
 
 function showNouveautes(){
@@ -413,7 +472,7 @@ var ACTIVE_FILTERS={types:[],colors:[]};
 var BRAND_PRODUCTS=[];
 var COLOR_HEX={'Rouge':'#e53935','Bleu':'#1e88e5','Vert':'#43a047','Jaune':'#fdd835','Orange':'#fb8c00','Violet':'#8e24aa','Rose':'#ec407a','Marron':'#6d4c41','Noir':'#333','Blanc':'#f5f5f5','Gris':'#9e9e9e','Beige':'#d7ccc8','Multicolore':'conic-gradient(red,yellow,green,blue,violet,red)'};
 
-function showBrand(albumId){
+function showBrand(albumId,opts){
   CURRENT_VIEW='brand';CURRENT_CAT=albumId;setActiveMenu(albumId);
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
@@ -427,6 +486,7 @@ function showBrand(albumId){
   FILTERED=BRAND_PRODUCTS;
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
+  if(!opts||!opts._q)_pushHash('#/cat/'+albumId);
 }
 
 function buildFilterBar(prods){
@@ -474,7 +534,7 @@ function toggleFilter(group,value){
   applyFilters();
 }
 
-function applyFilters(){
+function applyFilters(opts){
   var hasType=ACTIVE_FILTERS.types.length>0;
   var hasColor=ACTIVE_FILTERS.colors.length>0;
   /* Update pill active states */
@@ -499,6 +559,11 @@ function applyFilters(){
   /* Re-render */
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();
+  /* Sync URL with active ft filter (only if single type + single color-less) */
+  if((!opts||!opts._q)&&CURRENT_VIEW==='brand'&&CURRENT_CAT){
+    if(ACTIVE_FILTERS.types.length===1&&!hasColor){_setHash('#/cat/'+CURRENT_CAT+'/ft/'+_slugifyFt(ACTIVE_FILTERS.types[0]))}
+    else _setHash('#/cat/'+CURRENT_CAT);
+  }
 }
 
 function resetFilters(){
@@ -1327,7 +1392,7 @@ document.addEventListener('click',function(e){
   if(!e.target.closest('.search-wrap'))document.getElementById('searchSuggest').classList.remove('open');
 });
 
-function openLightbox(idx){
+function openLightbox(idx,opts){
   var p=FILTERED[idx];if(!p)return;
   var lbImg=p.p?(p.p.indexOf('http')===0?p.p:((p.s)?imgUrl(p.p,p.s,'b'):'')):'';
 
@@ -1344,12 +1409,21 @@ function openLightbox(idx){
   var lbFav=isFavorite(LB_CURRENT_PID);
   lbFavBtn.classList.toggle('active',lbFav);
   lbFavBtn.textContent=lbFav?'♥':'♡';
+  /* Reset copy button state on each open */
+  var lbCopy=document.getElementById('lbCopy');
+  if(lbCopy){lbCopy.classList.remove('copied');lbCopy.textContent='🔗 Copier le lien'}
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow='hidden';
+  if(!opts||!opts._q)_pushHash('#/p/'+p.p);
 }
 function closeLightbox(e){
   if(e&&e.target!==document.getElementById('lightbox')&&e.target.tagName!=='BUTTON'&&!e.target.closest('.lb-back,.lb-close'))return;
   document.getElementById('lightbox').classList.remove('open');document.body.style.overflow='';
+  /* Restore URL to the category (or home) */
+  if(CURRENT_VIEW==='brand'&&CURRENT_CAT){
+    if(ACTIVE_FILTERS.types.length===1)_setHash('#/cat/'+CURRENT_CAT+'/ft/'+_slugifyFt(ACTIVE_FILTERS.types[0]));
+    else _setHash('#/cat/'+CURRENT_CAT);
+  }else{_setHash('#/')}
 }
 
 function setupKeyboard(){document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLightbox({target:document.getElementById('lightbox')})})}
