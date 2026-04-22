@@ -88,6 +88,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .lightbox .lb-info{margin-top:12px;text-align:center}
 .lightbox .lb-info .lb-brand{font-size:13px;color:var(--text-dim)}
 .lightbox .lb-info .lb-price{font-size:18px;color:var(--green);font-weight:600;margin-top:4px}
+.lightbox .lb-info .lb-desc{font-size:13px;color:var(--text);margin-top:8px;max-width:720px;white-space:pre-wrap;line-height:1.4;text-align:left}
 .lightbox .lb-close{position:absolute;top:20px;right:24px;background:none;border:none;color:var(--text);font-size:28px;cursor:pointer}
 .lightbox .lb-back{position:absolute;top:20px;left:24px;background:none;border:none;color:var(--green);font-size:15px;cursor:pointer;display:flex;align-items:center;gap:6px}
 .hamburger{display:none;position:fixed;top:12px;left:12px;z-index:300;background:#111;border:1px solid #333;color:var(--text);font-size:22px;width:40px;height:40px;border-radius:8px;cursor:pointer;align-items:center;justify-content:center}
@@ -205,7 +206,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <button class="lb-back" onclick="closeLightbox(event)">← Retour</button>
   <button class="lb-close" onclick="closeLightbox(event)">✕</button>
   <img id="lbImg" src="" alt="" referrerpolicy="no-referrer">
-  <div class="lb-info"><div class="lb-brand" id="lbBrand"></div><div class="lb-price" id="lbPrice"></div></div>
+  <div class="lb-info"><div class="lb-brand" id="lbBrand"></div><div class="lb-price" id="lbPrice"></div><div class="lb-desc" id="lbDesc"></div></div>
   <button class="lb-copy" id="lbCopy" onclick="copyProductLink(event)" title="Copier le lien de ce produit">🔗 Copier le lien</button>
   <button class="lb-fav" id="lbFav" onclick="toggleLbFav(event)">♡</button>
 </div>
@@ -1404,6 +1405,7 @@ function openLightbox(idx,opts){
   document.getElementById('lbBrand').textContent=brandText;
   var price=extractPrice(p.t);
   document.getElementById('lbPrice').textContent=price||'';
+  document.getElementById('lbDesc').textContent=p.d||'';
   LB_CURRENT_PID=getProductPid(p);
   var lbFavBtn=document.getElementById('lbFav');
   var lbFav=isFavorite(LB_CURRENT_PID);
