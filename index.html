@@ -481,7 +481,7 @@ function showBrand(albumId,opts){
   var cat=CATEGORIES.find(function(c){return c.id===albumId});
   var catName=cat?cat.n:albumId;
   document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>'+escH(catName)+'</h2>';
-  BRAND_PRODUCTS=PRODUCTS.filter(function(p){return p.a===albumId});
+  BRAND_PRODUCTS=PRODUCTS.filter(function(p){return p.a===albumId}).sort(function(a,b){return(b.u||0)-(a.u||0)});
   ACTIVE_FILTERS={types:[],colors:[]};
   buildFilterBar(BRAND_PRODUCTS);
   FILTERED=BRAND_PRODUCTS;
@@ -1639,7 +1639,7 @@ function showFavorites(){
   if(favs.length===0){showFavEmpty();closeSidebarMobile();return}
   /* Build FILTERED from favorites */
   var favSet={};favs.forEach(function(f){favSet[f]=true});
-  FILTERED=PRODUCTS.filter(function(p){return favSet[getProductPid(p)]});
+  FILTERED=PRODUCTS.filter(function(p){return favSet[getProductPid(p)]}).sort(function(a,b){return(b.u||0)-(a.u||0)});
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
 }
