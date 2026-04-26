@@ -483,7 +483,12 @@ function showBrand(albumId,opts){
   var cat=CATEGORIES.find(function(c){return c.id===albumId});
   var catName=cat?cat.n:albumId;
   document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>'+escH(catName)+'</h2>';
-  BRAND_PRODUCTS=PRODUCTS.filter(function(p){return p.a===albumId}).sort(function(a,b){return(b.u||0)-(a.u||0)});
+  /* Tri par position Flickr (o) ascendante : reproduit l'ordre exact de l'album sur Flickr.com (drag-and-drop user). Fallback sur date upload pour les produits sans position. */
+  BRAND_PRODUCTS=PRODUCTS.filter(function(p){return p.a===albumId}).sort(function(a,b){
+    var ao=(a.o==null?1e9:a.o),bo=(b.o==null?1e9:b.o);
+    if(ao!==bo)return ao-bo;
+    return(b.u||0)-(a.u||0);
+  });
   ACTIVE_FILTERS={types:[],colors:[]};
   buildFilterBar(BRAND_PRODUCTS);
   FILTERED=BRAND_PRODUCTS;
