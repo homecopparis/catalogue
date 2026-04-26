@@ -281,7 +281,7 @@ fetch('data.json').then(function(r){return r.json()}).then(function(data){
     if(p.cs)out.cs=p.cs;
     return out;
   });
-  CATEGORIES.sort(function(a,b){return(a.n||'').toLowerCase().localeCompare((b.n||'').toLowerCase())});
+  /* Preserve order from data.json (matches Flickr album order) */
   init();
 }).catch(function(e){
   document.getElementById('loading').innerHTML='<p style="color:#f44">Erreur: '+e.message+'</p>';
@@ -437,14 +437,16 @@ function copyProductLink(e){
 function _fallbackCopy(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(_){}document.body.removeChild(ta)}
 
 /* Home grid order: Vêtements → Chaussures → Maroquinerie → Valises → Bijoux → Électronique,
-   alphabetical within each group. */
+   then within each group preserve data.json order (= Flickr album order). */
 var HOME_GROUP_ORDER={'vetements':0,'chaussures':1,'maroquinerie':2,'valises':3,'bijoux':4,'electronique':5};
 function sortCategoriesForHome(cats){
+  /* Map id -> position in data.json to break group ties stably */
+  var pos={};for(var i=0;i<cats.length;i++)pos[cats[i].id]=i;
   return cats.slice().sort(function(a,b){
     var ga=HOME_GROUP_ORDER[getGroupForCat(a)];if(ga==null)ga=99;
     var gb=HOME_GROUP_ORDER[getGroupForCat(b)];if(gb==null)gb=99;
     if(ga!==gb)return ga-gb;
-    return(a.n||'').toLowerCase().localeCompare((b.n||'').toLowerCase());
+    return pos[a.id]-pos[b.id];
   });
 }
 function showHome(opts){
