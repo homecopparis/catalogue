@@ -61,6 +61,25 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .auth-btn{display:block;width:100%;padding:9px;background:transparent;color:var(--green);border:1px solid var(--green);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;text-align:center;margin-bottom:8px;transition:all .15s;font-family:var(--font-body)}
 .auth-btn:hover{background:var(--green-dim)}
 .auth-btn.logged-in{background:var(--green-dim)}
+.cart-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;background:transparent;color:var(--text);border:1px solid #333;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;text-align:center;margin-bottom:8px;transition:all .15s;font-family:var(--font-body)}
+.cart-btn:hover{border-color:var(--green);color:var(--green)}
+.cart-badge{background:var(--green);color:#000;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;min-width:18px;display:inline-flex;align-items:center;justify-content:center}
+.cart-badge.empty{display:none}
+.cart-items{max-height:280px;overflow-y:auto;margin:8px 0;border:1px solid #222;border-radius:8px;padding:6px}
+.cart-item{display:flex;gap:10px;align-items:center;padding:6px;background:#0a0a0a;border-radius:6px;margin-bottom:4px}
+.cart-item:last-child{margin-bottom:0}
+.cart-item img{width:48px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0}
+.ci-info{flex:1;font-size:12px;min-width:0}
+.ci-brand{color:var(--text-dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.ci-title{color:var(--text);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci-remove{background:none;border:none;color:#ff4444;font-size:18px;cursor:pointer;padding:4px 8px;flex-shrink:0}
+.ci-remove:hover{color:#ff7070}
+.cart-empty{text-align:center;padding:24px 10px;color:var(--text-dim);font-size:13px}
+.fav-modal textarea{width:100%;padding:10px 12px;background:#111;border:1px solid #333;border-radius:8px;color:var(--text);font-size:14px;outline:none;resize:vertical;font-family:var(--font-body)}
+.fav-modal textarea:focus{border-color:var(--green)}
+.lb-cart{position:absolute;bottom:24px;right:84px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;width:48px;height:48px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);transition:all .2s}
+.lb-cart:hover{background:rgba(0,230,118,.15);border-color:rgba(0,230,118,.4);color:var(--green)}
+.lb-cart.added{color:var(--green);background:rgba(0,230,118,.2);border-color:var(--green)}
 .dm-btn{display:block;width:100%;padding:10px;background:var(--green);color:#000;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;text-decoration:none}
 .main{margin-left:var(--sidebar-w);min-height:100vh;padding:24px 32px}
 .hero{text-align:center;padding:40px 0 32px}
@@ -193,6 +212,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <div class="sidebar-stats" id="sidebarStats"></div>
   <nav class="sidebar-menu" id="sidebarMenu"></nav>
   <div class="sidebar-footer">
+    <button class="cart-btn" id="cartBtn" onclick="openCartModal()">🛒 Mon panier <span class="cart-badge empty" id="cartBadge">0</span></button>
     <button class="auth-btn" id="authBtn" onclick="openLoginModal()">Connexion</button>
     <a class="dm-btn" href="https://www.instagram.com/homecopparis/" target="_blank" rel="noopener">DM Instagram</a>
   </div>
@@ -213,6 +233,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <img id="lbImg" src="" alt="" referrerpolicy="no-referrer">
   <div class="lb-info"><div class="lb-brand" id="lbBrand"></div><div class="lb-price" id="lbPrice"></div><div class="lb-desc" id="lbDesc"></div></div>
   <button class="lb-copy" id="lbCopy" onclick="copyProductLink(event)" title="Copier le lien de ce produit">🔗 Copier le lien</button>
+  <button class="lb-cart" id="lbCart" onclick="toggleLbCart(event)" title="Ajouter au panier devis">🛒</button>
   <button class="lb-fav" id="lbFav" onclick="toggleLbFav(event)">♡</button>
 </div>
 <!-- Favorites Save Modal -->
@@ -252,16 +273,47 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     </div>
   </div>
 </div>
+<!-- Cart / Quote Request Modal -->
+<div class="fav-modal-overlay" id="cartModal">
+  <div class="fav-modal" style="max-width:480px">
+    <button class="fav-close" onclick="closeCartModal()">✕</button>
+    <h3>Mon panier devis</h3>
+    <p class="fav-modal-sub">Tu auras une URL unique à m'envoyer en DM Instagram pour que je voie ta demande.</p>
+    <div class="cart-items" id="cartItemsList"></div>
+    <label>Ton @Instagram (obligatoire)</label>
+    <input id="cartInstagram" type="text" placeholder="@ton_compte" autocomplete="off">
+    <label>Message (optionnel)</label>
+    <textarea id="cartMessage" rows="3" placeholder="Tailles, codes H, dates voulues, questions..."></textarea>
+    <div class="fav-error" id="cartError"></div>
+    <div class="fav-success" id="cartSuccess"></div>
+    <div id="quoteUrlBlock" style="display:none;margin-top:12px;padding:12px;background:rgba(0,230,118,.08);border:1px solid var(--green);border-radius:8px">
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Envoie cette URL en DM Instagram à <strong>@homecopparis</strong> :</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="quoteUrlInput" type="text" readonly style="flex:1;font-size:11px;font-family:monospace">
+        <button class="fav-btn-primary" id="quoteCopyBtn" onclick="copyQuoteUrl()" style="padding:8px 12px;font-size:12px">Copier</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:8px">Cette URL est valable 15 jours.</div>
+    </div>
+    <div class="fav-actions">
+      <button class="fav-btn-secondary" onclick="closeCartModal()">Fermer</button>
+      <button class="fav-btn-primary" id="sendQuoteBtn" onclick="sendQuoteRequest()">Envoyer ma demande</button>
+    </div>
+  </div>
+</div>
 <!-- Account Modal -->
 <div class="fav-modal-overlay" id="accountModal">
   <div class="fav-modal">
     <button class="fav-close" onclick="closeAccountModal()">✕</button>
     <h3>Mon compte</h3>
     <p class="fav-modal-sub">Connecté en tant que :</p>
-    <div id="accountEmail" style="font-weight:600;color:var(--green);padding:8px 0 16px"></div>
+    <div id="accountEmail" style="font-weight:600;color:var(--green);padding:8px 0 4px"></div>
+    <label style="margin-top:14px">Mon @Instagram</label>
+    <input id="accountInstagram" type="text" placeholder="@ton_compte">
+    <div class="fav-error" id="accountError"></div>
+    <div class="fav-success" id="accountSuccess"></div>
     <div class="fav-actions">
-      <button class="fav-btn-secondary" onclick="closeAccountModal()">Fermer</button>
-      <button class="fav-btn-primary" onclick="doLogout()">Se déconnecter</button>
+      <button class="fav-btn-secondary" onclick="doLogout()">Se déconnecter</button>
+      <button class="fav-btn-primary" onclick="saveAccountProfile()">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -1866,6 +1918,299 @@ function updateSyncBar(){
   document.getElementById('favSyncBar').innerHTML='Connecté: <strong>'+escH(sync.pseudo)+'</strong>'
     +'<button onclick="openFavModal(\'favSaveModal\')">Sync</button>';
 }
+
+/* ════════════════════════════════════════════════════════════════════════ */
+/* ═══ SUPABASE CART + FAVORITES SYNC + QUOTE URL                       ═══ */
+/* ════════════════════════════════════════════════════════════════════════ */
+
+var CART=[];          /* [{product_id, album_id, note, added_at}] */
+var USER_PROFILE=null; /* row from profiles table */
+var CURRENT_QUOTE=null; /* loaded quote when viewing #/quote/<uuid> */
+
+/* ── Profile ── */
+async function loadProfile(){
+  if(!sb||!CURRENT_USER){USER_PROFILE=null;return;}
+  var r=await sb.from('profiles').select('*').eq('id',CURRENT_USER.id).single();
+  if(!r.error)USER_PROFILE=r.data;
+}
+async function saveAccountProfile(){
+  var ig=(document.getElementById('accountInstagram').value||'').trim();
+  if(ig&&ig.charAt(0)!=='@')ig='@'+ig;
+  var errEl=document.getElementById('accountError');
+  var okEl=document.getElementById('accountSuccess');
+  errEl.textContent='';okEl.textContent='';
+  if(!sb||!CURRENT_USER){errEl.textContent='Non connecté';return;}
+  var r=await sb.from('profiles').update({instagram_handle:ig||null}).eq('id',CURRENT_USER.id);
+  if(r.error){errEl.textContent='Erreur: '+r.error.message;return;}
+  if(USER_PROFILE)USER_PROFILE.instagram_handle=ig;
+  okEl.textContent='Enregistré.';
+}
+
+/* ── Favorites cloud sync ── */
+async function loadFavoritesFromCloud(){
+  if(!sb||!CURRENT_USER)return;
+  var r=await sb.from('favorites').select('product_id, album_id').eq('user_id',CURRENT_USER.id);
+  if(r.error){console.warn('[favs] cloud load err',r.error);return;}
+  var cloudPids=(r.data||[]).map(function(x){return x.product_id});
+  var localPids=getFavorites().map(String);
+  var merged=[];var seen={};
+  [].concat(cloudPids,localPids).forEach(function(p){if(!seen[p]){seen[p]=1;merged.push(p)}});
+  setFavorites(merged);
+  /* Push local-only to cloud */
+  var toPush=localPids.filter(function(p){return cloudPids.indexOf(p)===-1});
+  if(toPush.length){
+    var rows=toPush.map(function(pid){
+      var prod=PRODUCTS.find(function(p){return p.p===pid});
+      return prod?{user_id:CURRENT_USER.id,product_id:pid,album_id:prod.a}:null;
+    }).filter(function(r){return r});
+    if(rows.length)await sb.from('favorites').upsert(rows,{onConflict:'user_id,product_id'});
+  }
+  if(typeof refreshVisibleHearts==='function')refreshVisibleHearts();
+  if(typeof updateFavCountInSidebar==='function')updateFavCountInSidebar();
+}
+async function cloudAddFavorite(pid){
+  if(!sb||!CURRENT_USER)return;
+  var prod=PRODUCTS.find(function(p){return p.p===pid});if(!prod)return;
+  await sb.from('favorites').upsert({user_id:CURRENT_USER.id,product_id:pid,album_id:prod.a},{onConflict:'user_id,product_id'});
+}
+async function cloudRemoveFavorite(pid){
+  if(!sb||!CURRENT_USER)return;
+  await sb.from('favorites').delete().eq('user_id',CURRENT_USER.id).eq('product_id',pid);
+}
+
+/* Wrap toggleFavorite to mirror to cloud */
+var _orig_toggleFavorite=window.toggleFavorite;
+window.toggleFavorite=function(pid){
+  var added=_orig_toggleFavorite(pid);
+  if(CURRENT_USER){
+    if(added)cloudAddFavorite(pid);else cloudRemoveFavorite(String(pid));
+  }
+  return added;
+};
+
+/* ── Cart ── */
+async function loadCart(){
+  if(!sb||!CURRENT_USER){CART=[];updateCartBadge();return;}
+  var r=await sb.from('cart_items').select('*').eq('user_id',CURRENT_USER.id).order('added_at',{ascending:false});
+  if(!r.error)CART=r.data||[];
+  updateCartBadge();
+}
+function updateCartBadge(){
+  var b=document.getElementById('cartBadge');if(!b)return;
+  var n=CART.length;b.textContent=n;b.classList.toggle('empty',n===0);
+}
+function isInCart(pid){return CART.some(function(c){return c.product_id===pid})}
+async function addToCart(pid,note){
+  if(!CURRENT_USER){openLoginModal();return;}
+  var prod=PRODUCTS.find(function(p){return p.p===pid});if(!prod)return;
+  var row={user_id:CURRENT_USER.id,product_id:pid,album_id:prod.a,note:note||null};
+  var r=await sb.from('cart_items').upsert(row,{onConflict:'user_id,product_id'}).select().single();
+  if(r.error){console.error('[cart] add err',r.error);return;}
+  var ex=CART.findIndex(function(c){return c.product_id===pid});
+  if(ex>=0)CART[ex]=r.data;else CART.unshift(r.data);
+  updateCartBadge();
+}
+async function removeFromCart(pid){
+  if(!CURRENT_USER)return;
+  await sb.from('cart_items').delete().eq('user_id',CURRENT_USER.id).eq('product_id',pid);
+  CART=CART.filter(function(c){return c.product_id!==pid});
+  updateCartBadge();
+  if(document.getElementById('cartModal').classList.contains('open'))renderCartModal();
+}
+
+/* ── Cart Modal ── */
+function openCartModal(){
+  if(!CURRENT_USER){openLoginModal();return;}
+  document.getElementById('cartError').textContent='';
+  document.getElementById('cartSuccess').textContent='';
+  document.getElementById('quoteUrlBlock').style.display='none';
+  if(USER_PROFILE&&USER_PROFILE.instagram_handle){
+    document.getElementById('cartInstagram').value=USER_PROFILE.instagram_handle;
+  }
+  renderCartModal();
+  document.getElementById('cartModal').classList.add('open');
+}
+function closeCartModal(){document.getElementById('cartModal').classList.remove('open')}
+function renderCartModal(){
+  var el=document.getElementById('cartItemsList');
+  var btn=document.getElementById('sendQuoteBtn');
+  if(CART.length===0){
+    el.innerHTML='<div class="cart-empty">Ton panier est vide.<br>Ajoute des produits depuis le catalogue (icône 🛒).</div>';
+    btn.disabled=true;return;
+  }
+  btn.disabled=false;
+  var h='';
+  CART.forEach(function(c){
+    var prod=PRODUCTS.find(function(p){return p.p===c.product_id});if(!prod)return;
+    var cat=CATEGORIES.find(function(x){return x.id===prod.a});
+    var brand=cat?cat.n:'?';
+    var img=imgUrl(prod.p,prod.ts||prod.s,'q');
+    h+='<div class="cart-item">';
+    h+='<img src="'+img+'" alt="" referrerpolicy="no-referrer">';
+    h+='<div class="ci-info"><div class="ci-brand">'+escH(brand)+'</div><div class="ci-title">'+escH(prod.t||'')+'</div></div>';
+    h+='<button class="ci-remove" onclick="removeFromCart(\''+prod.p+'\')" title="Retirer">✕</button>';
+    h+='</div>';
+  });
+  el.innerHTML=h;
+}
+
+/* ── Send Quote Request (with URL) ── */
+async function sendQuoteRequest(){
+  if(!sb||!CURRENT_USER)return;
+  var ig=(document.getElementById('cartInstagram').value||'').trim();
+  var msg=(document.getElementById('cartMessage').value||'').trim();
+  var errEl=document.getElementById('cartError');
+  var okEl=document.getElementById('cartSuccess');
+  errEl.textContent='';okEl.textContent='';
+  if(!ig){errEl.textContent='Ton @Instagram est obligatoire';return;}
+  if(CART.length===0){errEl.textContent='Ton panier est vide';return;}
+  if(ig.charAt(0)!=='@')ig='@'+ig;
+  var btn=document.getElementById('sendQuoteBtn');
+  btn.disabled=true;btn.textContent='Envoi...';
+  /* save instagram to profile */
+  await sb.from('profiles').update({instagram_handle:ig}).eq('id',CURRENT_USER.id);
+  if(USER_PROFILE)USER_PROFILE.instagram_handle=ig;
+  /* build items snapshot */
+  var items=CART.map(function(c){
+    var prod=PRODUCTS.find(function(p){return p.p===c.product_id});
+    var cat=prod?CATEGORIES.find(function(x){return x.id===prod.a}):null;
+    return{
+      product_id:c.product_id,
+      album_id:c.album_id,
+      brand:cat?cat.n:'',
+      title:prod?prod.t:'',
+      thumb_secret:prod?(prod.ts||prod.s):'',
+      note:c.note||''
+    };
+  });
+  var fullMsg='Instagram: '+ig+(msg?'\n\n'+msg:'');
+  var r=await sb.from('quote_requests').insert({user_id:CURRENT_USER.id,items:items,message:fullMsg}).select().single();
+  if(r.error){
+    btn.disabled=false;btn.textContent='Envoyer ma demande';
+    errEl.textContent='Erreur: '+r.error.message;return;
+  }
+  /* clear cart */
+  await sb.from('cart_items').delete().eq('user_id',CURRENT_USER.id);
+  CART=[];updateCartBadge();renderCartModal();
+  /* show URL */
+  var url=window.location.origin+window.location.pathname+'#/quote/'+r.data.id;
+  document.getElementById('quoteUrlInput').value=url;
+  document.getElementById('quoteUrlBlock').style.display='';
+  okEl.innerHTML='Demande créée ! Copie l\'URL ci-dessous et envoie-la en DM Instagram à <strong>@homecopparis</strong>.';
+  btn.disabled=false;btn.textContent='Envoyer ma demande';
+  document.getElementById('cartMessage').value='';
+}
+function copyQuoteUrl(){
+  var inp=document.getElementById('quoteUrlInput');
+  inp.select();inp.setSelectionRange(0,99999);
+  try{document.execCommand('copy');var b=document.getElementById('quoteCopyBtn');b.textContent='Copié ✓';setTimeout(function(){b.textContent='Copier'},2000)}catch(e){}
+  if(navigator.clipboard)navigator.clipboard.writeText(inp.value).catch(function(){});
+}
+
+/* ── Cart toggle from lightbox ── */
+function toggleLbCart(e){
+  e.stopPropagation();
+  if(!LB_CURRENT_PID)return;
+  if(!CURRENT_USER){closeLightbox({_q:1});openLoginModal();return;}
+  var pid=LB_CURRENT_PID;var btn=document.getElementById('lbCart');
+  if(isInCart(pid)){removeFromCart(pid);btn.classList.remove('added');}
+  else{addToCart(pid).then(function(){btn.classList.add('added')});}
+}
+/* Refresh lb-cart state when lightbox opens */
+var _orig_openLightbox=window.openLightbox;
+window.openLightbox=function(idx,opts){
+  var r=_orig_openLightbox(idx,opts);
+  setTimeout(function(){
+    var btn=document.getElementById('lbCart');
+    if(btn&&LB_CURRENT_PID)btn.classList.toggle('added',isInCart(LB_CURRENT_PID));
+  },50);
+  return r;
+};
+
+/* ── Auth lifecycle hooks ── */
+async function onUserLogin(){
+  await loadProfile();
+  await loadFavoritesFromCloud();
+  await loadCart();
+}
+function onUserLogout(){USER_PROFILE=null;CART=[];updateCartBadge();}
+var _orig_updateAuthUI=window.updateAuthUI;
+window.updateAuthUI=function(){
+  _orig_updateAuthUI();
+  if(CURRENT_USER){onUserLogin();var ig=document.getElementById('accountInstagram');if(ig&&USER_PROFILE)ig.value=USER_PROFILE.instagram_handle||'';}
+  else onUserLogout();
+};
+/* Pre-fill instagram field on account modal open */
+var _orig_openAccountModal=window.openAccountModal;
+window.openAccountModal=function(){
+  _orig_openAccountModal();
+  document.getElementById('accountError').textContent='';
+  document.getElementById('accountSuccess').textContent='';
+  if(USER_PROFILE)document.getElementById('accountInstagram').value=USER_PROFILE.instagram_handle||'';
+};
+
+/* ════════════════════════════════════════════════════════════════════════ */
+/* ═══ QUOTE URL VIEW : #/quote/<uuid>                                  ═══ */
+/* ════════════════════════════════════════════════════════════════════════ */
+async function showQuoteView(quoteId){
+  CURRENT_VIEW='quote';CURRENT_CAT=null;
+  document.getElementById('hero').style.display='none';
+  document.getElementById('brandsGrid').style.display='none';
+  document.getElementById('productsSection').style.display='block';
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>Devis</h2>';
+  hideFilterBar();
+  document.getElementById('productsGrid').innerHTML='<div style="padding:40px;text-align:center;color:var(--text-dim)">Chargement du devis...</div>';
+  if(!sb){setTimeout(function(){showQuoteView(quoteId)},300);return;}
+  var r=await sb.from('quote_requests').select('*').eq('id',quoteId).maybeSingle();
+  if(r.error||!r.data){
+    document.getElementById('productsGrid').innerHTML='<div style="padding:40px;text-align:center;color:#f55"><strong>Devis introuvable ou expiré.</strong><br><span style="color:var(--text-dim);font-size:13px">Les devis sont valables 15 jours.</span></div>';
+    return;
+  }
+  CURRENT_QUOTE=r.data;
+  var q=r.data;
+  var items=q.items||[];
+  var created=new Date(q.created_at);
+  var expires=new Date(q.expires_at);
+  var msgHtml=q.message?'<div style="margin:14px 0;padding:12px;background:#1a1a1a;border-radius:8px;font-size:13px;white-space:pre-wrap;color:var(--text)">'+escH(q.message)+'</div>':'';
+  var headHtml='<button class="back-btn" onclick="showHome()">←</button><h2>Devis (<span style="color:var(--green)">'+items.length+' article'+(items.length>1?'s':'')+'</span>)</h2>'
+    +'<div style="font-size:12px;color:var(--text-dim);margin-top:4px">Créé le '+created.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})+' • Expire le '+expires.toLocaleString('fr-FR',{dateStyle:'short'})+'</div>'
+    +msgHtml;
+  document.getElementById('productsHeader').innerHTML=headHtml;
+  /* Render items as products grid */
+  var grid=document.getElementById('productsGrid');
+  if(items.length===0){grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text-dim)">Aucun article dans ce devis.</div>';return;}
+  var html='';
+  items.forEach(function(it){
+    var prod=PRODUCTS.find(function(p){return p.p===it.product_id});
+    var thumb=imgUrl(it.product_id,it.thumb_secret||(prod?(prod.ts||prod.s):''),'q');
+    var big=imgUrl(it.product_id,(prod?prod.s:it.thumb_secret),'b');
+    var brand=it.brand||(prod&&CATEGORIES.find(function(c){return c.id===prod.a})?CATEGORIES.find(function(c){return c.id===prod.a}).n:'');
+    var title=it.title||(prod?prod.t:'');
+    var note=it.note?'<div style="font-size:11px;color:var(--text-dim);padding:0 10px 8px">Note: '+escH(it.note)+'</div>':'';
+    html+='<div class="product-card" style="cursor:pointer" onclick="window.location.hash=\'#/p/'+it.product_id+'\'">';
+    html+='<img src="'+thumb+'" alt="" referrerpolicy="no-referrer" loading="lazy" style="width:100%;display:block">';
+    html+='<div style="padding:8px 10px;font-size:12px"><div style="color:var(--text-dim);font-size:10px;text-transform:uppercase;letter-spacing:.5px">'+escH(brand)+'</div><div style="margin-top:2px">'+escH(title)+'</div></div>';
+    html+=note+'</div>';
+  });
+  grid.innerHTML=html;
+}
+
+/* Hook routeFromHash for #/quote/<uuid> */
+var _orig_routeFromHash=window.routeFromHash;
+window.routeFromHash=function(){
+  var h=window.location.hash||'';
+  var m=h.match(/^#\/quote\/([a-f0-9-]{20,})$/);
+  if(m){showQuoteView(m[1]);return;}
+  return _orig_routeFromHash();
+};
+/* Also handle initial load if hash matches quote */
+window.addEventListener('DOMContentLoaded',function(){
+  setTimeout(function(){
+    var h=window.location.hash||'';
+    var m=h.match(/^#\/quote\/([a-f0-9-]{20,})$/);
+    if(m&&CURRENT_VIEW!=='quote')showQuoteView(m[1]);
+  },1500);
+});
 </script>
 </body>
 </html>
