@@ -387,8 +387,19 @@ fetch('data.json').then(function(r){return r.json()}).then(function(data){
 function init(){
   document.getElementById('loading').style.display='none';
   buildSearchIndex();buildSidebar();
-  /* Route from initial URL hash (supports deep links #/p/... #/cat/... ) */
-  if(window.location.hash&&window.location.hash.length>1)routeFromHash();else showHome();
+  /* Route from initial URL hash (supports deep links #/p/... #/cat/... )
+     IMPORTANT : si l'URL contient des tokens Supabase (#access_token=...), on
+     attend que Supabase nettoie l'URL avant de router. Sinon on ecraserait les
+     tokens en pushant '#/'. */
+  var _h=window.location.hash||'';
+  if(_h.indexOf('access_token=')!==-1||_h.indexOf('error=')!==-1){
+    /* Affiche home sans toucher au hash : Supabase va nettoyer + onAuthStateChange */
+    showHome({_q:1});
+  }else if(_h.length>1){
+    routeFromHash();
+  }else{
+    showHome();
+  }
   setupInfiniteScroll();setupKeyboard();setupImageRetry();
   updateSyncBar();
   /* Fetch global fav counts for visible products (first batch) */
@@ -498,6 +509,8 @@ function _pushHash(h){if(window.location.hash===h)return;_routing=true;try{windo
 function routeFromHash(){
   if(_routing)return;
   var h=window.location.hash||'';var m;
+  /* Ignore Supabase auth tokens dans le hash (#access_token=... ou #error=...) */
+  if(h.indexOf('access_token=')!==-1||h.indexOf('error=')!==-1)return;
   if((m=h.match(/^#\/p\/([^\/]+)$/))){
     var pid=m[1];var prod=PRODUCTS.find(function(p){return p.p===pid});
     if(!prod){showHome({_q:1});return}
