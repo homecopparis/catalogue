@@ -293,6 +293,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <h3>Mon panier devis</h3>
     <p class="fav-modal-sub">Tu auras une URL unique à m'envoyer en DM Instagram pour que je voie ta demande.</p>
     <div class="cart-items" id="cartItemsList"></div>
+    <label>Nom du devis (optionnel)</label>
+    <input id="cartTitle" type="text" placeholder="ex: Sélection Hermès printemps" autocomplete="off">
     <label>Ton @Instagram (obligatoire)</label>
     <input id="cartInstagram" type="text" placeholder="@ton_compte" autocomplete="off">
     <label>Message (optionnel)</label>
@@ -2113,9 +2115,9 @@ async function removeFromCart(pidRaw){
 /* ── Cart Modal ── */
 function openCartModal(){
   if(!CURRENT_USER){openLoginModal();return;}
-  document.getElementById('cartError').textContent='';
-  document.getElementById('cartSuccess').textContent='';
+  showFormMsg('cartError','',true);showFormMsg('cartSuccess','',false);
   document.getElementById('quoteUrlBlock').style.display='none';
+  document.getElementById('cartTitle').value='';
   if(USER_PROFILE&&USER_PROFILE.instagram_handle){
     document.getElementById('cartInstagram').value=USER_PROFILE.instagram_handle;
   }
@@ -2173,7 +2175,8 @@ async function sendQuoteRequest(){
     };
   });
   var fullMsg='Instagram: '+ig+(msg?'\n\n'+msg:'');
-  var r=await sb.from('quote_requests').insert({user_id:CURRENT_USER.id,items:items,message:fullMsg}).select().single();
+  var title=(document.getElementById('cartTitle').value||'').trim();
+  var r=await sb.from('quote_requests').insert({user_id:CURRENT_USER.id,items:items,message:fullMsg,title:title||null}).select().single();
   if(r.error){
     btn.disabled=false;btn.textContent='Envoyer ma demande';
     showFormMsg('cartError','Erreur: '+r.error.message,true);return;
@@ -2247,7 +2250,7 @@ async function loadMyQuotes(){
   if(!sb||!CURRENT_USER)return [];
   var nowIso=new Date().toISOString();
   var r=await sb.from('quote_requests')
-    .select('id, items, message, status, created_at, expires_at')
+    .select('id, title, items, message, status, created_at, expires_at')
     .eq('user_id',CURRENT_USER.id)
     .gt('expires_at',nowIso)
     .order('created_at',{ascending:false})
@@ -2277,11 +2280,12 @@ async function renderMyQuotes(){
       firstThumb=PREFIX+it.product_id+'_'+(it.thumb_secret||'')+'_q.jpg';
     }
     var status=q.status||'pending';
+    var displayTitle=q.title||('Devis du '+d.toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}));
     h+='<div style="display:flex;gap:10px;align-items:center;padding:8px;background:#0a0a0a;border-radius:6px;margin-bottom:4px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'#141414\'" onmouseout="this.style.background=\'#0a0a0a\'" onclick="openQuoteFromAccount(\''+q.id+'\')">';
     if(firstThumb)h+='<img src="'+firstThumb+'" style="width:42px;height:42px;object-fit:cover;border-radius:4px;flex-shrink:0" referrerpolicy="no-referrer">';
     h+='<div style="flex:1;min-width:0">';
-    h+='<div style="font-size:12px;color:var(--text)">'+d.toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+' • '+n+' article'+(n>1?'s':'')+'</div>';
-    h+='<div style="font-size:11px;color:var(--text-dim);margin-top:2px"><span style="color:'+STATUS_COLOR[status]+'">●</span> '+STATUS_LABEL[status]+' • expire dans '+daysLeft+'j</div>';
+    h+='<div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(displayTitle)+'</div>';
+    h+='<div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+n+' article'+(n>1?'s':'')+' • <span style="color:'+STATUS_COLOR[status]+'">●</span> '+STATUS_LABEL[status]+' • expire dans '+daysLeft+'j</div>';
     h+='</div>';
     h+='<span style="color:var(--green);font-size:12px;flex-shrink:0">Voir →</span>';
     h+='</div>';
@@ -2315,10 +2319,23 @@ async function showQuoteView(quoteId){
   var items=q.items||[];
   var created=new Date(q.created_at);
   var expires=new Date(q.expires_at);
+  var isOwner=CURRENT_USER&&q.user_id===CURRENT_USER.id;
+  var titleDefault='Devis du '+created.toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  var displayTitle=q.title||titleDefault;
   var msgHtml=q.message?'<div style="margin:14px 0;padding:12px;background:#1a1a1a;border-radius:8px;font-size:13px;white-space:pre-wrap;color:var(--text)">'+escH(q.message)+'</div>':'';
-  var headHtml='<button class="back-btn" onclick="showHome()">←</button><h2>Devis (<span style="color:var(--green)">'+items.length+' article'+(items.length>1?'s':'')+'</span>)</h2>'
-    +'<div style="font-size:12px;color:var(--text-dim);margin-top:4px">Créé le '+created.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})+' • Expire le '+expires.toLocaleString('fr-FR',{dateStyle:'short'})+'</div>'
-    +msgHtml;
+  var actionsHtml='';
+  if(isOwner){
+    actionsHtml='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'
+      +'<button onclick="renameQuote(\''+q.id+'\')" style="background:#1a1a1a;border:1px solid #333;color:var(--text);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer">✏️ Renommer</button>'
+      +'<button onclick="duplicateQuote(\''+q.id+'\')" style="background:#1a1a1a;border:1px solid #333;color:var(--text);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer">🔁 Dupliquer</button>'
+      +'<button onclick="deleteQuote(\''+q.id+'\')" style="background:#1a1a1a;border:1px solid #ef5350;color:#ef5350;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer">🗑 Supprimer</button>'
+      +'<button onclick="copyCurrentQuoteUrl()" style="background:#1a1a1a;border:1px solid #333;color:var(--text);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer">🔗 Copier l\'URL</button>'
+      +'</div>';
+  }
+  var headHtml='<button class="back-btn" onclick="showHome()">←</button>'
+    +'<h2 id="quoteTitle">'+escH(displayTitle)+'</h2>'
+    +'<div style="font-size:12px;color:var(--text-dim);margin-top:4px"><strong>'+items.length+' article'+(items.length>1?'s':'')+'</strong> • Créé le '+created.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})+' • Expire le '+expires.toLocaleString('fr-FR',{dateStyle:'short'})+'</div>'
+    +msgHtml+actionsHtml;
   document.getElementById('productsHeader').innerHTML=headHtml;
   /* Render items as products grid */
   var grid=document.getElementById('productsGrid');
@@ -2327,16 +2344,79 @@ async function showQuoteView(quoteId){
   items.forEach(function(it){
     var prod=PRODUCTS.find(function(p){return p.p===it.product_id});
     var thumb=imgUrl(it.product_id,it.thumb_secret||(prod?(prod.ts||prod.s):''),'q');
-    var big=imgUrl(it.product_id,(prod?prod.s:it.thumb_secret),'b');
     var brand=it.brand||(prod&&CATEGORIES.find(function(c){return c.id===prod.a})?CATEGORIES.find(function(c){return c.id===prod.a}).n:'');
     var title=it.title||(prod?prod.t:'');
     var note=it.note?'<div style="font-size:11px;color:var(--text-dim);padding:0 10px 8px">Note: '+escH(it.note)+'</div>':'';
-    html+='<div class="product-card" style="cursor:pointer" onclick="window.location.hash=\'#/p/'+it.product_id+'\'">';
+    var removeBtn=isOwner?'<button onclick="event.stopPropagation();removeQuoteItem(\''+q.id+'\',\''+it.product_id+'\')" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.7);border:1px solid rgba(239,83,80,.6);color:#ff7070;width:26px;height:26px;border-radius:50%;font-size:14px;cursor:pointer;z-index:5;backdrop-filter:blur(6px)" title="Retirer du devis">✕</button>':'';
+    html+='<div class="product-card" style="cursor:pointer;position:relative" onclick="window.location.hash=\'#/p/'+it.product_id+'\'">';
+    html+=removeBtn;
     html+='<img src="'+thumb+'" alt="" referrerpolicy="no-referrer" loading="lazy" style="width:100%;display:block">';
     html+='<div style="padding:8px 10px;font-size:12px"><div style="color:var(--text-dim);font-size:10px;text-transform:uppercase;letter-spacing:.5px">'+escH(brand)+'</div><div style="margin-top:2px">'+escH(title)+'</div></div>';
     html+=note+'</div>';
   });
   grid.innerHTML=html;
+}
+
+/* ── Quote actions (owner only) ── */
+function copyCurrentQuoteUrl(){
+  if(!CURRENT_QUOTE)return;
+  var url=PROD_URL+'#/quote/'+CURRENT_QUOTE.id;
+  if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showToast('URL copiée')}).catch(function(){showToast('URL: '+url)});}
+  else{showToast('URL: '+url);}
+}
+async function renameQuote(quoteId){
+  if(!sb||!CURRENT_USER)return;
+  var current=(CURRENT_QUOTE&&CURRENT_QUOTE.title)||'';
+  var nv=prompt('Nouveau nom pour ce devis :',current);
+  if(nv===null)return; /* cancel */
+  nv=nv.trim();
+  var r=await sb.from('quote_requests').update({title:nv||null}).eq('id',quoteId).select().maybeSingle();
+  if(r.error){showToast('Erreur: '+r.error.message,true);return;}
+  showToast('Renommé');
+  if(r.data)CURRENT_QUOTE=r.data;
+  showQuoteView(quoteId);
+}
+async function deleteQuote(quoteId){
+  if(!sb||!CURRENT_USER)return;
+  if(!confirm('Supprimer ce devis ?\n\nCette action est irréversible.'))return;
+  var r=await sb.from('quote_requests').delete().eq('id',quoteId);
+  if(r.error){showToast('Erreur: '+r.error.message,true);return;}
+  showToast('Devis supprimé');
+  window.location.hash='#/';
+}
+async function duplicateQuote(quoteId){
+  if(!sb||!CURRENT_USER)return;
+  var r=await sb.from('quote_requests').select('*').eq('id',quoteId).maybeSingle();
+  if(r.error||!r.data){showToast('Erreur',true);return;}
+  var src=r.data;
+  var newTitle=src.title?(src.title+' (copie)'):null;
+  var ins=await sb.from('quote_requests').insert({
+    user_id:CURRENT_USER.id,
+    items:src.items,
+    message:src.message,
+    title:newTitle
+  }).select().maybeSingle();
+  if(ins.error){showToast('Erreur duplication: '+ins.error.message,true);return;}
+  showToast('Devis dupliqué');
+  window.location.hash='#/quote/'+ins.data.id;
+}
+async function removeQuoteItem(quoteId,productId){
+  if(!sb||!CURRENT_USER)return;
+  if(!CURRENT_QUOTE||CURRENT_QUOTE.id!==quoteId){
+    var fr=await sb.from('quote_requests').select('*').eq('id',quoteId).maybeSingle();
+    if(fr.error||!fr.data)return;
+    CURRENT_QUOTE=fr.data;
+  }
+  var newItems=(CURRENT_QUOTE.items||[]).filter(function(it){return it.product_id!==productId});
+  if(newItems.length===0){
+    if(!confirm('Dernier article du devis. Supprimer le devis entier ?'))return;
+    return deleteQuote(quoteId);
+  }
+  var r=await sb.from('quote_requests').update({items:newItems}).eq('id',quoteId).select().maybeSingle();
+  if(r.error){showToast('Erreur: '+r.error.message,true);return;}
+  CURRENT_QUOTE=r.data;
+  showToast('Article retiré');
+  showQuoteView(quoteId);
 }
 
 /* Hook routeFromHash for #/quote/<uuid> */
