@@ -80,6 +80,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .lb-cart{position:absolute;bottom:24px;right:84px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;width:48px;height:48px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);transition:all .2s}
 .lb-cart:hover{background:rgba(0,230,118,.15);border-color:rgba(0,230,118,.4);color:var(--green)}
 .lb-cart.added{color:var(--green);background:rgba(0,230,118,.2);border-color:var(--green)}
+.toast{position:fixed;top:20px;right:20px;background:#1a1a1a;border:1px solid var(--green);color:var(--green);padding:12px 18px;border-radius:8px;z-index:9999;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;transform:translateY(-10px);transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.error{border-color:#ef5350;color:#ef5350}
 .dm-btn{display:block;width:100%;padding:10px;background:var(--green);color:#000;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;text-decoration:none}
 .main{margin-left:var(--sidebar-w);min-height:100vh;padding:24px 32px}
 .hero{text-align:center;padding:40px 0 32px}
@@ -196,6 +199,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <body>
 <div id="loading"><div class="spinner"></div><p>Chargement du catalogue&hellip;</p></div>
 <button class="hamburger" onclick="toggleSidebar()">☰</button>
+<div class="toast" id="toast"></div>
 <div class="overlay" onclick="toggleSidebar()"></div>
 <aside class="sidebar">
   <div class="sidebar-header">
@@ -381,20 +385,24 @@ function openAccountModal(){
   document.getElementById('accountModal').classList.add('open');
 }
 function closeAccountModal(){document.getElementById('accountModal').classList.remove('open')}
+function _showLoginMsg(elId,msg,isError){
+  var el=document.getElementById(elId);if(!el)return;
+  el.textContent=msg;el.style.display=msg?'block':'none';
+  var sib=el.parentElement.querySelector(isError?'.fav-success':'.fav-error');
+  if(sib)sib.style.display='none';
+}
 function sendLoginLink(){
   var email=(document.getElementById('loginEmail').value||'').trim();
-  var errEl=document.getElementById('loginError');
-  var okEl=document.getElementById('loginSuccess');
-  errEl.textContent='';okEl.textContent='';
-  if(!email||email.indexOf('@')===-1){errEl.textContent='Email invalide';return;}
-  if(!sb){errEl.textContent='Connexion à Supabase pas prête, réessaye dans 1s';return;}
+  _showLoginMsg('loginError','',true);_showLoginMsg('loginSuccess','',false);
+  if(!email||email.indexOf('@')===-1){_showLoginMsg('loginError','Email invalide',true);return;}
+  if(!sb){_showLoginMsg('loginError','Connexion à Supabase pas prête, réessaye dans 1s',true);return;}
   var btn=document.getElementById('loginBtn');
   btn.disabled=true;btn.textContent='Envoi...';
   var redirectTo=window.location.origin+window.location.pathname;
   sb.auth.signInWithOtp({email:email,options:{emailRedirectTo:redirectTo}}).then(function(r){
     btn.disabled=false;btn.textContent='Recevoir le lien';
-    if(r.error){errEl.textContent=r.error.message||'Erreur inconnue';}
-    else{okEl.textContent='Email envoyé ! Vérifie ta boîte (et les spams).';document.getElementById('loginEmail').value='';}
+    if(r.error){_showLoginMsg('loginError',r.error.message||'Erreur inconnue',true);}
+    else{_showLoginMsg('loginSuccess','Email envoyé ! Vérifie ta boîte (et les spams).',false);document.getElementById('loginEmail').value='';}
   });
 }
 function doLogout(){
@@ -1927,23 +1935,52 @@ var CART=[];          /* [{product_id, album_id, note, added_at}] */
 var USER_PROFILE=null; /* row from profiles table */
 var CURRENT_QUOTE=null; /* loaded quote when viewing #/quote/<uuid> */
 
+/* ── Toast helper ── */
+function showToast(msg,isError){
+  var t=document.getElementById('toast');if(!t)return;
+  t.textContent=msg;t.classList.toggle('error',!!isError);t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(function(){t.classList.remove('show')},2500);
+}
+function showFormMsg(elId,msg,isError){
+  var el=document.getElementById(elId);if(!el)return;
+  el.textContent=msg;el.style.display=msg?'block':'none';
+  /* hide sibling */
+  var p=el.parentElement;if(!p)return;
+  var sib=p.querySelector(isError?'.fav-success':'.fav-error');
+  if(sib)sib.style.display='none';
+}
+
 /* ── Profile ── */
+async function ensureProfile(){
+  /* Cree la ligne profiles si elle manque (cas user existant avant trigger) */
+  if(!sb||!CURRENT_USER)return false;
+  var r=await sb.from('profiles').select('id').eq('id',CURRENT_USER.id).maybeSingle();
+  if(r.data)return true;
+  /* missing -> insert */
+  var ins=await sb.from('profiles').insert({id:CURRENT_USER.id,email:CURRENT_USER.email,consent_given_at:new Date().toISOString()}).select().single();
+  if(ins.error){console.error('[profile] create err',ins.error);return false;}
+  USER_PROFILE=ins.data;return true;
+}
 async function loadProfile(){
   if(!sb||!CURRENT_USER){USER_PROFILE=null;return;}
-  var r=await sb.from('profiles').select('*').eq('id',CURRENT_USER.id).single();
-  if(!r.error)USER_PROFILE=r.data;
+  var r=await sb.from('profiles').select('*').eq('id',CURRENT_USER.id).maybeSingle();
+  if(r.data){USER_PROFILE=r.data;return;}
+  /* missing -> create on the fly */
+  await ensureProfile();
 }
 async function saveAccountProfile(){
   var ig=(document.getElementById('accountInstagram').value||'').trim();
   if(ig&&ig.charAt(0)!=='@')ig='@'+ig;
-  var errEl=document.getElementById('accountError');
-  var okEl=document.getElementById('accountSuccess');
-  errEl.textContent='';okEl.textContent='';
-  if(!sb||!CURRENT_USER){errEl.textContent='Non connecté';return;}
-  var r=await sb.from('profiles').update({instagram_handle:ig||null}).eq('id',CURRENT_USER.id);
-  if(r.error){errEl.textContent='Erreur: '+r.error.message;return;}
-  if(USER_PROFILE)USER_PROFILE.instagram_handle=ig;
-  okEl.textContent='Enregistré.';
+  showFormMsg('accountError','',true);showFormMsg('accountSuccess','',false);
+  if(!sb||!CURRENT_USER){showFormMsg('accountError','Non connecté',true);return;}
+  await ensureProfile();
+  var r=await sb.from('profiles').update({instagram_handle:ig||null}).eq('id',CURRENT_USER.id).select().maybeSingle();
+  if(r.error){showFormMsg('accountError','Erreur: '+r.error.message,true);return;}
+  if(!r.data){showFormMsg('accountError','Aucune ligne mise à jour. Re-connecte-toi.',true);return;}
+  USER_PROFILE=r.data;
+  showFormMsg('accountSuccess','Enregistré ✓',false);
+  showToast('@Instagram enregistré');
 }
 
 /* ── Favorites cloud sync ── */
@@ -2001,14 +2038,23 @@ function updateCartBadge(){
 }
 function isInCart(pid){return CART.some(function(c){return c.product_id===pid})}
 async function addToCart(pid,note){
-  if(!CURRENT_USER){openLoginModal();return;}
-  var prod=PRODUCTS.find(function(p){return p.p===pid});if(!prod)return;
+  if(!CURRENT_USER){openLoginModal();return false;}
+  var prod=PRODUCTS.find(function(p){return p.p===pid});
+  if(!prod){showToast('Produit introuvable',true);return false;}
+  await ensureProfile();
   var row={user_id:CURRENT_USER.id,product_id:pid,album_id:prod.a,note:note||null};
-  var r=await sb.from('cart_items').upsert(row,{onConflict:'user_id,product_id'}).select().single();
-  if(r.error){console.error('[cart] add err',r.error);return;}
+  var r=await sb.from('cart_items').upsert(row,{onConflict:'user_id,product_id'}).select().maybeSingle();
+  if(r.error){
+    console.error('[cart] add err',r.error);
+    showToast('Erreur ajout: '+(r.error.message||'inconnue'),true);
+    return false;
+  }
+  if(!r.data){console.warn('[cart] upsert returned no data');return false;}
   var ex=CART.findIndex(function(c){return c.product_id===pid});
   if(ex>=0)CART[ex]=r.data;else CART.unshift(r.data);
   updateCartBadge();
+  showToast('Ajouté au panier ('+CART.length+' article'+(CART.length>1?'s':'')+')');
+  return true;
 }
 async function removeFromCart(pid){
   if(!CURRENT_USER)return;
@@ -2059,18 +2105,15 @@ async function sendQuoteRequest(){
   if(!sb||!CURRENT_USER)return;
   var ig=(document.getElementById('cartInstagram').value||'').trim();
   var msg=(document.getElementById('cartMessage').value||'').trim();
-  var errEl=document.getElementById('cartError');
-  var okEl=document.getElementById('cartSuccess');
-  errEl.textContent='';okEl.textContent='';
-  if(!ig){errEl.textContent='Ton @Instagram est obligatoire';return;}
-  if(CART.length===0){errEl.textContent='Ton panier est vide';return;}
+  showFormMsg('cartError','',true);showFormMsg('cartSuccess','',false);
+  if(!ig){showFormMsg('cartError','Ton @Instagram est obligatoire',true);return;}
+  if(CART.length===0){showFormMsg('cartError','Ton panier est vide',true);return;}
   if(ig.charAt(0)!=='@')ig='@'+ig;
   var btn=document.getElementById('sendQuoteBtn');
   btn.disabled=true;btn.textContent='Envoi...';
-  /* save instagram to profile */
+  await ensureProfile();
   await sb.from('profiles').update({instagram_handle:ig}).eq('id',CURRENT_USER.id);
   if(USER_PROFILE)USER_PROFILE.instagram_handle=ig;
-  /* build items snapshot */
   var items=CART.map(function(c){
     var prod=PRODUCTS.find(function(p){return p.p===c.product_id});
     var cat=prod?CATEGORIES.find(function(x){return x.id===prod.a}):null;
@@ -2087,16 +2130,15 @@ async function sendQuoteRequest(){
   var r=await sb.from('quote_requests').insert({user_id:CURRENT_USER.id,items:items,message:fullMsg}).select().single();
   if(r.error){
     btn.disabled=false;btn.textContent='Envoyer ma demande';
-    errEl.textContent='Erreur: '+r.error.message;return;
+    showFormMsg('cartError','Erreur: '+r.error.message,true);return;
   }
-  /* clear cart */
   await sb.from('cart_items').delete().eq('user_id',CURRENT_USER.id);
   CART=[];updateCartBadge();renderCartModal();
-  /* show URL */
   var url=window.location.origin+window.location.pathname+'#/quote/'+r.data.id;
   document.getElementById('quoteUrlInput').value=url;
   document.getElementById('quoteUrlBlock').style.display='';
-  okEl.innerHTML='Demande créée ! Copie l\'URL ci-dessous et envoie-la en DM Instagram à <strong>@homecopparis</strong>.';
+  showFormMsg('cartSuccess','Demande créée ! Copie l\'URL ci-dessous et envoie-la en DM Instagram à @homecopparis.',false);
+  showToast('Devis créé ✓');
   btn.disabled=false;btn.textContent='Envoyer ma demande';
   document.getElementById('cartMessage').value='';
 }
@@ -2113,8 +2155,12 @@ function toggleLbCart(e){
   if(!LB_CURRENT_PID)return;
   if(!CURRENT_USER){closeLightbox({_q:1});openLoginModal();return;}
   var pid=LB_CURRENT_PID;var btn=document.getElementById('lbCart');
-  if(isInCart(pid)){removeFromCart(pid);btn.classList.remove('added');}
-  else{addToCart(pid).then(function(){btn.classList.add('added')});}
+  if(isInCart(pid)){
+    removeFromCart(pid);btn.classList.remove('added');
+    showToast('Retiré du panier');
+  }else{
+    addToCart(pid).then(function(ok){if(ok)btn.classList.add('added');});
+  }
 }
 /* Refresh lb-cart state when lightbox opens */
 var _orig_openLightbox=window.openLightbox;
