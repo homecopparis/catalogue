@@ -593,6 +593,11 @@ function routeFromHash(){
   var h=window.location.hash||'';var m;
   /* Ignore Supabase auth tokens dans le hash (#access_token=... ou #error=...) */
   if(h.indexOf('access_token=')!==-1||h.indexOf('error=')!==-1)return;
+  /* Quote URL : #/quote/<uuid> */
+  if((m=h.match(/^#\/quote\/([a-f0-9-]{20,})$/))){
+    if(typeof showQuoteView==='function')showQuoteView(m[1]);
+    return;
+  }
   if((m=h.match(/^#\/p\/([^\/]+)$/))){
     var pid=m[1];var prod=PRODUCTS.find(function(p){return p.p===pid});
     if(!prod){showHome({_q:1});return}
@@ -750,6 +755,10 @@ function applyFilters(opts){
     if(hasColor){if(!p.fc||ACTIVE_FILTERS.colors.indexOf(p.fc)===-1)return false;}
     return true;
   });
+  /* Si un filtre actif : tri par date d'upload Flickr descendante (plus recent en premier) */
+  if(hasType||hasColor){
+    FILTERED.sort(function(a,b){return(parseInt(b.u||0,10))-(parseInt(a.u||0,10))});
+  }
   /* Update info */
   var info=document.getElementById('filterInfo');
   if(hasType||hasColor){
