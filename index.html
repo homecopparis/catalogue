@@ -306,7 +306,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 </div>
 <!-- Account Modal -->
 <div class="fav-modal-overlay" id="accountModal">
-  <div class="fav-modal">
+  <div class="fav-modal" style="max-width:480px">
     <button class="fav-close" onclick="closeAccountModal()">✕</button>
     <h3>Mon compte</h3>
     <p class="fav-modal-sub">Connecté en tant que :</p>
@@ -318,6 +318,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <div class="fav-actions">
       <button class="fav-btn-secondary" onclick="doLogout()">Se déconnecter</button>
       <button class="fav-btn-primary" onclick="saveAccountProfile()">Enregistrer</button>
+    </div>
+    <div style="margin-top:18px;border-top:1px solid #333;padding-top:14px">
+      <label style="margin:0 0 8px;display:block">Mes devis (15 derniers jours)</label>
+      <div id="myQuotesList" style="max-height:240px;overflow-y:auto;border:1px solid #222;border-radius:8px;padding:6px"></div>
     </div>
   </div>
 </div>
@@ -347,6 +351,7 @@ var searchTimer=null;
 /* ═══ SUPABASE AUTH ═══ */
 var SUPABASE_URL='https://xlpewoqodiunszluzwto.supabase.co';
 var SUPABASE_KEY='sb_publishable_u6liPzC4EtX2x0ObCdvYig_-CvyqtVy';
+var PROD_URL='https://homecopparis.com/'; /* domaine custom pour magic link */
 var sb=null;var CURRENT_USER=null;
 
 function initSupabase(){
@@ -398,8 +403,7 @@ function sendLoginLink(){
   if(!sb){_showLoginMsg('loginError','Connexion à Supabase pas prête, réessaye dans 1s',true);return;}
   var btn=document.getElementById('loginBtn');
   btn.disabled=true;btn.textContent='Envoi...';
-  var redirectTo=window.location.origin+window.location.pathname;
-  sb.auth.signInWithOtp({email:email,options:{emailRedirectTo:redirectTo}}).then(function(r){
+  sb.auth.signInWithOtp({email:email,options:{emailRedirectTo:PROD_URL}}).then(function(r){
     btn.disabled=false;btn.textContent='Recevoir le lien';
     if(r.error){_showLoginMsg('loginError',r.error.message||'Erreur inconnue',true);}
     else{_showLoginMsg('loginSuccess','Email envoyé ! Vérifie ta boîte (et les spams).',false);document.getElementById('loginEmail').value='';}
@@ -2149,7 +2153,7 @@ async function sendQuoteRequest(){
   }
   await sb.from('cart_items').delete().eq('user_id',CURRENT_USER.id);
   CART=[];updateCartBadge();renderCartModal();
-  var url=window.location.origin+window.location.pathname+'#/quote/'+r.data.id;
+  var url=PROD_URL+'#/quote/'+r.data.id;
   document.getElementById('quoteUrlInput').value=url;
   document.getElementById('quoteUrlBlock').style.display='';
   showFormMsg('cartSuccess','Demande créée ! Copie l\'URL ci-dessous et envoie-la en DM Instagram à @homecopparis.',false);
@@ -2201,14 +2205,66 @@ window.updateAuthUI=function(){
   if(CURRENT_USER){onUserLogin();var ig=document.getElementById('accountInstagram');if(ig&&USER_PROFILE)ig.value=USER_PROFILE.instagram_handle||'';}
   else onUserLogout();
 };
-/* Pre-fill instagram field on account modal open */
+/* Pre-fill instagram field + load my quotes on account modal open */
 var _orig_openAccountModal=window.openAccountModal;
 window.openAccountModal=function(){
   _orig_openAccountModal();
-  document.getElementById('accountError').textContent='';
-  document.getElementById('accountSuccess').textContent='';
+  showFormMsg('accountError','',true);
+  showFormMsg('accountSuccess','',false);
   if(USER_PROFILE)document.getElementById('accountInstagram').value=USER_PROFILE.instagram_handle||'';
+  renderMyQuotes();
 };
+
+/* ── Mes devis (historique 15 jours) ── */
+async function loadMyQuotes(){
+  if(!sb||!CURRENT_USER)return [];
+  var nowIso=new Date().toISOString();
+  var r=await sb.from('quote_requests')
+    .select('id, items, message, status, created_at, expires_at')
+    .eq('user_id',CURRENT_USER.id)
+    .gt('expires_at',nowIso)
+    .order('created_at',{ascending:false})
+    .limit(50);
+  if(r.error){console.warn('[quotes] load err',r.error);return [];}
+  return r.data||[];
+}
+async function renderMyQuotes(){
+  var el=document.getElementById('myQuotesList');if(!el)return;
+  el.innerHTML='<div style="padding:12px;color:var(--text-dim);font-size:12px;text-align:center">Chargement...</div>';
+  var quotes=await loadMyQuotes();
+  if(quotes.length===0){
+    el.innerHTML='<div style="padding:14px;color:var(--text-dim);font-size:12px;text-align:center">Aucun devis actif. Crée-en un depuis ton panier.</div>';
+    return;
+  }
+  var STATUS_LABEL={pending:'En attente',seen:'Vu',replied:'Répondu',archived:'Archivé'};
+  var STATUS_COLOR={pending:'var(--green)',seen:'#aaa',replied:'#3498db',archived:'#666'};
+  var h='';
+  quotes.forEach(function(q){
+    var d=new Date(q.created_at);
+    var exp=new Date(q.expires_at);
+    var daysLeft=Math.max(0,Math.ceil((exp-Date.now())/86400000));
+    var n=(q.items||[]).length;
+    var firstThumb='';
+    if(q.items&&q.items[0]){
+      var it=q.items[0];
+      firstThumb=PREFIX+it.product_id+'_'+(it.thumb_secret||'')+'_q.jpg';
+    }
+    var status=q.status||'pending';
+    h+='<div style="display:flex;gap:10px;align-items:center;padding:8px;background:#0a0a0a;border-radius:6px;margin-bottom:4px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'#141414\'" onmouseout="this.style.background=\'#0a0a0a\'" onclick="openQuoteFromAccount(\''+q.id+'\')">';
+    if(firstThumb)h+='<img src="'+firstThumb+'" style="width:42px;height:42px;object-fit:cover;border-radius:4px;flex-shrink:0" referrerpolicy="no-referrer">';
+    h+='<div style="flex:1;min-width:0">';
+    h+='<div style="font-size:12px;color:var(--text)">'+d.toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+' • '+n+' article'+(n>1?'s':'')+'</div>';
+    h+='<div style="font-size:11px;color:var(--text-dim);margin-top:2px"><span style="color:'+STATUS_COLOR[status]+'">●</span> '+STATUS_LABEL[status]+' • expire dans '+daysLeft+'j</div>';
+    h+='</div>';
+    h+='<span style="color:var(--green);font-size:12px;flex-shrink:0">Voir →</span>';
+    h+='</div>';
+  });
+  el.innerHTML=h;
+}
+function openQuoteFromAccount(quoteId){
+  closeAccountModal();
+  window.location.hash='#/quote/'+quoteId;
+}
 
 /* ════════════════════════════════════════════════════════════════════════ */
 /* ═══ QUOTE URL VIEW : #/quote/<uuid>                                  ═══ */
