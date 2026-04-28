@@ -1935,6 +1935,10 @@ var CART=[];          /* [{product_id, album_id, note, added_at}] */
 var USER_PROFILE=null; /* row from profiles table */
 var CURRENT_QUOTE=null; /* loaded quote when viewing #/quote/<uuid> */
 
+/* ── PID normalisation : la lightbox/heart utilise "<photoid>_<secret>",
+   mais Supabase stocke juste "<photoid>". On strip le secret aux frontieres. */
+function _bareId(pid){return String(pid||'').split('_')[0]}
+
 /* ── Toast helper ── */
 function showToast(msg,isError){
   var t=document.getElementById('toast');if(!t)return;
@@ -1988,31 +1992,40 @@ async function loadFavoritesFromCloud(){
   if(!sb||!CURRENT_USER)return;
   var r=await sb.from('favorites').select('product_id, album_id').eq('user_id',CURRENT_USER.id);
   if(r.error){console.warn('[favs] cloud load err',r.error);return;}
-  var cloudPids=(r.data||[]).map(function(x){return x.product_id});
-  var localPids=getFavorites().map(String);
-  var merged=[];var seen={};
-  [].concat(cloudPids,localPids).forEach(function(p){if(!seen[p]){seen[p]=1;merged.push(p)}});
-  setFavorites(merged);
-  /* Push local-only to cloud */
-  var toPush=localPids.filter(function(p){return cloudPids.indexOf(p)===-1});
+  /* Cloud stocke bare ids. localStorage utilise "<pid>_<secret>". On reconstruit. */
+  var cloudBare=(r.data||[]).map(function(x){return x.product_id});
+  var cloudCombined=cloudBare.map(function(bid){
+    var prod=PRODUCTS.find(function(p){return p.p===bid});
+    return prod?(prod.p+'_'+prod.s):null;
+  }).filter(function(x){return x});
+  var localCombined=getFavorites().map(String);
+  var merged={};
+  localCombined.forEach(function(c){merged[_bareId(c)]=c});
+  cloudCombined.forEach(function(c){if(!merged[_bareId(c)])merged[_bareId(c)]=c});
+  setFavorites(Object.keys(merged).map(function(k){return merged[k]}));
+  /* Push local-only to cloud (en bare) */
+  var cloudSet={};cloudBare.forEach(function(b){cloudSet[b]=1});
+  var localBare=localCombined.map(_bareId);
+  var toPush=localBare.filter(function(b){return !cloudSet[b]});
   if(toPush.length){
-    var rows=toPush.map(function(pid){
-      var prod=PRODUCTS.find(function(p){return p.p===pid});
-      return prod?{user_id:CURRENT_USER.id,product_id:pid,album_id:prod.a}:null;
+    var rows=toPush.map(function(bid){
+      var prod=PRODUCTS.find(function(p){return p.p===bid});
+      return prod?{user_id:CURRENT_USER.id,product_id:bid,album_id:prod.a}:null;
     }).filter(function(r){return r});
     if(rows.length)await sb.from('favorites').upsert(rows,{onConflict:'user_id,product_id'});
   }
   if(typeof refreshVisibleHearts==='function')refreshVisibleHearts();
   if(typeof updateFavCountInSidebar==='function')updateFavCountInSidebar();
 }
-async function cloudAddFavorite(pid){
+async function cloudAddFavorite(pidRaw){
   if(!sb||!CURRENT_USER)return;
+  var pid=_bareId(pidRaw);
   var prod=PRODUCTS.find(function(p){return p.p===pid});if(!prod)return;
   await sb.from('favorites').upsert({user_id:CURRENT_USER.id,product_id:pid,album_id:prod.a},{onConflict:'user_id,product_id'});
 }
-async function cloudRemoveFavorite(pid){
+async function cloudRemoveFavorite(pidRaw){
   if(!sb||!CURRENT_USER)return;
-  await sb.from('favorites').delete().eq('user_id',CURRENT_USER.id).eq('product_id',pid);
+  await sb.from('favorites').delete().eq('user_id',CURRENT_USER.id).eq('product_id',_bareId(pidRaw));
 }
 
 /* Wrap toggleFavorite to mirror to cloud */
@@ -2036,11 +2049,12 @@ function updateCartBadge(){
   var b=document.getElementById('cartBadge');if(!b)return;
   var n=CART.length;b.textContent=n;b.classList.toggle('empty',n===0);
 }
-function isInCart(pid){return CART.some(function(c){return c.product_id===pid})}
-async function addToCart(pid,note){
+function isInCart(pidRaw){var pid=_bareId(pidRaw);return CART.some(function(c){return c.product_id===pid})}
+async function addToCart(pidRaw,note){
   if(!CURRENT_USER){openLoginModal();return false;}
+  var pid=_bareId(pidRaw);
   var prod=PRODUCTS.find(function(p){return p.p===pid});
-  if(!prod){showToast('Produit introuvable',true);return false;}
+  if(!prod){console.warn('[cart] no PRODUCT for',pid,'(raw:',pidRaw,')');showToast('Produit introuvable',true);return false;}
   await ensureProfile();
   var row={user_id:CURRENT_USER.id,product_id:pid,album_id:prod.a,note:note||null};
   var r=await sb.from('cart_items').upsert(row,{onConflict:'user_id,product_id'}).select().maybeSingle();
@@ -2056,8 +2070,9 @@ async function addToCart(pid,note){
   showToast('Ajouté au panier ('+CART.length+' article'+(CART.length>1?'s':'')+')');
   return true;
 }
-async function removeFromCart(pid){
+async function removeFromCart(pidRaw){
   if(!CURRENT_USER)return;
+  var pid=_bareId(pidRaw);
   await sb.from('cart_items').delete().eq('user_id',CURRENT_USER.id).eq('product_id',pid);
   CART=CART.filter(function(c){return c.product_id!==pid});
   updateCartBadge();
