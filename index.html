@@ -1460,7 +1460,7 @@ function buildSuggestions(query){
   /* Brand suggestions */
   CATEGORIES.forEach(function(c){
     var s=fuzzyMatch(q,c.n.toLowerCase());
-    if(s>0.4)suggestions.push({label:c.n,type:'Marque',score:s*1.2,count:c.c});
+    if(s>0.4)suggestions.push({label:c.n,type:'Marque',score:s*1.2,count:c.c,brandId:c.id});
   });
   /* Type suggestions — count includes family expansion */
   Object.keys(TYPE_DICT).forEach(function(canonical){
@@ -1514,8 +1514,16 @@ function pickSuggestion(idx){
   var sugs=window._currentSugs;if(!sugs||!sugs[idx])return;
   var sug=sugs[idx];
   var input=document.getElementById('searchInput');
-  input.value=sug.label;
+  input.value='';
+  document.getElementById('searchTags').innerHTML='';
   document.getElementById('searchSuggest').classList.remove('open');
+  /* Si c'est une marque : navigation directe vers son album (par ID) — evite la confusion entre Prada / Prada Sneakers etc. */
+  if(sug.type==='Marque'&&sug.brandId){
+    showBrand(sug.brandId);
+    return;
+  }
+  /* Sinon (Type, Couleur) : recherche texte normale */
+  input.value=sug.label;
   executeSmartSearch(sug.label);
 }
 function onSearchKey(e){
