@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Home Cop Paris">
+  <style>
+    .hc { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 800; font-size: 30px; fill: #1f7f3a; letter-spacing: 0.5px; }
+    .hc-line { stroke: #1f7f3a; stroke-width: 2; stroke-linecap: round; }
+    .hc-paris { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 600; font-size: 9px; fill: #1f7f3a; letter-spacing: 1.2px; }
+  </style>
+  <text class="hc" x="32" y="34" text-anchor="middle">HC</text>
+  <line class="hc-line" x1="22" y1="40" x2="42" y2="40"/>
+  <text class="hc-paris" x="32" y="51" text-anchor="middle">PARIS</text>
+</svg>
