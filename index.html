@@ -649,6 +649,7 @@ function sortCategoriesForHome(cats){
   });
 }
 function showHome(opts){
+  window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='home';CURRENT_CAT=null;setActiveMenu('home');
   document.getElementById('hero').style.display='';
   document.getElementById('brandsGrid').style.display='';
@@ -658,6 +659,7 @@ function showHome(opts){
 }
 
 function showNouveautes(){
+  window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='nouveautes';CURRENT_CAT=null;setActiveMenu('nouveautes');
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
@@ -675,6 +677,7 @@ var BRAND_PRODUCTS=[];
 var COLOR_HEX={'Rouge':'#e53935','Bleu':'#1e88e5','Vert':'#43a047','Jaune':'#fdd835','Orange':'#fb8c00','Violet':'#8e24aa','Rose':'#ec407a','Marron':'#6d4c41','Noir':'#333','Blanc':'#f5f5f5','Gris':'#9e9e9e','Beige':'#d7ccc8','Multicolore':'conic-gradient(red,yellow,green,blue,violet,red)'};
 
 function showBrand(albumId,opts){
+  window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='brand';CURRENT_CAT=albumId;setActiveMenu(albumId);
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
@@ -1843,6 +1846,7 @@ function updateFavCountInSidebar(){
 
 /* ── Show Favorites page ── */
 function showFavorites(){
+  window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='favorites';CURRENT_CAT=null;setActiveMenu('favorites');
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
@@ -2309,6 +2313,7 @@ function openQuoteFromAccount(quoteId){
 /* ═══ QUOTE URL VIEW : #/quote/<uuid>                                  ═══ */
 /* ════════════════════════════════════════════════════════════════════════ */
 async function showQuoteView(quoteId){
+  window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='quote';CURRENT_CAT=null;
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
