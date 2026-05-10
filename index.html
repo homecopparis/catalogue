@@ -442,6 +442,10 @@ function initSupabase(){
     CURRENT_USER=(session&&session.user)||null;
     updateAuthUI();
   });
+  /* Charge les compteurs publics de favoris (anonyme, accessible a tous) */
+  setTimeout(function(){
+    if(typeof loadFavCountsFromSupabase==='function')loadFavCountsFromSupabase();
+  },800);
 }
 function updateAuthUI(){
   var btn=document.getElementById('authBtn');if(!btn)return;
@@ -1893,31 +1897,42 @@ function refreshVisibleHearts(){
   });
 }
 
-/* ── Global favorite counts (from API) ── */
-function fetchGlobalCounts(pids){
-  if(!pids||!pids.length)return;
-  /* Check cache */
-  try{
-    var cached=localStorage.getItem(FAV_COUNTS_KEY);
-    if(cached){
-      var d=JSON.parse(cached);
-      if(Date.now()-d.ts<FAV_COUNTS_TTL){
-        Object.keys(d.counts).forEach(function(k){GLOBAL_FAV_COUNTS[k]=d.counts[k]});
-        applyGlobalCounts();
-        return;
+/* ── Global favorite counts (from Supabase RPC fav_counts()) ── */
+async function loadFavCountsFromSupabase(force){
+  if(!sb)return;
+  /* Check cache (5 min TTL) */
+  if(!force){
+    try{
+      var cached=localStorage.getItem(FAV_COUNTS_KEY);
+      if(cached){
+        var d=JSON.parse(cached);
+        if(Date.now()-d.ts<FAV_COUNTS_TTL){
+          GLOBAL_FAV_COUNTS=d.counts||{};
+          applyGlobalCounts();
+          return;
+        }
       }
+    }catch(e){}
+  }
+  var r=await sb.rpc('fav_counts');
+  if(r.error){console.warn('[favcounts] err',r.error);return;}
+  /* Result: array of {product_id (bare), count (bigint)}.
+     On indexe avec 2 cles : la bare ('55206197801') ET la combinee ('55206197801_abc')
+     pour matcher partout (toggleLbFav utilise combined, refreshVisibleHearts utilise combined). */
+  GLOBAL_FAV_COUNTS={};
+  (r.data||[]).forEach(function(row){
+    var bare=row.product_id;
+    GLOBAL_FAV_COUNTS[bare]=row.count;
+    var prod=PRODUCTS.find(function(p){return p.p===bare});
+    if(prod){
+      GLOBAL_FAV_COUNTS[prod.p+'_'+prod.s]=row.count;
     }
-  }catch(e){}
-  fetch(FAV_API+'/api/counts',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({pids:pids})
-  }).then(function(r){return r.json()}).then(function(data){
-    if(data.ok&&data.counts){
-      Object.keys(data.counts).forEach(function(k){GLOBAL_FAV_COUNTS[k]=data.counts[k]});
-      try{localStorage.setItem(FAV_COUNTS_KEY,JSON.stringify({ts:Date.now(),counts:GLOBAL_FAV_COUNTS}))}catch(e){}
-      applyGlobalCounts();
-    }
-  }).catch(function(){});
+  });
+  try{localStorage.setItem(FAV_COUNTS_KEY,JSON.stringify({ts:Date.now(),counts:GLOBAL_FAV_COUNTS}))}catch(e){}
+  applyGlobalCounts();
 }
+/* Backward-compat wrapper (l'ancienne API d'appel etait fetchGlobalCounts(pids)) */
+function fetchGlobalCounts(pids){loadFavCountsFromSupabase();}
 
 function applyGlobalCounts(){
   var els=document.querySelectorAll('.fav-count[data-pid]');
