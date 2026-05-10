@@ -624,6 +624,31 @@ function toggleGroup(gk){
   var nowCollapsed=!el.classList.contains('collapsed');
   el.classList.toggle('collapsed',nowCollapsed);
   GROUP_COLLAPSED[gk]=nowCollapsed;
+  /* Si on vient de l'OUVRIR : scroll le groupe + ses sous-categories dans la zone visible
+     de la sidebar (sinon les sous-categories apparaissent hors viewport en bas). */
+  if(!nowCollapsed){
+    setTimeout(function(){
+      var menu=document.getElementById('sidebarMenu');
+      if(!menu)return;
+      var header=el.querySelector('.menu-group-header');
+      var body=el.querySelector('.menu-group-body');
+      if(!header||!body)return;
+      /* Position du groupe dans la sidebar scroll container */
+      var menuRect=menu.getBoundingClientRect();
+      var headerRect=header.getBoundingClientRect();
+      var bodyRect=body.getBoundingClientRect();
+      var totalH=(headerRect.height||0)+(bodyRect.height||0);
+      /* Si le groupe deborde en bas ou si le body n'est pas entierement visible */
+      var headerOffsetTop=header.offsetTop;
+      var visibleH=menu.clientHeight;
+      var currentScroll=menu.scrollTop;
+      var groupBottom=headerOffsetTop+totalH;
+      /* On veut que le groupe (header + body) soit visible. S'il deborde, on scroll vers lui. */
+      if(headerOffsetTop<currentScroll||groupBottom>currentScroll+visibleH){
+        menu.scrollTo({top:Math.max(0,headerOffsetTop-8),behavior:'smooth'});
+      }
+    },50); /* attend la fin de la transition d'ouverture */
+  }
 }
 
 function showGroup(gk){
