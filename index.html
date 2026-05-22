@@ -453,6 +453,20 @@ function initSupabase(){
   setTimeout(function(){
     if(typeof loadFavCountsFromSupabase==='function')loadFavCountsFromSupabase();
   },800);
+  /* Tracking visite anonyme (1 par session, fire-and-forget) */
+  trackPageView();
+}
+
+function trackPageView(){
+  if(!sb)return;
+  /* 1 visite par session navigateur (evite de compter chaque navigation interne) */
+  try{
+    if(sessionStorage.getItem('hc_visit_tracked'))return;
+    sessionStorage.setItem('hc_visit_tracked','1');
+  }catch(e){}
+  var ref='';
+  try{ref=(document.referrer||'').slice(0,200);}catch(e){}
+  sb.from('page_views').insert({path:(location.hash||'/').slice(0,100),referrer:ref}).then(function(){}, function(){});
 }
 function updateAuthUI(){
   var btn=document.getElementById('authBtn');if(!btn)return;
