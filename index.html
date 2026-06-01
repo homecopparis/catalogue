@@ -973,7 +973,22 @@ var BRAND_LOGO_RULES=[
   [/cartier/i,'cartier'],
   [/aim[ée] leon dore/i,'aime-leon-dore'],
   [/supreme/i,'supreme'],
-  [/palace/i,'palace']
+  [/palace/i,'palace'],
+  [/maison margiela|^margiela/i,'maison-margiela'],
+  [/birkenstock/i,'birkenstock'],
+  [/thom browne/i,'thom-browne'],
+  [/zegna/i,'zegna'],
+  [/salomon/i,'salomon'],
+  [/asics/i,'asics'],
+  [/golden goose/i,'golden-goose'],
+  [/rick owens/i,'rick-owens'],
+  [/lanvin/i,'lanvin'],
+  [/jordan/i,'jordan'],
+  [/^paly/i,'paly'],
+  [/enfants riches/i,'enfants-riches-deprimes'],
+  [/on sneakers|on running|^on /i,'on-running'],
+  [/^mmy/i,'mmy'],
+  [/air max|^nike/i,'nike']
 ];
 function brandLogoSlug(name){
   if(!name) return '';
@@ -1913,6 +1928,9 @@ function escH(s){if(!s)return '';return s.replace(/&/g,'&amp;').replace(/</g,'&l
 function setupImageRetry(){
   document.addEventListener('error',function(e){
     if(e.target.tagName!=='IMG')return;var img=e.target;
+    /* IGNORE le logo overlay : son onerror inline cache l'image, pas besoin de retry
+       et surtout ne pas marquer la brand-card parente en .no-img */
+    if(img.classList.contains('brand-logo-overlay'))return;
     /* Skip if already flagged broken */
     if(img.classList.contains('broken'))return;
     var retries=parseInt(img.getAttribute('data-retry')||'0');
