@@ -162,11 +162,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .hero h1 em{color:var(--green);font-style:italic}
 .brands-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-top:16px}
 .brand-card{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;cursor:pointer;background:#1a1a1a}
-.brand-card img:not(.brand-logo-overlay){width:100%;height:100%;object-fit:cover;transition:transform .3s}
-.brand-card:hover img:not(.brand-logo-overlay){transform:scale(1.05)}
-.brand-logo-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60%;max-width:140px;max-height:55%;opacity:.42;filter:brightness(0) invert(1) drop-shadow(0 2px 8px rgba(0,0,0,.6));transition:opacity .4s cubic-bezier(.25,.1,.25,1),transform .4s cubic-bezier(.25,.1,.25,1);pointer-events:none;z-index:3;object-fit:contain}
-.brand-card:hover .brand-logo-overlay{opacity:.92;transform:translate(-50%,-50%) scale(1.08)}
-.brand-card.no-img .brand-logo-overlay{filter:none;opacity:.85}
+.brand-card img:not(.brand-logo-overlay){width:100%;height:100%;object-fit:cover;transition:transform .45s cubic-bezier(.25,.1,.25,1),filter .45s cubic-bezier(.25,.1,.25,1)}
+.brand-card:hover img:not(.brand-logo-overlay){transform:scale(1.06);filter:brightness(.55)}
+.brand-logo-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.82);width:60%;max-width:150px;max-height:55%;opacity:0;filter:brightness(0) invert(1) blur(8px) drop-shadow(0 2px 12px rgba(0,0,0,.7));transition:opacity .5s cubic-bezier(.25,.1,.25,1),transform .5s cubic-bezier(.25,.1,.25,1),filter .5s cubic-bezier(.25,.1,.25,1);pointer-events:none;z-index:3;object-fit:contain}
+.brand-card:hover .brand-logo-overlay{opacity:.95;transform:translate(-50%,-50%) scale(1.04);filter:brightness(0) invert(1) blur(0) drop-shadow(0 2px 14px rgba(0,0,0,.85))}
+.brand-card.no-img .brand-logo-overlay{filter:none}
+.brand-card.no-img:hover .brand-logo-overlay{filter:none;opacity:.92}
 .brand-overlay{position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,.85));display:flex;flex-direction:column;justify-content:flex-end;padding:16px;z-index:2}
 .brand-overlay .name{font-weight:600;font-size:15px}
 .brand-overlay .cnt{font-size:12px;color:var(--green);margin-top:2px}
@@ -956,6 +957,7 @@ var BRAND_LOGO_RULES=[
   [/off.?white/i,'off-white'],
   [/comme des gar[çc]on/i,'comme-des-garcons'],
   [/jacquemus/i,'jacquemus'],
+  [/nike x nocta|^nocta/i,'nike-nocta'],
   [/nike/i,'nike'],
   [/palm angels/i,'palm-angels'],
   [/the north face|^tnf/i,'the-north-face'],
@@ -988,8 +990,21 @@ var BRAND_LOGO_RULES=[
   [/enfants riches/i,'enfants-riches-deprimes'],
   [/on sneakers|on running|^on /i,'on-running'],
   [/^mmy/i,'mmy'],
-  [/air max|^nike/i,'nike']
+  [/air max|^nike/i,'nike'],
+  [/alexander mcqueen/i,'alexander-mcqueen'],
+  [/valentino/i,'valentino'],
+  [/^kroen/i,'kroen'],
+  [/timberland/i,'timberland'],
+  [/new balance/i,'new-balance']
 ];
+/* Liste d'extensions a essayer en cascade pour les logos (certains sont en SVG, d'autres PNG/WebP/JPG) */
+var LOGO_EXTS=['svg','png','webp','jpg'];
+function tryNextLogoExt(img){
+  var idx=parseInt(img.getAttribute('data-ext-idx')||'0')+1;
+  if(idx>=LOGO_EXTS.length){img.style.display='none';return;}
+  img.setAttribute('data-ext-idx',idx);
+  img.src='logos/'+img.getAttribute('data-slug')+'.'+LOGO_EXTS[idx];
+}
 function brandLogoSlug(name){
   if(!name) return '';
   for(var i=0;i<BRAND_LOGO_RULES.length;i++){
@@ -1007,7 +1022,7 @@ function renderBrandCards(cats){
     var slug=brandLogoSlug(c.n);
     h+='<div class="brand-card"'+noImgAttr+' data-fallback="'+escH(c.n)+'" onclick="showBrand(\''+c.id+'\')">';
     if(cover){h+='<img src="'+escH(cover)+'" alt="'+escH(c.n)+'" loading="lazy" referrerpolicy="no-referrer" onerror="handleImgErr(this)">';}
-    if(slug){h+='<img class="brand-logo-overlay" src="logos/'+slug+'.svg" alt="" loading="lazy" onerror="this.style.display=\'none\'">';}
+    if(slug){h+='<img class="brand-logo-overlay" src="logos/'+slug+'.svg" alt="" loading="lazy" data-slug="'+slug+'" data-ext-idx="0" onerror="tryNextLogoExt(this)">';}
     h+='<div class="brand-overlay"><div class="name">'+escH(c.n)+'</div><div class="cnt">'+c.c+' articles</div></div></div>';
   }
   g.innerHTML=h;
