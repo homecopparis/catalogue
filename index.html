@@ -1960,6 +1960,9 @@ function setupImageRetry(){
     /* IGNORE le logo overlay : son onerror inline cache l'image, pas besoin de retry
        et surtout ne pas marquer la brand-card parente en .no-img */
     if(img.classList.contains('brand-logo-overlay'))return;
+    /* IGNORE les images avec fallback Flickr en attente (cover locale absente sur GitHub).
+       Laisse tryLocalCover faire son boulot via le onerror inline. */
+    if(img.hasAttribute('data-flickr-fallback'))return;
     /* Skip if already flagged broken */
     if(img.classList.contains('broken'))return;
     var retries=parseInt(img.getAttribute('data-retry')||'0');
