@@ -1013,15 +1013,29 @@ function brandLogoSlug(name){
   return '';
 }
 
+/* Si une cover locale detouree existe (covers/<id>.jpg), on l'essaie en premier.
+   Si elle echoue (404), on bascule sur la cover Flickr d'origine via onerror. */
+function tryLocalCover(img){
+  var fb=img.getAttribute('data-flickr-fallback');
+  if(fb){img.removeAttribute('data-flickr-fallback');img.src=fb;return;}
+  handleImgErr(img);
+}
+
 function renderBrandCards(cats){
   var g=document.getElementById('brandsGrid');var h='';
   for(var i=0;i<cats.length;i++){
     var c=cats[i];
-    var cover=c.cp?(c.cp.indexOf('http')===0?c.cp:((c.cs)?imgUrl(c.cp,c.cs,'z'):'')):'';
-    var noImgAttr=cover?'':' class="no-img" data-fallback="'+escH(c.n)+'"';
+    var flickrCover=c.cp?(c.cp.indexOf('http')===0?c.cp:((c.cs)?imgUrl(c.cp,c.cs,'z'):'')):'';
+    var localCover=String(c.id).match(/^\d+$/)?('covers/'+c.id+'.jpg'):'';
+    var primaryCover=localCover||flickrCover;
+    var noImgAttr=primaryCover?'':' class="no-img" data-fallback="'+escH(c.n)+'"';
     var slug=brandLogoSlug(c.n);
     h+='<div class="brand-card"'+noImgAttr+' data-fallback="'+escH(c.n)+'" onclick="showBrand(\''+c.id+'\')">';
-    if(cover){h+='<img src="'+escH(cover)+'" alt="'+escH(c.n)+'" loading="lazy" referrerpolicy="no-referrer" onerror="handleImgErr(this)">';}
+    if(primaryCover){
+      var fbAttr=(localCover&&flickrCover)?' data-flickr-fallback="'+escH(flickrCover)+'"':'';
+      var errHandler=(localCover&&flickrCover)?'tryLocalCover(this)':'handleImgErr(this)';
+      h+='<img src="'+escH(primaryCover)+'" alt="'+escH(c.n)+'" loading="lazy" referrerpolicy="no-referrer"'+fbAttr+' onerror="'+errHandler+'">';
+    }
     if(slug){h+='<img class="brand-logo-overlay" src="logos/'+slug+'.svg" alt="" loading="lazy" data-slug="'+slug+'" data-ext-idx="0" onerror="tryNextLogoExt(this)">';}
     h+='<div class="brand-overlay"><div class="name">'+escH(c.n)+'</div><div class="cnt">'+c.c+' articles</div></div></div>';
   }
