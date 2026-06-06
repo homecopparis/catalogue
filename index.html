@@ -558,6 +558,20 @@ fetch('data.json').then(function(r){return r.json()}).then(function(data){
     return out;
   });
   /* Preserve order from data.json (matches Flickr album order) */
+  /* Recalcul des compteurs des albums thematiques (Casquettes & Bobs, Ceintures, etc.)
+     pour qu'ils refletent les produits agreges depuis tous les albums. */
+  Object.keys(THEMATIC_ALBUM_AGGREGATION).forEach(function(themeName){
+    var cat=CATEGORIES.find(function(c){return c.n===themeName});
+    if(!cat)return;
+    var aggregateTypes=THEMATIC_ALBUM_AGGREGATION[themeName];
+    var total=0;
+    for(var i=0;i<PRODUCTS.length;i++){
+      var p=PRODUCTS[i];
+      if(p.a===cat.id){total++;continue;}
+      if(aggregateTypes.indexOf(p.ft)!==-1)total++;
+    }
+    cat.c=total;
+  });
   init();
 }).catch(function(e){
   document.getElementById('loading').innerHTML='<p style="color:#f44">Erreur: '+e.message+'</p>';
@@ -796,6 +810,15 @@ var ACTIVE_FILTERS={types:[],colors:[]};
 var BRAND_PRODUCTS=[];
 var COLOR_HEX={'Rouge':'#e53935','Bleu':'#1e88e5','Vert':'#43a047','Jaune':'#fdd835','Orange':'#fb8c00','Violet':'#8e24aa','Rose':'#ec407a','Marron':'#6d4c41','Noir':'#333','Blanc':'#f5f5f5','Gris':'#9e9e9e','Beige':'#d7ccc8','Multicolore':'conic-gradient(red,yellow,green,blue,violet,red)'};
 
+/* Mapping albums thematiques : ces albums agregent automatiquement les produits
+   d'autres albums dont le ft (filter_type) correspond. Ex : "Casquettes & Bobs"
+   affiche les casquettes de Gucci, Louis Vuitton, etc. en plus des siennes. */
+var THEMATIC_ALBUM_AGGREGATION={
+  'Casquettes & Bobs':['Casquettes','Bonnets'],
+  'Ceintures':['Ceinture'],
+  'Echarpes & Bonnets':['Écharpes','Bonnets']
+};
+
 function showBrand(albumId,opts){
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='brand';CURRENT_CAT=albumId;setActiveMenu(albumId);
@@ -805,8 +828,17 @@ function showBrand(albumId,opts){
   var cat=CATEGORIES.find(function(c){return c.id===albumId});
   var catName=cat?cat.n:albumId;
   document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>'+escH(catName)+'</h2>';
+  /* Si album thematique, on agrège les produits d'autres albums dont ft matche. */
+  var aggregateTypes=cat?THEMATIC_ALBUM_AGGREGATION[cat.n]:null;
   /* Tri par position Flickr (o) ascendante : reproduit l'ordre exact de l'album sur Flickr.com (drag-and-drop user). Fallback sur date upload pour les produits sans position. */
-  BRAND_PRODUCTS=PRODUCTS.filter(function(p){return p.a===albumId}).sort(function(a,b){
+  BRAND_PRODUCTS=PRODUCTS.filter(function(p){
+    if(p.a===albumId)return true;
+    if(aggregateTypes&&aggregateTypes.indexOf(p.ft)!==-1)return true;
+    return false;
+  }).sort(function(a,b){
+    /* Pour les produits agreges (a !== albumId), on les met apres les produits propres */
+    var aOwn=(a.a===albumId)?0:1,bOwn=(b.a===albumId)?0:1;
+    if(aOwn!==bOwn)return aOwn-bOwn;
     var ao=(a.o==null?1e9:a.o),bo=(b.o==null?1e9:b.o);
     if(ao!==bo)return ao-bo;
     return(b.u||0)-(a.u||0);
