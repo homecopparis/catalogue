@@ -607,7 +607,17 @@ var MAROQUINERIE_RX=/\b(sac|sacs|maroquinerie|bag|bags|backpack|pochette|sacoche
 var BIJOUX_RX=/\b(bijou|bijoux|jewelry|jewellery|bague|bagues|collier|colliers|bracelet|bracelets|boucles?|pendentif|pendentifs|chaine|cha\u00eene)\b/i;
 var ELECTRO_RX=/\b(electronique|\u00e9lectronique|electronic|electronics|airpods|iphone|ipad|apple[-\s]?watch|smartphone|ecouteurs|\u00e9couteurs|casque|tech)\b/i;
 var VALISES_RX=/\b(valise|valises|rimowa|luggage|suitcase|trolley|bagage)\b/i;
+/* Albums explicitement classes dans ACCESSOIRES (override du tp).
+   Inclut : Casquettes & Bobs, Ceintures, Echarpes & Bonnets, Lunettes,
+   Calecons/Chaussettes, Bijoux des 4 marques. */
+var ACCESSOIRES_IDS={
+  '72177720313032027':1,'72177720316332783':1,'72177720313062334':1,
+  '72177720334058723':1,'72177720333424749':1,'72177720333072985':1,
+  '72177720333072950':1,'72177720333074652':1,'72177720333079076':1
+};
 function getGroupForCat(c){
+  /* Priorite absolue : albums explicitement listes en Accessoires */
+  if(ACCESSOIRES_IDS[c.id])return 'accessoires';
   var tp=c.tp||'';
   if(tp==='Chaussure')return 'chaussures';
   if(tp==='Sac')return 'maroquinerie';
@@ -622,8 +632,8 @@ function getGroupForCat(c){
   if(MAROQUINERIE_RX.test(n))return 'maroquinerie';
   return 'vetements';
 }
-var GROUP_LABELS={'vetements':'V\u00eatements','chaussures':'Chaussures','maroquinerie':'Maroquinerie','bijoux':'Bijoux','electronique':'\u00c9lectronique','valises':'Valises'};
-var GROUP_COLLAPSED={'vetements':false,'chaussures':true,'maroquinerie':true,'bijoux':true,'electronique':true,'valises':true};
+var GROUP_LABELS={'vetements':'V\u00eatements','chaussures':'Chaussures','maroquinerie':'Maroquinerie','accessoires':'Accessoires','bijoux':'Bijoux','electronique':'\u00c9lectronique','valises':'Valises'};
+var GROUP_COLLAPSED={'vetements':false,'chaussures':true,'maroquinerie':true,'accessoires':true,'bijoux':true,'electronique':true,'valises':true};
 
 function buildSidebar(){
   var totalProds=PRODUCTS.length;
@@ -634,13 +644,13 @@ function buildSidebar(){
   h+='<div class="menu-item" data-cat="favorites" onclick="showFavorites()"><span>\u2665 Mes Favoris</span><span class="count" id="favMenuCount">'+(favCount||'')+'</span></div>';
   h+='<div class="menu-item" data-cat="nouveautes" onclick="showNouveautes()"><span>Nouveaut\u00e9s</span><span class="count">'+totalProds+'</span></div>';
   /* Group categories */
-  var groups={vetements:[],chaussures:[],maroquinerie:[],bijoux:[],electronique:[],valises:[]};
-  var groupCounts={vetements:0,chaussures:0,maroquinerie:0,bijoux:0,electronique:0,valises:0};
+  var groups={vetements:[],chaussures:[],maroquinerie:[],accessoires:[],bijoux:[],electronique:[],valises:[]};
+  var groupCounts={vetements:0,chaussures:0,maroquinerie:0,accessoires:0,bijoux:0,electronique:0,valises:0};
   for(var i=0;i<CATEGORIES.length;i++){
     var c=CATEGORIES[i];var g=getGroupForCat(c);
     groups[g].push(c);groupCounts[g]+=(c.c||0);
   }
-  var order=['vetements','chaussures','maroquinerie','bijoux','electronique','valises'];
+  var order=['vetements','chaussures','maroquinerie','accessoires','bijoux','electronique','valises'];
   for(var k=0;k<order.length;k++){
     var gk=order[k];var list=groups[gk];if(list.length===0)continue;
     var cls='menu-group'+(GROUP_COLLAPSED[gk]?' collapsed':'');
@@ -771,7 +781,7 @@ function _fallbackCopy(t){var ta=document.createElement('textarea');ta.value=t;d
 
 /* Home grid order: Vêtements → Chaussures → Maroquinerie → Valises → Bijoux → Électronique,
    then within each group preserve data.json order (= Flickr album order). */
-var HOME_GROUP_ORDER={'vetements':0,'chaussures':1,'maroquinerie':2,'valises':3,'bijoux':4,'electronique':5};
+var HOME_GROUP_ORDER={'vetements':0,'chaussures':1,'maroquinerie':2,'accessoires':3,'bijoux':4,'valises':5,'electronique':6};
 function sortCategoriesForHome(cats){
   /* Map id -> position in data.json to break group ties stably */
   var pos={};for(var i=0;i<cats.length;i++)pos[cats[i].id]=i;
