@@ -1068,7 +1068,10 @@ function renderBrandCards(cats){
   for(var i=0;i<cats.length;i++){
     var c=cats[i];
     var flickrCover=c.cp?(c.cp.indexOf('http')===0?c.cp:((c.cs)?imgUrl(c.cp,c.cs,'z'):'')):'';
-    var localCover=String(c.id).match(/^\d+$/)?('covers/'+c.id+'.jpg'):'';
+    /* On utilise la cover detouree locale UNIQUEMENT pour les vetements.
+       Pour les autres (chaussures, maroquinerie, accessoires, bijoux, valises,
+       electronique), on garde la cover Flickr originale (pas de detourage). */
+    var localCover=(String(c.id).match(/^\d+$/) && getGroupForCat(c)==='vetements')?('covers/'+c.id+'.jpg'):'';
     var primaryCover=localCover||flickrCover;
     var noImgAttr=primaryCover?'':' class="no-img" data-fallback="'+escH(c.n)+'"';
     var slug=brandLogoSlug(c.n);
