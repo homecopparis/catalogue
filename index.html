@@ -841,7 +841,23 @@ function showNouveautes(){
 }
 
 /* ═══ FILTER SYSTEM ═══ */
-var ACTIVE_FILTERS={types:[],colors:[],brands:[]};
+var ACTIVE_FILTERS={types:[],colors:[],brands:[],prices:[]};
+var ACTIVE_SORT=null; /* null | 'asc' | 'desc' (prix) */
+var PRICE_RANGES=[['lt100','< 100 €',0,100],['r100','100 – 200 €',100,200],['r200','200 – 300 €',200,300],['gt300','300 € et +',300,1e9]];
+/* Prix numerique d'un produit depuis son titre ("155e", "95", "115e (Acné)"). null si non parsable. */
+function _priceOf(p){
+  var t=(p.t||'').trim();
+  var m=t.match(/^(\d+(?:[.,]\d+)?)(?:\s*(?:€|e\b|eur(?:os?)?)|\s*$)/i);
+  if(!m)return null;
+  var v=parseFloat(m[1].replace(',','.'));
+  return(v>=5&&v<=20000)?v:null;
+}
+function _priceRangeOf(p){
+  var v=_priceOf(p);
+  if(v==null)return null;
+  for(var i=0;i<PRICE_RANGES.length;i++){if(v>=PRICE_RANGES[i][2]&&v<PRICE_RANGES[i][3])return PRICE_RANGES[i][0];}
+  return null;
+}
 var BRAND_PRODUCTS=[];
 var COLOR_HEX={'Rouge':'#e53935','Bleu':'#1e88e5','Vert':'#43a047','Jaune':'#fdd835','Orange':'#fb8c00','Violet':'#8e24aa','Rose':'#ec407a','Marron':'#6d4c41','Noir':'var(--border2)','Blanc':'#f5f5f5','Gris':'#9e9e9e','Beige':'#d7ccc8','Multicolore':'conic-gradient(red,yellow,green,blue,violet,red)'};
 
@@ -878,7 +894,8 @@ function showBrand(albumId,opts){
     if(ao!==bo)return ao-bo;
     return(b.u||0)-(a.u||0);
   });
-  ACTIVE_FILTERS={types:[],colors:[],brands:[]};
+  ACTIVE_FILTERS={types:[],colors:[],brands:[],prices:[]};
+  ACTIVE_SORT=null;
   buildFilterBar(BRAND_PRODUCTS);
   FILTERED=BRAND_PRODUCTS;
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
@@ -900,12 +917,15 @@ function _brandOf(p){
 function buildFilterBar(prods){
   var bar=document.getElementById('filterBar');
   /* Count brands, types and colors */
-  var typeCounts={},colorCounts={},brandCounts={};
+  var typeCounts={},colorCounts={},brandCounts={},priceCounts={};
   prods.forEach(function(p){
     var ft=p.ft||'Autres';typeCounts[ft]=(typeCounts[ft]||0)+1;
     if(p.fc){colorCounts[p.fc]=(colorCounts[p.fc]||0)+1;}
     var br=_brandOf(p);if(br){brandCounts[br]=(brandCounts[br]||0)+1;}
+    var pr=_priceRangeOf(p);if(pr){priceCounts[pr]=(priceCounts[pr]||0)+1;}
   });
+  var pricedRanges=PRICE_RANGES.filter(function(r){return priceCounts[r[0]]>0});
+  var pricedCount=pricedRanges.reduce(function(s,r){return s+priceCounts[r[0]]},0);
   /* Sort by count desc */
   var types=Object.keys(typeCounts).sort(function(a,b){return typeCounts[b]-typeCounts[a]});
   var colors=Object.keys(colorCounts).sort(function(a,b){return colorCounts[b]-colorCounts[a]});
@@ -916,7 +936,7 @@ function buildFilterBar(prods){
     return brandCounts[b]-brandCounts[a];
   });
   /* Only show filter bar if there's something to filter */
-  if(types.length<=1&&colors.length<=1&&brands.length<=1){bar.className='filter-bar';bar.innerHTML='';return;}
+  if(types.length<=1&&colors.length<=1&&brands.length<=1&&pricedRanges.length<=1&&pricedCount<2){bar.className='filter-bar';bar.innerHTML='';return;}
   bar.className='filter-bar visible';
   var h='';
   /* Brand filters */
@@ -947,12 +967,31 @@ function buildFilterBar(prods){
     });
     h+='</div>';
   }
+  /* Price filters + sort */
+  if(pricedCount>1){
+    h+='<div class="filter-group" id="filterPrices"><span class="filter-group-label">Prix</span>';
+    if(pricedRanges.length>1){
+      pricedRanges.forEach(function(r){
+        h+='<span class="filter-pill" data-filter-type="price" data-value="'+r[0]+'" onclick="toggleFilter(\'price\',\''+r[0]+'\')">';
+        h+=escH(r[1])+' <span class="fp-count">'+priceCounts[r[0]]+'</span></span>';
+      });
+      h+='<span class="filter-group-label" style="margin-left:10px">Tri</span>';
+    }
+    h+='<span class="filter-pill" data-filter-type="sort" data-value="asc" onclick="toggleSort(\'asc\')">Prix ↑</span>';
+    h+='<span class="filter-pill" data-filter-type="sort" data-value="desc" onclick="toggleSort(\'desc\')">Prix ↓</span>';
+    h+='</div>';
+  }
   h+='<div id="filterInfo" class="filter-active-info" style="display:none"></div>';
   bar.innerHTML=h;
 }
 
+function toggleSort(dir){
+  ACTIVE_SORT=(ACTIVE_SORT===dir)?null:dir;
+  applyFilters();
+}
+
 function toggleFilter(group,value){
-  var arr=group==='type'?ACTIVE_FILTERS.types:(group==='brand'?ACTIVE_FILTERS.brands:ACTIVE_FILTERS.colors);
+  var arr=group==='type'?ACTIVE_FILTERS.types:(group==='brand'?ACTIVE_FILTERS.brands:(group==='price'?ACTIVE_FILTERS.prices:ACTIVE_FILTERS.colors));
   var idx=arr.indexOf(value);
   if(idx===-1)arr.push(value);else arr.splice(idx,1);
   applyFilters();
@@ -962,11 +1001,13 @@ function applyFilters(opts){
   var hasType=ACTIVE_FILTERS.types.length>0;
   var hasColor=ACTIVE_FILTERS.colors.length>0;
   var hasBrand=ACTIVE_FILTERS.brands.length>0;
+  var hasPrice=ACTIVE_FILTERS.prices.length>0;
   /* Update pill active states */
   document.querySelectorAll('#filterBar .filter-pill').forEach(function(el){
     var g=el.getAttribute('data-filter-type');
     var v=el.getAttribute('data-value');
-    var arr=g==='type'?ACTIVE_FILTERS.types:(g==='brand'?ACTIVE_FILTERS.brands:ACTIVE_FILTERS.colors);
+    if(g==='sort'){el.classList.toggle('active',ACTIVE_SORT===v);return;}
+    var arr=g==='type'?ACTIVE_FILTERS.types:(g==='brand'?ACTIVE_FILTERS.brands:(g==='price'?ACTIVE_FILTERS.prices:ACTIVE_FILTERS.colors));
     el.classList.toggle('active',arr.indexOf(v)!==-1);
   });
   /* Filter products */
@@ -974,15 +1015,24 @@ function applyFilters(opts){
     if(hasType){var ft=p.ft||'Autres';if(ACTIVE_FILTERS.types.indexOf(ft)===-1)return false;}
     if(hasColor){if(!p.fc||ACTIVE_FILTERS.colors.indexOf(p.fc)===-1)return false;}
     if(hasBrand){var br=_brandOf(p);if(!br||ACTIVE_FILTERS.brands.indexOf(br)===-1)return false;}
+    if(hasPrice){var pr=_priceRangeOf(p);if(!pr||ACTIVE_FILTERS.prices.indexOf(pr)===-1)return false;}
     return true;
   });
-  /* Si un filtre actif : tri par date d'upload Flickr descendante (plus recent en premier) */
-  if(hasType||hasColor||hasBrand){
+  /* Tri : prix si actif, sinon date d'upload descendante quand un filtre est actif */
+  if(ACTIVE_SORT==='asc'||ACTIVE_SORT==='desc'){
+    FILTERED=FILTERED.slice().sort(function(a,b){
+      var pa=_priceOf(a),pb=_priceOf(b);
+      if(pa==null&&pb==null)return(parseInt(b.u||0,10))-(parseInt(a.u||0,10));
+      if(pa==null)return 1;
+      if(pb==null)return -1;
+      return ACTIVE_SORT==='asc'?pa-pb:pb-pa;
+    });
+  }else if(hasType||hasColor||hasBrand||hasPrice){
     FILTERED.sort(function(a,b){return(parseInt(b.u||0,10))-(parseInt(a.u||0,10))});
   }
   /* Update info */
   var info=document.getElementById('filterInfo');
-  if(hasType||hasColor||hasBrand){
+  if(hasType||hasColor||hasBrand||hasPrice){
     info.style.display='';
     info.innerHTML=FILTERED.length+' article'+(FILTERED.length>1?'s':'')+' — <span style="cursor:pointer;text-decoration:underline" onclick="resetFilters()">Réinitialiser</span>';
   }else{info.style.display='none';}
@@ -991,20 +1041,22 @@ function applyFilters(opts){
   renderBatch();
   /* Sync URL with active ft filter (only if single type + single color-less) */
   if((!opts||!opts._q)&&CURRENT_VIEW==='brand'&&CURRENT_CAT){
-    if(ACTIVE_FILTERS.types.length===1&&!hasColor&&!hasBrand){_setHash('#/cat/'+CURRENT_CAT+'/ft/'+_slugifyFt(ACTIVE_FILTERS.types[0]))}
+    if(ACTIVE_FILTERS.types.length===1&&!hasColor&&!hasBrand&&!hasPrice&&!ACTIVE_SORT){_setHash('#/cat/'+CURRENT_CAT+'/ft/'+_slugifyFt(ACTIVE_FILTERS.types[0]))}
     else _setHash('#/cat/'+CURRENT_CAT);
   }
 }
 
 function resetFilters(){
-  ACTIVE_FILTERS={types:[],colors:[],brands:[]};
+  ACTIVE_FILTERS={types:[],colors:[],brands:[],prices:[]};
+  ACTIVE_SORT=null;
   applyFilters();
 }
 
 function hideFilterBar(){
   document.getElementById('filterBar').className='filter-bar';
   document.getElementById('filterBar').innerHTML='';
-  ACTIVE_FILTERS={types:[],colors:[],brands:[]};
+  ACTIVE_FILTERS={types:[],colors:[],brands:[],prices:[]};
+  ACTIVE_SORT=null;
 }
 
 /* Mapping nom de marque -> slug de logo (groupe les variantes : LV Homme/Femme/etc -> louis-vuitton).
