@@ -19,7 +19,19 @@
 <link rel="apple-touch-icon" href="favicon.svg">
 <link rel="mask-icon" href="favicon.svg" color="#1f7f3a">
 <meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HOME COP">
 <script>try{if(localStorage.getItem("hc_theme")==="light")document.documentElement.classList.add("light")}catch(e){}</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){/* PWA optionnelle */});
+  });
+}
+</script>
 
 <!-- Open Graph (Facebook, Discord, LinkedIn previews) -->
 <meta property="og:type" content="website">
