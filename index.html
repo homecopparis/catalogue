@@ -563,22 +563,33 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(initSupabase,30
 /* URL helpers — reconstruct from prefix + photo_id + secret, or return full URL */
 function imgUrl(pid,secret,size){if(pid&&pid.indexOf('http')===0)return pid;return PREFIX+pid+'_'+secret+'_'+size+'.jpg'}
 
-fetch('data.json').then(function(r){return r.json()}).then(function(data){
-  PREFIX=data.prefix||'https://live.staticflickr.com/65535/';
-  var rawCats=data.categories||[];
-  var rawProds=data.products||[];
-  /* Normalize: support both optimized (short) and full field names */
-  CATEGORIES=rawCats.map(function(c){
+/* ═══ CHARGEMENT EN 2 TEMPS ═══
+   1. data.cats.json (~16 KB)  → accueil + sidebar instantanés
+   2. data.min.json (produits) → recherche, albums, nouveautés (fallback data.json) */
+var DATA_READY=false;      /* produits chargés */
+var SHELL_READY=false;     /* interface initialisée (une seule fois) */
+var PENDING_ACTION=null;   /* action différée en attendant les produits */
+
+function _normalizeCats(rawCats){
+  return rawCats.map(function(c){
     if(c.n)return c; /* already optimized */
     var coverUrl=c.cover_image||'';
     var parts=coverUrl.match(/\/(\d+)_(\w+)_\w+\.jpg/)||[];
     var out={id:c.album_id||c.id,n:c.album_title||c.n||'',c:c.count||c.c||0,cp:parts[1]||c.cp||'',cs:parts[2]||c.cs||''};
     if(c.tp)out.tp=c.tp;
-    if(c.cp&&c.cp.indexOf('http')===0)out.cp=c.cp; /* cover URL directe si fournie */
+    if(c.cp&&c.cp.indexOf('http')===0)out.cp=c.cp;
     return out;
   });
-  PRODUCTS=rawProds.map(function(p){
-    if(p.a!==undefined&&p.ts!==undefined)return p; /* already optimized */
+}
+
+function applyFullData(data){
+  PREFIX=data.prefix||'https://live.staticflickr.com/65535/';
+  CATEGORIES=_normalizeCats(data.categories||[]);
+  PRODUCTS=(data.products||[]).map(function(p){
+    if(p.a!==undefined&&p.p!==undefined){
+      if(p.ts===undefined)p.ts=p.s; /* ts omis dans data.min.json quand identique */
+      return p;
+    }
     var imgParts=(p.image_url||'').match(/\/(\d+)_(\w+)_\w+\.jpg/)||[];
     var thumbParts=(p.thumb_url||'').match(/\/(\d+)_(\w+)_\w+\.jpg/)||[];
     var out={a:p.album_id||p.a||'',p:imgParts[1]||p.photo_id||p.p||'',s:imgParts[2]||p.s||'',ts:thumbParts[2]||p.ts||'',t:p.title||p.t||'',u:p.date_upload||p.u||0};
@@ -587,9 +598,7 @@ fetch('data.json').then(function(r){return r.json()}).then(function(data){
     if(p.cs)out.cs=p.cs;
     return out;
   });
-  /* Preserve order from data.json (matches Flickr album order) */
-  /* Recalcul des compteurs des albums thematiques (Casquettes & Bobs, Ceintures, etc.)
-     pour qu'ils refletent les produits agreges depuis tous les albums. */
+  /* Recalcul des compteurs des albums thematiques */
   Object.keys(THEMATIC_ALBUM_AGGREGATION).forEach(function(themeName){
     var cat=CATEGORIES.find(function(c){return c.n===themeName});
     if(!cat)return;
@@ -602,10 +611,44 @@ fetch('data.json').then(function(r){return r.json()}).then(function(data){
     }
     cat.c=total;
   });
+  DATA_READY=true;
   init();
-}).catch(function(e){
+  /* Rejoue l'action différée (clic album / recherche / deep link) */
+  if(PENDING_ACTION){var fn=PENDING_ACTION;PENDING_ACTION=null;fn();}
+}
+
+/* Étape 1 : coquille instantanée (catégories seules) */
+fetch('data.cats.json').then(function(r){return r.ok?r.json():null}).then(function(cats){
+  if(!cats||DATA_READY)return;
+  PREFIX=cats.prefix||'https://live.staticflickr.com/65535/';
+  CATEGORIES=_normalizeCats(cats.categories||[]);
+  init();
+}).catch(function(){/* fichier pas encore déployé : l'étape 2 prendra le relais */});
+
+/* Étape 2 : produits complets */
+fetch('data.min.json').then(function(r){
+  if(r.ok)return r.json();
+  return fetch('data.json').then(function(r2){return r2.json()});
+}).then(applyFullData).catch(function(e){
   document.getElementById('loading').innerHTML='<p style="color:#f44">Erreur: '+e.message+'</p>';
 });
+
+/* Garde-fou : différer une action tant que les produits ne sont pas chargés */
+function _needsData(fn){
+  if(DATA_READY)return false;
+  PENDING_ACTION=fn;
+  var ps=document.getElementById('productsSection');
+  var grid=document.getElementById('productsGrid');
+  if(ps&&grid){
+    document.getElementById('hero').style.display='none';
+    document.getElementById('brandsGrid').style.display='none';
+    var _nrd=document.getElementById('newRow');if(_nrd)_nrd.style.display='none';
+    ps.style.display='block';
+    document.getElementById('productsHeader').innerHTML='<h2>Chargement…</h2>';
+    grid.innerHTML='<p style="color:var(--text-dim);padding:20px">Chargement du catalogue…</p>';
+  }
+  return true;
+}
 
 function _applyThemeUI(){
   var light=document.documentElement.classList.contains('light');
@@ -623,24 +666,30 @@ function toggleTheme(){
 function init(){
   document.getElementById('loading').style.display='none';_applyThemeUI();
   buildSearchIndex();buildSidebar();
-  /* Route from initial URL hash (supports deep links #/p/... #/cat/... )
-     IMPORTANT : si l'URL contient des tokens Supabase (#access_token=...), on
-     attend que Supabase nettoie l'URL avant de router. Sinon on ecraserait les
-     tokens en pushant '#/'. */
-  var _h=window.location.hash||'';
-  if(_h.indexOf('access_token=')!==-1||_h.indexOf('error=')!==-1){
-    /* Affiche home sans toucher au hash : Supabase va nettoyer + onAuthStateChange */
-    showHome({_q:1});
-  }else if(_h.length>1){
-    routeFromHash();
-  }else{
-    showHome();
+  var firstInit=!SHELL_READY;
+  if(firstInit){
+    /* Route from initial URL hash (supports deep links #/p/... #/cat/... )
+       IMPORTANT : si l'URL contient des tokens Supabase (#access_token=...), on
+       attend que Supabase nettoie l'URL avant de router. */
+    var _h=window.location.hash||'';
+    if(_h.indexOf('access_token=')!==-1||_h.indexOf('error=')!==-1){
+      showHome({_q:1});
+    }else if(_h.length>1){
+      routeFromHash();
+    }else{
+      showHome();
+    }
+    setupInfiniteScroll();setupKeyboard();setupImageRetry();setupLightboxSwipe();
+    updateSyncBar();
+    SHELL_READY=true;
+  }else if(DATA_READY&&!PENDING_ACTION){
+    /* Produits arrivés après la coquille : rafraîchit la vue courante si accueil */
+    if(CURRENT_VIEW==='home')renderNewRow();
   }
-  setupInfiniteScroll();setupKeyboard();setupImageRetry();setupLightboxSwipe();
-  updateSyncBar();
-  /* Fetch global fav counts for visible products (first batch) */
-  var pids=PRODUCTS.slice(0,200).map(function(p){return getProductPid(p)});
-  fetchGlobalCounts(pids);
+  if(DATA_READY){
+    var pids=PRODUCTS.slice(0,200).map(function(p){return getProductPid(p)});
+    fetchGlobalCounts(pids);
+  }
 }
 
 /* ═══ GROUP CATEGORIES BY TOP-LEVEL ═══
@@ -679,7 +728,7 @@ var GROUP_LABELS={'vetements':'V\u00eatements','chaussures':'Chaussures','maroqu
 var GROUP_COLLAPSED={'vetements':false,'chaussures':true,'maroquinerie':true,'accessoires':true,'bijoux':true,'electronique':true,'valises':true};
 
 function buildSidebar(){
-  var totalProds=PRODUCTS.length;
+  var totalProds=PRODUCTS.length||CATEGORIES.reduce(function(s,c){return s+(c.c||0)},0);
   var totalCats=CATEGORIES.length;
   document.getElementById('sidebarStats').textContent=totalProds.toLocaleString('fr-FR')+' articles \u00b7 '+totalCats+' marques';
   var favCount=getFavorites().length;
@@ -781,6 +830,10 @@ function _pushHash(h){if(window.location.hash===h)return;_routing=true;try{windo
 function routeFromHash(){
   if(_routing)return;
   var h=window.location.hash||'';var m;
+  /* Produits pas encore chargés : différer toute route non-accueil */
+  if(!DATA_READY&&h.length>1&&h!=='#/'&&h.indexOf('access_token=')===-1&&h.indexOf('error=')===-1){
+    if(_needsData(function(){routeFromHash()}))return;
+  }
   /* Ignore Supabase auth tokens dans le hash (#access_token=... ou #error=...) */
   if(h.indexOf('access_token=')!==-1||h.indexOf('error=')!==-1)return;
   /* Quote URL : #/quote/<uuid> */
@@ -853,6 +906,7 @@ var NEW_DAYS=7;
 function _isNew(p){return(parseInt(p.u||0,10))>((Date.now()/1000)-NEW_DAYS*86400)}
 
 function showNouveautes(opts){
+  if(_needsData(function(){showNouveautes(opts)}))return;
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='nouveautes';CURRENT_CAT=null;setActiveMenu('nouveautes');
   document.getElementById('hero').style.display='none';
@@ -922,6 +976,7 @@ var THEMATIC_ALBUM_AGGREGATION={
 };
 
 function showBrand(albumId,opts){
+  if(_needsData(function(){showBrand(albumId,opts)}))return;
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='brand';CURRENT_CAT=albumId;setActiveMenu(albumId);
   document.getElementById('hero').style.display='none';
@@ -2106,6 +2161,7 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 
 function executeSmartSearch(q){
+  if(_needsData(function(){executeSmartSearch(q)}))return;
   document.getElementById('searchSuggest').classList.remove('open');
   q=(q||'').trim();
   if(!q){
@@ -2506,6 +2562,7 @@ function updateFavCountInSidebar(){
 
 /* ── Show Favorites page ── */
 function showFavorites(){
+  if(_needsData(function(){showFavorites()}))return;
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='favorites';CURRENT_CAT=null;setActiveMenu('favorites');
   document.getElementById('hero').style.display='none';
@@ -3016,6 +3073,7 @@ function openQuoteFromAccount(quoteId){
 /* ═══ QUOTE URL VIEW : #/quote/<uuid>                                  ═══ */
 /* ════════════════════════════════════════════════════════════════════════ */
 async function showQuoteView(quoteId){
+  if(_needsData(function(){showQuoteView(quoteId)}))return;
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='quote';CURRENT_CAT=null;
   document.getElementById('hero').style.display='none';
