@@ -191,6 +191,16 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .product-card:hover .card-dim{background:rgba(0,0,0,.12)}
 .product-card .price-overlay{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);color:var(--green);font-size:13px;font-weight:600;padding:4px 10px;border-radius:6px;opacity:0;transform:translateY(-4px);transition:opacity .22s ease,transform .22s ease;z-index:12;pointer-events:none;letter-spacing:.3px}
 .product-card:hover .price-overlay{opacity:1;transform:translateY(0)}
+.product-card .new-badge{position:absolute;bottom:10px;right:10px;background:var(--green);color:#0a0a0a;font-size:9px;font-weight:800;letter-spacing:.8px;padding:3px 7px;border-radius:5px;z-index:12;pointer-events:none}
+.new-row-wrap{margin-bottom:28px}
+.new-row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.new-row-head h2{font-family:var(--font-display);font-size:22px;font-weight:600}
+.new-row-head a{color:var(--green);font-size:13px;text-decoration:none;cursor:pointer}
+.new-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin}
+.new-row .nr-card{flex:0 0 130px;width:130px;border-radius:10px;overflow:hidden;cursor:pointer;position:relative;background:var(--card)}
+.new-row .nr-card img{width:130px;height:130px;object-fit:cover;display:block;transition:transform .3s}
+.new-row .nr-card:hover img{transform:scale(1.06)}
+.new-row .nr-price{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.55);color:var(--green);font-size:11px;font-weight:600;padding:2px 6px;border-radius:5px;pointer-events:none}
 #sentinel{height:1px}
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:500;display:none;align-items:center;justify-content:center;flex-direction:column}
 .lightbox.open{display:flex}
@@ -310,6 +320,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 </aside>
 <main class="main">
   <div class="hero" id="hero"><h1>Streetwear & <em>Luxe</em></h1></div>
+  <div class="new-row-wrap" id="newRow" style="display:none"></div>
   <div class="brands-grid" id="brandsGrid"></div>
   <div class="products-section" id="productsSection">
     <div class="products-header" id="productsHeader"></div>
@@ -667,7 +678,8 @@ function buildSidebar(){
   var favCount=getFavorites().length;
   var h='<div class="menu-item active" data-cat="home" onclick="showHome()"><span>Accueil</span></div>';
   h+='<div class="menu-item" data-cat="favorites" onclick="showFavorites()"><span>\u2665 Mes Favoris</span><span class="count" id="favMenuCount">'+(favCount||'')+'</span></div>';
-  h+='<div class="menu-item" data-cat="nouveautes" onclick="showNouveautes()"><span>Nouveaut\u00e9s</span><span class="count">'+totalProds+'</span></div>';
+  var newCount=PRODUCTS.filter(_isNew).length;
+  h+='<div class="menu-item" data-cat="nouveautes" onclick="showNouveautes()"><span>Nouveaut\u00e9s</span><span class="count">'+(newCount?newCount.toLocaleString('fr-FR'):'')+'</span></div>';
   /* Group categories */
   var groups={vetements:[],chaussures:[],maroquinerie:[],accessoires:[],bijoux:[],electronique:[],valises:[]};
   var groupCounts={vetements:0,chaussures:0,maroquinerie:0,accessoires:0,bijoux:0,electronique:0,valises:0};
@@ -732,7 +744,7 @@ function toggleGroup(gk){
 function showGroup(gk){
   CURRENT_VIEW='group';CURRENT_CAT='group-'+gk;setActiveMenu('group-'+gk);
   document.getElementById('hero').style.display='none';
-  document.getElementById('brandsGrid').style.display='';
+  document.getElementById('brandsGrid').style.display='';var _nrg=document.getElementById('newRow');if(_nrg)_nrg.style.display='none';
   document.getElementById('productsSection').style.display='none';
   hideFilterBar();
   var filtered=CATEGORIES.filter(function(c){return getGroupForCat(c)===gk});
@@ -785,6 +797,8 @@ function routeFromHash(){
       var ft=_slugToFt(m[2],BRAND_PRODUCTS);
       if(ft){ACTIVE_FILTERS.types=[ft];applyFilters({_q:1})}
     }finally{_routing=false}
+  }else if(h==='#/new'){
+    showNouveautes({_q:1});
   }else if((m=h.match(/^#\/cat\/([^\/]+)$/))){
     showBrand(m[1],{_q:1});
   }else{
@@ -821,23 +835,53 @@ function showHome(opts){
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='home';CURRENT_CAT=null;setActiveMenu('home');
   document.getElementById('hero').style.display='';
-  document.getElementById('brandsGrid').style.display='';
+  document.getElementById('brandsGrid').style.display='';if(typeof renderNewRow==='function')renderNewRow();
   document.getElementById('productsSection').style.display='none';
   hideFilterBar();renderBrandCards(sortCategoriesForHome(CATEGORIES));closeSidebarMobile();
   if(!opts||!opts._q)_pushHash('#/');
 }
 
-function showNouveautes(){
+/* ═══ NOUVEAUTÉS ═══ */
+var NEW_DAYS=7;
+function _isNew(p){return(parseInt(p.u||0,10))>((Date.now()/1000)-NEW_DAYS*86400)}
+
+function showNouveautes(opts){
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='nouveautes';CURRENT_CAT=null;setActiveMenu('nouveautes');
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
+  var _nr=document.getElementById('newRow');if(_nr)_nr.style.display='none';
   document.getElementById('productsSection').style.display='block';
-  document.getElementById('productsHeader').innerHTML='<h2>Nouveautés</h2>';
-  hideFilterBar();
-  FILTERED=PRODUCTS.slice().sort(function(a,b){return(b.u||0)-(a.u||0)});
+  var news=PRODUCTS.filter(_isNew);
+  var subtitle=NEW_DAYS+' derniers jours';
+  if(news.length<12){news=PRODUCTS.slice();subtitle='tout le catalogue, plus récent en premier';}
+  news=news.slice().sort(function(a,b){return(b.u||0)-(a.u||0)});
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>Nouveautés <span style="font-size:13px;color:var(--text-dim);font-weight:400">('+subtitle+')</span></h2>';
+  BRAND_PRODUCTS=news;
+  ACTIVE_FILTERS={types:[],colors:[],brands:[],prices:[]};ACTIVE_SORT=null;
+  buildFilterBar(BRAND_PRODUCTS);
+  FILTERED=BRAND_PRODUCTS;
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
+  if(!opts||!opts._q)_pushHash('#/new');
+}
+
+/* Rangée Nouveautés en page d'accueil (16 plus récents, scroll horizontal) */
+function renderNewRow(){
+  var wrap=document.getElementById('newRow');if(!wrap)return;
+  var all=PRODUCTS.filter(_isNew).sort(function(a,b){return(b.u||0)-(a.u||0)});
+  if(all.length<4){wrap.style.display='none';wrap.innerHTML='';return}
+  var h='<div class="new-row-head"><h2>Nouveautés</h2><a onclick="showNouveautes();return false">Voir tout ('+all.length+') →</a></div><div class="new-row">';
+  all.slice(0,16).forEach(function(p){
+    var img=p.ts?imgUrl(p.p,p.ts,'n'):(p.s?imgUrl(p.p,p.s,'n'):'');
+    var price=extractPrice(p.t);
+    h+='<div class="nr-card" onclick="location.hash=\'#/p/'+escH(p.p)+'\'">';
+    if(img)h+='<img src="'+escH(img)+'" loading="lazy" referrerpolicy="no-referrer" alt="">';
+    if(price)h+='<div class="nr-price">'+price+'</div>';
+    h+='</div>';
+  });
+  h+='</div>';
+  wrap.innerHTML=h;wrap.style.display='';
 }
 
 /* ═══ FILTER SYSTEM ═══ */
@@ -874,7 +918,7 @@ function showBrand(albumId,opts){
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='brand';CURRENT_CAT=albumId;setActiveMenu(albumId);
   document.getElementById('hero').style.display='none';
-  document.getElementById('brandsGrid').style.display='none';
+  document.getElementById('brandsGrid').style.display='none';var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';
   document.getElementById('productsSection').style.display='block';
   var cat=CATEGORIES.find(function(c){return c.id===albumId});
   var catName=cat?cat.n:albumId;
@@ -935,6 +979,7 @@ function buildFilterBar(prods){
     if(aEnd!==bEnd)return aEnd-bEnd;
     return brandCounts[b]-brandCounts[a];
   });
+  if(brands.length>25)brands=brands.slice(0,25); /* cap : vues agrégées (Nouveautés) */
   /* Only show filter bar if there's something to filter */
   if(types.length<=1&&colors.length<=1&&brands.length<=1&&pricedRanges.length<=1&&pricedCount<2){bar.className='filter-bar';bar.innerHTML='';return;}
   bar.className='filter-bar visible';
@@ -1214,6 +1259,7 @@ function renderBatch(){
     var noImgClass=cardImg?'':' no-img';
     h+='<div class="product-card'+noImgClass+'" data-fallback="'+escH(fallbackLabel)+'" onclick="openLightbox('+i+')">';
     if(price)h+='<div class="price-overlay">'+price+'</div>';
+    if(_isNew(p))h+='<div class="new-badge">NEW</div>';
     h+='<button class="fav-btn'+(fav?' active':'')+'" data-pid="'+escH(pid)+'" onclick="onFavClick(event,'+i+')">'+(fav?'\u2665':'\u2661')+'</button>';
     h+='<div class="fav-count'+(gc>0?' visible':'')+'" data-pid="'+escH(pid)+'"><span class="fc-heart">\u2665</span> '+gc+'</div>';
     h+='<div class="card-dim"></div>';
@@ -1967,7 +2013,7 @@ function executeSmartSearch(q){
   CURRENT_VIEW='search';CURRENT_CAT=null;
   setActiveMenu('');
   document.getElementById('hero').style.display='none';
-  document.getElementById('brandsGrid').style.display='none';
+  document.getElementById('brandsGrid').style.display='none';var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';
   document.getElementById('productsSection').style.display='block';
   hideFilterBar();
   var countText=result.count+' résultat'+(result.count!==1?'s':'');
@@ -2298,7 +2344,7 @@ function showFavorites(){
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='favorites';CURRENT_CAT=null;setActiveMenu('favorites');
   document.getElementById('hero').style.display='none';
-  document.getElementById('brandsGrid').style.display='none';
+  document.getElementById('brandsGrid').style.display='none';var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';
   document.getElementById('productsSection').style.display='block';
   hideFilterBar();
   var favs=getFavorites();
@@ -2808,7 +2854,7 @@ async function showQuoteView(quoteId){
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='quote';CURRENT_CAT=null;
   document.getElementById('hero').style.display='none';
-  document.getElementById('brandsGrid').style.display='none';
+  document.getElementById('brandsGrid').style.display='none';var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';
   document.getElementById('productsSection').style.display='block';
   document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>Devis</h2>';
   hideFilterBar();
