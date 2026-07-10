@@ -1,0 +1,16 @@
+{
+  "name": "HOME COP PARIS — Catalogue Streetwear & Luxe",
+  "short_name": "HOME COP",
+  "description": "Catalogue streetwear et luxe : sneakers, maroquinerie, vêtements et accessoires.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "lang": "fr",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
