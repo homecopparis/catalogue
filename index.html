@@ -206,6 +206,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .lightbox.open{display:flex}
 .lightbox img{max-width:90vw;max-height:80vh;border-radius:8px;object-fit:contain}
 .lightbox .lb-info{margin-top:12px;text-align:center}
+.lb-similar{margin-top:10px;text-align:center;max-width:min(90vw,560px)}
+.lb-sim-label{font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.lb-sim-row{display:flex;gap:8px;justify-content:flex-start;overflow-x:auto;padding:2px;scrollbar-width:thin}
+.lb-sim-row img{width:56px;height:56px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.15);transition:transform .15s,border-color .15s;flex-shrink:0}
+.lb-sim-row img:hover{transform:scale(1.08);border-color:var(--green)}
+@media(max-width:768px){.lb-sim-row img{width:48px;height:48px}}
 .lightbox .lb-info .lb-brand{font-size:13px;color:var(--text-dim)}
 .lightbox .lb-info .lb-price{font-size:18px;color:var(--green);font-weight:600;margin-top:4px}
 .lightbox .lb-info .lb-desc{font-size:13px;color:var(--text);margin-top:8px;max-width:720px;white-space:pre-wrap;line-height:1.4;text-align:left}
@@ -336,6 +342,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <button class="lb-nav lb-next" id="lbNext" onclick="lbNext(event)" aria-label="Produit suivant">›</button>
   <img id="lbImg" src="" alt="" referrerpolicy="no-referrer">
   <div class="lb-info"><div class="lb-brand" id="lbBrand"></div><div class="lb-price" id="lbPrice"></div><div class="lb-desc" id="lbDesc"></div></div>
+  <div class="lb-similar" id="lbSimilar" style="display:none"></div>
   <button class="lb-copy" id="lbCopy" onclick="copyProductLink(event)" title="Copier le lien de ce produit">🔗 Copier le lien</button>
   <button class="lb-cart" id="lbCart" onclick="toggleLbCart(event)" title="Ajouter au panier devis">🛒</button>
   <button class="lb-fav" id="lbFav" onclick="toggleLbFav(event)">♡</button>
@@ -2050,6 +2057,56 @@ document.addEventListener('click',function(e){
 });
 
 var LB_CURRENT_IDX=-1;
+/* ═══ PRODUITS SIMILAIRES ═══
+   Score : même type requis (si connu), puis couleur +2, marque IA +2, même album +1, prix ±25% +1. */
+function _similarTo(p,n){
+  var ft=p.ft,fc=p.fc,br=p.br||null,al=p.a,pv=_priceOf(p);
+  var out=[];
+  for(var i=0;i<PRODUCTS.length;i++){
+    var q=PRODUCTS[i];
+    if(q.p===p.p)continue;
+    var s=0;
+    if(ft){if(q.ft!==ft)continue;s+=4;}
+    else if(q.a!==al)continue; /* type inconnu : on reste dans l'album */
+    if(fc&&q.fc===fc)s+=2;
+    if(br&&q.br===br)s+=2;
+    if(q.a===al)s+=1;
+    if(pv!=null){var qv=_priceOf(q);if(qv!=null&&Math.abs(qv-pv)<=pv*0.25)s+=1;}
+    out.push([s,q]);
+  }
+  out.sort(function(x,y){return y[0]-x[0]||((parseInt(y[1].u||0,10))-(parseInt(x[1].u||0,10)))});
+  return out.slice(0,n).map(function(x){return x[1]});
+}
+
+function renderLbSimilar(p){
+  var el=document.getElementById('lbSimilar');if(!el)return;
+  var sims=_similarTo(p,10);
+  if(sims.length<3){el.innerHTML='';el.style.display='none';return}
+  var h='<div class="lb-sim-label">Vous aimerez aussi</div><div class="lb-sim-row">';
+  var shown=0;
+  sims.forEach(function(q){
+    var im=q.ts?imgUrl(q.p,q.ts,'q'):(q.s?imgUrl(q.p,q.s,'q'):'');
+    if(!im)return;
+    shown++;
+    h+='<img src="'+escH(im)+'" loading="lazy" referrerpolicy="no-referrer" onclick="openSimilar(event,\''+escH(q.p)+'\')" alt="Produit similaire">';
+  });
+  h+='</div>';
+  if(shown<3){el.innerHTML='';el.style.display='none';return}
+  el.innerHTML=h;el.style.display='';
+}
+
+function openSimilar(e,pid){
+  if(e)e.stopPropagation();
+  var prod=PRODUCTS.find(function(x){return x.p===pid});
+  if(!prod)return;
+  var idx=FILTERED.findIndex(function(x){return x.p===pid});
+  if(idx<0){
+    showBrand(prod.a,{_q:1});
+    idx=FILTERED.findIndex(function(x){return x.p===pid});
+  }
+  if(idx>=0)openLightbox(idx);
+}
+
 function openLightbox(idx,opts){
   var p=FILTERED[idx];if(!p)return;
   LB_CURRENT_IDX=idx;
@@ -2072,6 +2129,7 @@ function openLightbox(idx,opts){
   /* Reset copy button state on each open */
   var lbCopy=document.getElementById('lbCopy');
   if(lbCopy){lbCopy.classList.remove('copied');lbCopy.textContent='🔗 Copier le lien'}
+  renderLbSimilar(p);
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow='hidden';
   /* MAJ etat boutons prev/next */
