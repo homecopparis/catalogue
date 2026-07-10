@@ -31,6 +31,26 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(function(){/* PWA optionnelle */});
   });
 }
+/* ═══ Analytics Umami Cloud (RGPD, sans cookies) ═══ */
+var UMAMI_WEBSITE_ID='6f92096e-0295-433b-b7fe-a562d5401797';/* cloud.umami.is — vide = analytics désactivé */
+if(UMAMI_WEBSITE_ID){
+  var _us=document.createElement('script');
+  _us.defer=true;_us.src='https://cloud.umami.is/script.js';
+  _us.setAttribute('data-website-id',UMAMI_WEBSITE_ID);
+  _us.setAttribute('data-auto-track','false');/* SPA : pageviews manuelles */
+  document.head.appendChild(_us);
+}
+/* Wrapper sûr : ne casse jamais le site si Umami absent/bloqué */
+function hcpTrack(name,data){
+  try{
+    if(!window.umami||!UMAMI_WEBSITE_ID)return;
+    if(name==='pageview'){
+      umami.track(function(props){return Object.assign({},props,{url:(data&&data.url)||'/',title:(data&&data.title)||document.title})});
+    }else{
+      umami.track(name,data||{});
+    }
+  }catch(e){}
+}
 </script>
 
 <!-- Open Graph (Facebook, Discord, LinkedIn previews) -->
@@ -671,6 +691,7 @@ function _applyThemeUI(){
 }
 function toggleTheme(){
   var el=document.documentElement;el.classList.toggle('light');
+  hcpTrack('theme',{mode:el.classList.contains('light')?'jour':'nuit'});
   try{localStorage.setItem('hc_theme',el.classList.contains('light')?'light':'dark')}catch(e){}
   _applyThemeUI();
 }
@@ -910,6 +931,7 @@ function showHome(opts){
   document.getElementById('brandsGrid').style.display='';if(typeof renderNewRow==='function')renderNewRow();
   document.getElementById('productsSection').style.display='none';
   hideFilterBar();renderBrandCards(sortCategoriesForHome(CATEGORIES));closeSidebarMobile();
+  hcpTrack('pageview',{url:'/'});
   if(!opts||!opts._q)_pushHash('#/');
 }
 
@@ -931,6 +953,7 @@ function showNouveautes(opts){
   news=news.slice().sort(function(a,b){return(b.u||0)-(a.u||0)});
   document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>Nouveautés <span style="font-size:13px;color:var(--text-dim);font-weight:400">('+subtitle+')</span></h2>';
   BRAND_PRODUCTS=news;
+  hcpTrack('pageview',{url:'/new',title:'Nouveautés'});
   ACTIVE_FILTERS={types:[],colors:[],brands:[],prices:[]};ACTIVE_SORT=null;
   buildFilterBar(BRAND_PRODUCTS);
   FILTERED=BRAND_PRODUCTS;
@@ -997,6 +1020,7 @@ function showBrand(albumId,opts){
   var cat=CATEGORIES.find(function(c){return c.id===albumId});
   var catName=cat?cat.n:albumId;
   document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>'+escH(catName)+'</h2>';
+  hcpTrack('pageview',{url:'/cat/'+albumId,title:catName});
   /* Si album thematique, on agrège les produits d'autres albums dont ft matche. */
   var aggregateTypes=cat?THEMATIC_ALBUM_AGGREGATION[cat.n]:null;
   /* Tri par position Flickr (o) ascendante : reproduit l'ordre exact de l'album sur Flickr.com (drag-and-drop user). Fallback sur date upload pour les produits sans position. */
@@ -1105,11 +1129,13 @@ function buildFilterBar(prods){
 }
 
 function toggleSort(dir){
+  hcpTrack('filtre',{groupe:'tri_prix',valeur:dir,album:CURRENT_CAT||''});
   ACTIVE_SORT=(ACTIVE_SORT===dir)?null:dir;
   applyFilters();
 }
 
 function toggleFilter(group,value){
+  hcpTrack('filtre',{groupe:group,valeur:value,album:CURRENT_CAT||CURRENT_VIEW||''});
   var arr=group==='type'?ACTIVE_FILTERS.types:(group==='brand'?ACTIVE_FILTERS.brands:(group==='price'?ACTIVE_FILTERS.prices:ACTIVE_FILTERS.colors));
   var idx=arr.indexOf(value);
   if(idx===-1)arr.push(value);else arr.splice(idx,1);
@@ -2184,6 +2210,7 @@ function executeSmartSearch(q){
     return;
   }
   var result=smartSearch(q);
+  hcpTrack('recherche',{requete:q,resultats:result.count,niveau:result.level});
   var tagsHtml='';
   if(result.filters){
     result.filters.types.forEach(function(t){tagsHtml+='<span class="search-tag">'+escH(t)+' <span class="tag-x" onclick="removeSearchToken(this,\'type\',\''+escH(t)+'\')">×</span></span>'});
@@ -2272,6 +2299,7 @@ function renderLbSimilar(p){
 
 function openSimilar(e,pid){
   if(e)e.stopPropagation();
+  hcpTrack('similaire_clic',{pid:pid});
   var prod=PRODUCTS.find(function(x){return x.p===pid});
   if(!prod)return;
   var idx=FILTERED.findIndex(function(x){return x.p===pid});
@@ -2297,6 +2325,7 @@ function openLightbox(idx,opts){
   document.getElementById('lbPrice').textContent=price||'';
   document.getElementById('lbDesc').textContent=p.d||'';
   LB_CURRENT_PID=getProductPid(p);
+  hcpTrack('produit_vu',{pid:p.p,album:(cat?cat.n:''),marque:p.br||'',prix:extractPrice(p.t)||''});
   var lbFavBtn=document.getElementById('lbFav');
   var lbFav=isFavorite(LB_CURRENT_PID);
   lbFavBtn.classList.toggle('active',lbFav);
@@ -2433,6 +2462,7 @@ function setFavorites(arr){
 }
 function isFavorite(pid){return getFavorites().indexOf(String(pid))!==-1}
 function toggleFavorite(pid){
+  hcpTrack('favori',{pid:pid});
   pid=String(pid);
   var favs=getFavorites();
   var idx=favs.indexOf(pid);
@@ -2825,6 +2855,7 @@ function updateCartBadge(){
 }
 function isInCart(pidRaw){var pid=_bareId(pidRaw);return CART.some(function(c){return c.product_id===pid})}
 async function addToCart(pidRaw,note){
+  hcpTrack('panier_ajout',{pid:String(pidRaw)});
   if(!CURRENT_USER){openLoginModal();return false;}
   var pid=_bareId(pidRaw);
   var prod=PRODUCTS.find(function(p){return p.p===pid});
@@ -2927,6 +2958,7 @@ function updateCartSelectionSummary(){
 
 /* ── Send Quote Request (with URL) ── */
 async function sendQuoteRequest(){
+  hcpTrack('devis_envoye',{});
   if(!sb||!CURRENT_USER)return;
   var ig=(document.getElementById('cartInstagram').value||'').trim();
   var msg=(document.getElementById('cartMessage').value||'').trim();
