@@ -2304,6 +2304,11 @@ function _vsStatus(t){document.getElementById('vsStatus').textContent=t}
 async function _vsLoadIndex(){
   if(VS.index)return;
   var rs=await Promise.all([fetch('visual_index.bin'),fetch('visual_index.json')]);
+  if(!rs[0].ok||!rs[1].ok){
+    /* Fallback : miroir GitHub Pages (utile si le déploiement Vercel est en retard) */
+    var GH='https://homecopparis.github.io/catalogue/';
+    rs=await Promise.all([fetch(GH+'visual_index.bin'),fetch(GH+'visual_index.json')]);
+  }
   if(!rs[0].ok||!rs[1].ok)throw new Error('index non publié');
   var buf=await rs[0].arrayBuffer();
   var meta=await rs[1].json();
