@@ -132,6 +132,20 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .sidebar-logo{display:flex;align-items:center;justify-content:center;margin-bottom:12px;text-decoration:none;padding:4px 0}
 .sidebar-logo img{width:100%;max-width:200px;height:auto;display:block}
 .search-wrap{position:relative}
+.vs-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:16px;cursor:pointer;opacity:.65;padding:4px;line-height:1}
+.vs-btn:hover{opacity:1}
+.vs-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:650;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.vs-modal-overlay.open{display:flex}
+.vs-modal{background:var(--card);border:1px solid var(--border2);border-radius:14px;padding:22px;width:min(420px,92vw);text-align:center}
+.vs-modal h3{margin-bottom:6px;font-size:17px}
+.vs-modal .vs-sub{font-size:12px;color:var(--text-dim);margin-bottom:14px}
+.vs-drop{border:2px dashed var(--border2);border-radius:12px;padding:26px 14px;cursor:pointer;transition:border-color .15s;font-size:13px;color:var(--text-dim)}
+.vs-drop:hover{border-color:var(--green)}
+.vs-drop img{max-width:100%;max-height:200px;border-radius:8px}
+.vs-status{font-size:12px;color:var(--green);margin-top:12px;min-height:16px}
+.vs-cancel{margin-top:14px;background:none;border:1px solid var(--border2);color:var(--text-dim);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px}
+.vs-cancel:hover{border-color:var(--border4);color:var(--text)}
+.vs-score{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.55);color:var(--green);font-size:10px;font-weight:700;padding:3px 7px;border-radius:5px;z-index:12;pointer-events:none}
 .search-box{width:100%;padding:8px 12px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;outline:none}
 .search-box:focus{border-color:var(--green)}
 .search-suggest{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-top:none;border-radius:0 0 8px 8px;max-height:260px;overflow-y:auto;z-index:210;display:none;scrollbar-width:thin}
@@ -339,7 +353,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <img src="logo.svg" alt="HOME COP PARIS" referrerpolicy="no-referrer">
     </a>
     <div class="search-wrap">
-      <input class="search-box" id="searchInput" type="search" placeholder="Rechercher&hellip; ex: hoodie noir nike" oninput="onSearchInput(this.value)" onkeydown="onSearchKey(event)" autocomplete="off">
+      <input class="search-box" id="searchInput" type="search" placeholder="Rechercher&hellip; ex: hoodie noir nike" oninput="onSearchInput(this.value)" onkeydown="onSearchKey(event)" autocomplete="off" style="padding-right:38px">
+      <button class="vs-btn" id="vsBtn" onclick="openVisualSearch()" title="Recherche par photo" aria-label="Recherche par photo">📷</button>
       <div class="search-suggest" id="searchSuggest"></div>
     </div>
     <div class="search-tags" id="searchTags"></div>
@@ -367,6 +382,19 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <div id="sentinel"></div>
   </div>
 </main>
+<div class="vs-modal-overlay" id="vsOverlay" onclick="if(event.target===this)closeVisualSearch()">
+  <div class="vs-modal">
+    <h3>📷 Recherche par photo</h3>
+    <p class="vs-sub">Envoie un screenshot ou une photo : je trouve les produits les plus ressemblants du catalogue.</p>
+    <div class="vs-drop" id="vsDrop" onclick="document.getElementById('vsFile').click()">
+      <span id="vsDropTxt">Clique pour choisir une image<br>(ou glisse-la ici)</span>
+    </div>
+    <input type="file" id="vsFile" accept="image/*" style="display:none" onchange="if(this.files[0])runVisualSearch(this.files[0])">
+    <div class="vs-status" id="vsStatus"></div>
+    <button class="vs-cancel" onclick="closeVisualSearch()">Fermer</button>
+  </div>
+</div>
+
 <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
   <button class="lb-back" onclick="closeLightbox(event)">← Retour</button>
   <button class="lb-close" onclick="closeLightbox(event)">✕</button>
@@ -2259,6 +2287,113 @@ document.addEventListener('click',function(e){
 });
 
 var LB_CURRENT_IDX=-1;
+/* ═══ RECHERCHE VISUELLE — CLIP dans le navigateur ═══
+   Index : visual_index.bin (header N/dim + mean 512 f32 + W 512x128 f32 + int8 N*128)
+   Modèle : Xenova/clip-vit-base-patch32 q8 via transformers.js (chargé au 1er usage). */
+var VS={index:null,pids:null,model:null,processor:null,RawImage:null,mean:null,W:null,N:0,D:0};
+
+function openVisualSearch(){
+  if(_needsData(function(){openVisualSearch()}))return;
+  document.getElementById('vsOverlay').classList.add('open');
+  _vsStatus('');
+  _vsLoadIndex().catch(function(e){_vsStatus('Recherche visuelle indisponible : '+e.message)});
+}
+function closeVisualSearch(){document.getElementById('vsOverlay').classList.remove('open')}
+function _vsStatus(t){document.getElementById('vsStatus').textContent=t}
+
+async function _vsLoadIndex(){
+  if(VS.index)return;
+  var rs=await Promise.all([fetch('visual_index.bin'),fetch('visual_index.json')]);
+  if(!rs[0].ok||!rs[1].ok)throw new Error('index non publié');
+  var buf=await rs[0].arrayBuffer();
+  var meta=await rs[1].json();
+  var dv=new DataView(buf);
+  var N=dv.getInt32(0,true),D=dv.getInt32(4,true);
+  var off=8;
+  VS.mean=new Float32Array(buf.slice(off,off+512*4));off+=512*4;
+  VS.W=new Float32Array(buf.slice(off,off+512*D*4));off+=512*D*4;
+  VS.index=new Int8Array(buf,off,N*D);
+  VS.N=N;VS.D=D;VS.pids=meta.pids;
+}
+
+async function _vsLoadModel(){
+  if(VS.model)return;
+  _vsStatus('Chargement du moteur visuel (première fois : ~1 min)…');
+  var T=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.0');
+  VS.RawImage=T.RawImage;
+  VS.processor=await T.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+  VS.model=await T.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32',
+    {dtype:'q8',progress_callback:function(p){
+      if(p.status==='progress'&&p.total)_vsStatus('Téléchargement du moteur… '+Math.round(p.loaded/p.total*100)+'%');
+    }});
+}
+
+async function runVisualSearch(file){
+  try{
+    hcpTrack('recherche_visuelle',{});
+    var url=URL.createObjectURL(file);
+    document.getElementById('vsDrop').innerHTML='<img src="'+url+'" alt="Photo recherchée">';
+    await _vsLoadIndex();
+    await _vsLoadModel();
+    _vsStatus('Analyse de la photo…');
+    await new Promise(function(r){setTimeout(r,30)});/* laisse l'UI respirer */
+    var img=await VS.RawImage.read(url);
+    var inputs=await VS.processor(img);
+    var out=await VS.model(inputs);
+    var q=out.image_embeds.data;
+    var i,j,n=0;for(i=0;i<512;i++)n+=q[i]*q[i];n=Math.sqrt(n)||1;
+    var c=new Float32Array(512);for(i=0;i<512;i++)c[i]=q[i]/n-VS.mean[i];
+    var D=VS.D,y=new Float32Array(D);
+    for(j=0;j<D;j++){var s=0;for(i=0;i<512;i++)s+=c[i]*VS.W[i*D+j];y[j]=s;}
+    var yn=0;for(j=0;j<D;j++)yn+=y[j]*y[j];yn=Math.sqrt(yn)||1;
+    for(j=0;j<D;j++)y[j]/=yn;
+    var idx=VS.index,N=VS.N,scores=new Float32Array(N);
+    for(var r=0;r<N;r++){var s2=0,base=r*D;for(j=0;j<D;j++)s2+=idx[base+j]*y[j];scores[r]=s2;}
+    var order=Array.from(scores.keys()).sort(function(a,b){return scores[b]-scores[a]}).slice(0,40);
+    var hits=order.map(function(k){return{pid:VS.pids[k],score:scores[k]/127}});
+    _vsShowResults(hits);
+    _vsStatus('');
+  }catch(e){
+    _vsStatus('Erreur : '+(e&&e.message?e.message:e));
+  }finally{
+    document.getElementById('vsFile').value='';
+  }
+}
+
+var _PID_MAP=null;
+function _vsShowResults(hits){
+  closeVisualSearch();
+  document.getElementById('vsDrop').innerHTML='<span id="vsDropTxt">Clique pour choisir une image<br>(ou glisse-la ici)</span>';
+  if(!_PID_MAP){_PID_MAP={};PRODUCTS.forEach(function(p){_PID_MAP[p.p]=p})}
+  var prods=[];
+  hits.forEach(function(h){var p=_PID_MAP[h.pid];if(p)prods.push(p)});
+  window.scrollTo({top:0,left:0,behavior:'auto'});
+  CURRENT_VIEW='visual';CURRENT_CAT=null;setActiveMenu('');
+  document.getElementById('hero').style.display='none';
+  document.getElementById('brandsGrid').style.display='none';
+  var _nrv=document.getElementById('newRow');if(_nrv)_nrv.style.display='none';
+  document.getElementById('productsSection').style.display='block';
+  BRAND_PRODUCTS=prods;
+  ACTIVE_FILTERS={types:[],colors:[],brands:[],prices:[]};ACTIVE_SORT=null;
+  buildFilterBar(prods);
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>📷 Ressemblants <span style="font-size:13px;color:var(--text-dim);font-weight:400">('+prods.length+' produits, du plus proche au plus lointain)</span></h2>';
+  FILTERED=prods;RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
+  renderBatch();closeSidebarMobile();
+}
+
+/* Glisser-déposer sur la zone du modal */
+document.addEventListener('DOMContentLoaded',function(){
+  var drop=document.getElementById('vsDrop');
+  if(!drop)return;
+  drop.addEventListener('dragover',function(e){e.preventDefault();drop.style.borderColor='var(--green)'});
+  drop.addEventListener('dragleave',function(){drop.style.borderColor=''});
+  drop.addEventListener('drop',function(e){
+    e.preventDefault();drop.style.borderColor='';
+    var f=e.dataTransfer.files&&e.dataTransfer.files[0];
+    if(f&&f.type.indexOf('image')===0)runVisualSearch(f);
+  });
+});
+
 /* ═══ PRODUITS SIMILAIRES ═══
    Score : même type requis (si connu), puis couleur +2, marque IA +2, même album +1, prix ±25% +1. */
 function _similarTo(p,n){
