@@ -2399,11 +2399,96 @@ async function _vsEmbed(im){
   return out.image_embeds.data;
 }
 
-async function runVisualSearch(file){
+/* ── Recadrage interactif avant recherche ── */
+function runVisualSearch(file){
+  VS.origUrl=URL.createObjectURL(file);
+  document.getElementById('vsDrop').style.display='none';
+  var ui=document.getElementById('vsCropUI');ui.style.display='block';
+  var img=document.getElementById('vsCropImg');
+  img.onload=function(){
+    document.getElementById('vsCropSize').value=75;
+    _vsInitBox(75);
+  };
+  img.src=VS.origUrl;
+  /* précharge moteur + index pendant que le client cadre */
+  _vsLoadIndex().then(_vsLoadModel).catch(function(e){_vsStatus('Indisponible : '+e.message)});
+}
+
+function _vsInitBox(pct){
+  var img=document.getElementById('vsCropImg');
+  var w=img.clientWidth,hh=img.clientHeight;
+  var s=Math.round(Math.min(w,hh)*pct/100);
+  VS.box={x:Math.round((w-s)/2),y:Math.round((hh-s)/2),s:s};
+  _vsDrawBox();
+}
+function _vsCropResize(pct){
+  if(!VS.box)return;
+  var img=document.getElementById('vsCropImg');
+  var w=img.clientWidth,hh=img.clientHeight;
+  var cx=VS.box.x+VS.box.s/2,cy=VS.box.y+VS.box.s/2;
+  var s=Math.round(Math.min(w,hh)*pct/100);
+  VS.box.s=s;
+  VS.box.x=Math.max(0,Math.min(w-s,Math.round(cx-s/2)));
+  VS.box.y=Math.max(0,Math.min(hh-s,Math.round(cy-s/2)));
+  _vsDrawBox();
+}
+function _vsDrawBox(){
+  var img=document.getElementById('vsCropImg');
+  var w=img.clientWidth,hh=img.clientHeight,b=VS.box;
+  var box=document.getElementById('vsCropBox');
+  box.style.left=b.x+'px';box.style.top=b.y+'px';
+  box.style.width=b.s+'px';box.style.height=b.s+'px';
+  function sh(id,l,t,ww,hhh){var e=document.getElementById(id);e.style.left=l+'px';e.style.top=t+'px';e.style.width=ww+'px';e.style.height=hhh+'px'}
+  sh('vsShadeT',0,0,w,b.y);
+  sh('vsShadeB',0,b.y+b.s,w,Math.max(0,hh-b.y-b.s));
+  sh('vsShadeL',0,b.y,b.x,b.s);
+  sh('vsShadeR',b.x+b.s,b.y,Math.max(0,w-b.x-b.s),b.s);
+}
+/* Drag du cadre (souris + tactile via pointer events) */
+document.addEventListener('DOMContentLoaded',function(){
+  var wrap=document.getElementById('vsCropWrap');
+  if(!wrap)return;
+  var dragging=null;
+  wrap.addEventListener('pointerdown',function(e){
+    if(!VS.box)return;
+    dragging={px:e.clientX,py:e.clientY,bx:VS.box.x,by:VS.box.y};
+    wrap.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  wrap.addEventListener('pointermove',function(e){
+    if(!dragging||!VS.box)return;
+    var img=document.getElementById('vsCropImg');
+    var w=img.clientWidth,hh=img.clientHeight,s=VS.box.s;
+    VS.box.x=Math.max(0,Math.min(w-s,dragging.bx+e.clientX-dragging.px));
+    VS.box.y=Math.max(0,Math.min(hh-s,dragging.by+e.clientY-dragging.py));
+    _vsDrawBox();
+  });
+  wrap.addEventListener('pointerup',function(){dragging=null});
+  wrap.addEventListener('pointercancel',function(){dragging=null});
+});
+
+function _vsResetUI(){
+  document.getElementById('vsCropUI').style.display='none';
+  var drop=document.getElementById('vsDrop');
+  drop.style.display='';
+  drop.innerHTML='<span id="vsDropTxt">Clique pour choisir une image<br>(ou glisse-la ici)</span>';
+  VS.box=null;
+}
+function _vsSearchFull(){_vsRunSearch(VS.origUrl)}
+function _vsSearchCropped(){
+  var img=document.getElementById('vsCropImg'),b=VS.box;
+  if(!b){_vsSearchFull();return}
+  var scale=img.naturalWidth/img.clientWidth;
+  var cv=document.createElement('canvas');
+  var s=Math.round(b.s*scale);
+  cv.width=s;cv.height=s;
+  cv.getContext('2d').drawImage(img,Math.round(b.x*scale),Math.round(b.y*scale),s,s,0,0,s,s);
+  _vsRunSearch(cv.toDataURL('image/jpeg',0.92));
+}
+
+async function _vsRunSearch(url){
   try{
     hcpTrack('recherche_visuelle',{});
-    var url=URL.createObjectURL(file);
-    document.getElementById('vsDrop').innerHTML='<img src="'+url+'" alt="Photo recherchée">';
     await _vsLoadIndex();
     await _vsLoadModel();
     _vsStatus('Analyse de la photo…');
@@ -2447,7 +2532,7 @@ async function runVisualSearch(file){
 var _PID_MAP=null;
 function _vsShowResults(hits,topScore){
   closeVisualSearch();
-  document.getElementById('vsDrop').innerHTML='<span id="vsDropTxt">Clique pour choisir une image<br>(ou glisse-la ici)</span>';
+  _vsResetUI();
   if(!_PID_MAP){_PID_MAP={};PRODUCTS.forEach(function(p){_PID_MAP[p.p]=p})}
   var prods=[];
   hits.forEach(function(h){var p=_PID_MAP[h.pid];if(p)prods.push(p)});
