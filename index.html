@@ -145,6 +145,16 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .vs-status{font-size:12px;color:var(--green);margin-top:12px;min-height:16px}
 .vs-cancel{margin-top:14px;background:none;border:1px solid var(--border2);color:var(--text-dim);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px}
 .vs-cancel:hover{border-color:var(--border4);color:var(--text)}
+.vs-crop-wrap{position:relative;display:inline-block;max-width:100%;line-height:0;touch-action:none;user-select:none;border-radius:10px;overflow:hidden}
+.vs-crop-wrap img{max-width:100%;max-height:300px;display:block;pointer-events:none}
+.vs-crop-box{position:absolute;border:2px solid var(--green);border-radius:6px;cursor:move;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+.vs-crop-shade{position:absolute;background:rgba(0,0,0,.55);pointer-events:none}
+.vs-crop-hint{font-size:11px;color:var(--text-dim);margin:10px 0 4px}
+#vsCropSize{width:100%;accent-color:var(--green)}
+.vs-crop-btns{display:flex;gap:8px;margin-top:10px}
+.vs-go{flex:1;background:var(--green);color:#0a0a0a;border:0;padding:10px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px}
+.vs-alt{background:none;border:1px solid var(--border2);color:var(--text-dim);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:12px}
+.vs-alt:hover{border-color:var(--border4);color:var(--text)}
 .vs-score{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.55);color:var(--green);font-size:10px;font-weight:700;padding:3px 7px;border-radius:5px;z-index:12;pointer-events:none}
 .search-box{width:100%;padding:8px 12px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;outline:none}
 .search-box:focus{border-color:var(--green)}
@@ -390,6 +400,20 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <span id="vsDropTxt">Clique pour choisir une image<br>(ou glisse-la ici)</span>
     </div>
     <input type="file" id="vsFile" accept="image/*" style="display:none" onchange="if(this.files[0])runVisualSearch(this.files[0])">
+    <div id="vsCropUI" style="display:none">
+      <div class="vs-crop-wrap" id="vsCropWrap">
+        <img id="vsCropImg" alt="" draggable="false">
+        <div class="vs-crop-shade" id="vsShadeT"></div><div class="vs-crop-shade" id="vsShadeB"></div>
+        <div class="vs-crop-shade" id="vsShadeL"></div><div class="vs-crop-shade" id="vsShadeR"></div>
+        <div class="vs-crop-box" id="vsCropBox"></div>
+      </div>
+      <div class="vs-crop-hint">Déplace le cadre sur le produit, ajuste sa taille :</div>
+      <input type="range" id="vsCropSize" min="25" max="100" value="75" oninput="_vsCropResize(this.value)">
+      <div class="vs-crop-btns">
+        <button class="vs-go" onclick="_vsSearchCropped()">🔍 Rechercher cette zone</button>
+        <button class="vs-alt" onclick="_vsSearchFull()">Photo entière</button>
+      </div>
+    </div>
     <div class="vs-status" id="vsStatus"></div>
     <button class="vs-cancel" onclick="closeVisualSearch()">Fermer</button>
   </div>
