@@ -2315,22 +2315,64 @@ async function _vsLoadIndex(){
   var dv=new DataView(buf);
   var N=dv.getInt32(0,true),D=dv.getInt32(4,true);
   var off=8;
-  VS.mean=new Float32Array(buf.slice(off,off+512*4));off+=512*4;
-  VS.W=new Float32Array(buf.slice(off,off+512*D*4));off+=512*D*4;
+  VS.embDim=meta.embDim||512;
+  VS.modelId=meta.model||'Xenova/clip-vit-base-patch32';
+  VS.cls=!!meta.cls;
+  if(meta.pca){/* PCA : mean + W présents dans le bin */
+    VS.mean=new Float32Array(buf.slice(off,off+VS.embDim*4));off+=VS.embDim*4;
+    VS.W=new Float32Array(buf.slice(off,off+VS.embDim*D*4));off+=VS.embDim*D*4;
+  }else{VS.mean=null;VS.W=null;}
   VS.index=new Int8Array(buf,off,N*D);
   VS.N=N;VS.D=D;VS.pids=meta.pids;
 }
 
+/* Projette un embedding brut (embDim) vers l'espace de l'index (PCA si présente), normalisé */
+function _vsProject(q){
+  var i,j,D=VS.D,E=VS.embDim;
+  var n=0;for(i=0;i<E;i++)n+=q[i]*q[i];n=Math.sqrt(n)||1;
+  if(!VS.W){
+    var v=new Float32Array(E);for(i=0;i<E;i++)v[i]=q[i]/n;
+    return v;
+  }
+  var c=new Float32Array(E);for(i=0;i<E;i++)c[i]=q[i]/n-VS.mean[i];
+  var y=new Float32Array(D);
+  for(j=0;j<D;j++){var s=0;for(i=0;i<E;i++)s+=c[i]*VS.W[i*D+j];y[j]=s;}
+  var yn=0;for(j=0;j<D;j++)yn+=y[j]*y[j];yn=Math.sqrt(yn)||1;
+  for(j=0;j<D;j++)y[j]/=yn;
+  return y;
+}
+
+/* Recadre une image (fraction centrée) via canvas → dataURL */
+function _vsCrop(imgEl,frac){
+  var w=imgEl.naturalWidth,h=imgEl.naturalHeight;
+  var cw=Math.round(w*frac),ch=Math.round(h*frac);
+  var cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
+  cv.getContext('2d').drawImage(imgEl,(w-cw)/2,(h-ch)/2,cw,ch,0,0,cw,ch);
+  return cv.toDataURL('image/jpeg',0.92);
+}
+
 async function _vsLoadModel(){
   if(VS.model)return;
-  _vsStatus('Chargement du moteur visuel (première fois : ~1 min)…');
+  _vsStatus('Chargement du moteur visuel (première fois seulement)…');
   var T=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.0');
   VS.RawImage=T.RawImage;
-  VS.processor=await T.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
-  VS.model=await T.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32',
-    {dtype:'q8',progress_callback:function(p){
-      if(p.status==='progress'&&p.total)_vsStatus('Téléchargement du moteur… '+Math.round(p.loaded/p.total*100)+'%');
-    }});
+  var opts={dtype:'q8',progress_callback:function(p){
+    if(p.status==='progress'&&p.total)_vsStatus('Téléchargement du moteur… '+Math.round(p.loaded/p.total*100)+'%');
+  }};
+  VS.processor=await T.AutoProcessor.from_pretrained(VS.modelId);
+  VS.model=VS.cls
+    ? await T.AutoModel.from_pretrained(VS.modelId,opts)
+    : await T.CLIPVisionModelWithProjection.from_pretrained(VS.modelId,opts);
+}
+
+/* Embedding brut d'une image (RawImage) selon le modèle de l'index */
+async function _vsEmbed(im){
+  var inputs=await VS.processor(im);
+  var out=await VS.model(inputs);
+  if(VS.cls){/* DINOv2 : token CLS de last_hidden_state [1,257,embDim] */
+    return out.last_hidden_state.data.slice(0,VS.embDim);
+  }
+  return out.image_embeds.data;
 }
 
 async function runVisualSearch(file){
@@ -2342,21 +2384,34 @@ async function runVisualSearch(file){
     await _vsLoadModel();
     _vsStatus('Analyse de la photo…');
     await new Promise(function(r){setTimeout(r,30)});/* laisse l'UI respirer */
-    var img=await VS.RawImage.read(url);
-    var inputs=await VS.processor(img);
-    var out=await VS.model(inputs);
-    var q=out.image_embeds.data;
-    var i,j,n=0;for(i=0;i<512;i++)n+=q[i]*q[i];n=Math.sqrt(n)||1;
-    var c=new Float32Array(512);for(i=0;i<512;i++)c[i]=q[i]/n-VS.mean[i];
-    var D=VS.D,y=new Float32Array(D);
-    for(j=0;j<D;j++){var s=0;for(i=0;i<512;i++)s+=c[i]*VS.W[i*D+j];y[j]=s;}
-    var yn=0;for(j=0;j<D;j++)yn+=y[j]*y[j];yn=Math.sqrt(yn)||1;
-    for(j=0;j<D;j++)y[j]/=yn;
-    var idx=VS.index,N=VS.N,scores=new Float32Array(N);
-    for(var r=0;r<N;r++){var s2=0,base=r*D;for(j=0;j<D;j++)s2+=idx[base+j]*y[j];scores[r]=s2;}
+    /* Multi-crop : image entière + centre 85% + centre 65% (le produit domine, pas le décor) */
+    var imgEl=new Image();
+    await new Promise(function(res,rej){imgEl.onload=res;imgEl.onerror=rej;imgEl.src=url});
+    var crops=[url,_vsCrop(imgEl,0.85),_vsCrop(imgEl,0.65)];
+    var queries=[];
+    for(var ci=0;ci<crops.length;ci++){
+      var im=await VS.RawImage.read(crops[ci]);
+      queries.push(_vsProject(await _vsEmbed(im)));
+      _vsStatus('Analyse de la photo… '+(ci+1)+'/3');
+    }
+    /* Score de chaque produit = MAX sur les 3 cadrages */
+    var j,D=VS.D,idx=VS.index,N=VS.N;
+    var scores=new Float32Array(N);scores.fill(-1e9);
+    for(var qi=0;qi<queries.length;qi++){
+      var y=queries[qi];
+      for(var r=0;r<N;r++){
+        var s2=0,base=r*D;
+        for(j=0;j<D;j++)s2+=idx[base+j]*y[j];
+        if(s2>scores[r])scores[r]=s2;
+      }
+    }
     var order=Array.from(scores.keys()).sort(function(a,b){return scores[b]-scores[a]}).slice(0,40);
     var hits=order.map(function(k){return{pid:VS.pids[k],score:scores[k]/127}});
-    _vsShowResults(hits);
+    /* Seuil de pertinence, calibré par modèle (DINOv2 sépare mieux que CLIP) */
+    var top=hits[0]?hits[0].score:0;
+    var floor=VS.cls?0.5:0.45, band=VS.cls?0.25:0.18;
+    hits=hits.filter(function(h){return h.score>=Math.max(floor,top-band)});
+    _vsShowResults(hits,top);
     _vsStatus('');
   }catch(e){
     _vsStatus('Erreur : '+(e&&e.message?e.message:e));
@@ -2366,12 +2421,13 @@ async function runVisualSearch(file){
 }
 
 var _PID_MAP=null;
-function _vsShowResults(hits){
+function _vsShowResults(hits,topScore){
   closeVisualSearch();
   document.getElementById('vsDrop').innerHTML='<span id="vsDropTxt">Clique pour choisir une image<br>(ou glisse-la ici)</span>';
   if(!_PID_MAP){_PID_MAP={};PRODUCTS.forEach(function(p){_PID_MAP[p.p]=p})}
   var prods=[];
   hits.forEach(function(h){var p=_PID_MAP[h.pid];if(p)prods.push(p)});
+  var weak=(topScore!==undefined&&topScore<(VS.cls?0.6:0.62));
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='visual';CURRENT_CAT=null;setActiveMenu('');
   document.getElementById('hero').style.display='none';
@@ -2381,7 +2437,9 @@ function _vsShowResults(hits){
   BRAND_PRODUCTS=prods;
   ACTIVE_FILTERS={types:[],colors:[],brands:[],prices:[]};ACTIVE_SORT=null;
   buildFilterBar(prods);
-  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>📷 Ressemblants <span style="font-size:13px;color:var(--text-dim);font-weight:400">('+prods.length+' produits, du plus proche au plus lointain)</span></h2>';
+  var subtitle=prods.length+' produits, du plus proche au plus lointain';
+  if(typeof weak!=='undefined'&&weak)subtitle+=' — correspondance faible : essaie une photo plus serrée sur le produit';
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>📷 Ressemblants <span style="font-size:13px;color:var(--text-dim);font-weight:400">('+subtitle+')</span></h2>';
   FILTERED=prods;RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   renderBatch();closeSidebarMobile();
 }
