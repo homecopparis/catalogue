@@ -2327,11 +2327,17 @@ function _vsStatus(t){document.getElementById('vsStatus').textContent=t}
 
 async function _vsLoadIndex(){
   if(VS.index)return;
-  var rs=await Promise.all([fetch('visual_index.bin'),fetch('visual_index.json')]);
+  _vsStatus('Chargement de l\u2019index visuel\u2026');
+  var rs;
+  try{
+    rs=await Promise.all([fetch('visual_index.bin'),fetch('visual_index.json')]);
+  }catch(e){rs=[{ok:false},{ok:false}];}
   if(!rs[0].ok||!rs[1].ok){
     /* Fallback : miroir GitHub Pages (utile si le déploiement Vercel est en retard) */
     var GH='https://homecopparis.github.io/catalogue/';
-    rs=await Promise.all([fetch(GH+'visual_index.bin'),fetch(GH+'visual_index.json')]);
+    try{
+      rs=await Promise.all([fetch(GH+'visual_index.bin'),fetch(GH+'visual_index.json')]);
+    }catch(e2){throw new Error('index inaccessible (réseau)');}
   }
   if(!rs[0].ok||!rs[1].ok)throw new Error('index non publié');
   var buf=await rs[0].arrayBuffer();
@@ -2377,16 +2383,37 @@ function _vsCrop(imgEl,frac){
 
 async function _vsLoadModel(){
   if(VS.model)return;
-  _vsStatus('Chargement du moteur visuel (première fois seulement)…');
-  var T=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.0');
+  /* 1. Librairie (2 CDN en secours) */
+  _vsStatus('Chargement du moteur JS…');
+  var T=null,urls=[
+    'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.0/dist/transformers.min.js',
+    'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.0',
+    'https://unpkg.com/@huggingface/transformers@3.4.0/dist/transformers.min.js'
+  ];
+  var lastErr=null;
+  for(var i=0;i<urls.length&&!T;i++){
+    try{
+      var mod=await import(urls[i]);
+      if(mod&&mod.AutoProcessor)T=mod;else lastErr=new Error('module incomplet');
+    }catch(e){lastErr=e;}
+  }
+  if(!T)throw new Error('moteur JS inaccessible ('+(lastErr&&lastErr.message||'?')+') — vérifie bloqueur de pub / réseau');
   VS.RawImage=T.RawImage;
   var opts={dtype:'q8',progress_callback:function(p){
-    if(p.status==='progress'&&p.total)_vsStatus('Téléchargement du moteur… '+Math.round(p.loaded/p.total*100)+'%');
+    if(p.status==='progress'&&p.total)_vsStatus('Téléchargement du modèle… '+Math.round(p.loaded/p.total*100)+'%');
   }};
-  VS.processor=await T.AutoProcessor.from_pretrained(VS.modelId);
-  VS.model=VS.cls
-    ? await T.AutoModel.from_pretrained(VS.modelId,opts)
-    : await T.CLIPVisionModelWithProjection.from_pretrained(VS.modelId,opts);
+  /* 2. Config du modèle */
+  _vsStatus('Chargement de la config du modèle…');
+  try{
+    VS.processor=await T.AutoProcessor.from_pretrained(VS.modelId);
+  }catch(e){throw new Error('config modèle inaccessible (huggingface.co bloqué ? '+(e.message||'')+')');}
+  /* 3. Poids du modèle */
+  _vsStatus('Téléchargement du modèle…');
+  try{
+    VS.model=VS.cls
+      ? await T.AutoModel.from_pretrained(VS.modelId,opts)
+      : await T.CLIPVisionModelWithProjection.from_pretrained(VS.modelId,opts);
+  }catch(e2){throw new Error('poids du modèle : '+(e2.message||e2));}
 }
 
 /* Embedding brut d'une image (RawImage) selon le modèle de l'index */
