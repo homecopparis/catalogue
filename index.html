@@ -2328,20 +2328,33 @@ function _vsStatus(t){document.getElementById('vsStatus').textContent=t}
 async function _vsLoadIndex(){
   if(VS.index)return;
   _vsStatus('Chargement de l\u2019index visuel\u2026');
-  var rs;
-  try{
-    rs=await Promise.all([fetch('visual_index.bin'),fetch('visual_index.json')]);
-  }catch(e){rs=[{ok:false},{ok:false}];}
-  if(!rs[0].ok||!rs[1].ok){
-    /* Fallback : miroir GitHub Pages (utile si le déploiement Vercel est en retard) */
-    var GH='https://homecopparis.github.io/catalogue/';
-    try{
-      rs=await Promise.all([fetch(GH+'visual_index.bin'),fetch(GH+'visual_index.json')]);
-    }catch(e2){throw new Error('index inaccessible (réseau)');}
+  async function loadPair(base){
+    /* meta toujours revalidée, bin versionné par le contenu de la meta → jamais de duo incohérent en cache */
+    var mr=await fetch(base+'visual_index.json',{cache:'no-cache'});
+    if(!mr.ok)throw new Error('meta absente');
+    var meta=await mr.json();
+    var ver=(meta.count||0)+'-'+(meta.dim||0)+'-'+(meta.model||'').replace(/[^a-z0-9]/gi,'');
+    var br=await fetch(base+'visual_index.bin?v='+ver);
+    if(!br.ok)throw new Error('bin absent');
+    var buf=await br.arrayBuffer();
+    var dv0=new DataView(buf);
+    if(dv0.getInt32(0,true)!==meta.count||dv0.getInt32(4,true)!==meta.dim){
+      /* cache périmé : re-télécharge en forçant le réseau */
+      br=await fetch(base+'visual_index.bin?v='+ver,{cache:'reload'});
+      buf=await br.arrayBuffer();
+      dv0=new DataView(buf);
+      if(dv0.getInt32(0,true)!==meta.count||dv0.getInt32(4,true)!==meta.dim)
+        throw new Error('index incohérent (cache)');
+    }
+    return {buf:buf,meta:meta};
   }
-  if(!rs[0].ok||!rs[1].ok)throw new Error('index non publié');
-  var buf=await rs[0].arrayBuffer();
-  var meta=await rs[1].json();
+  var pair;
+  try{pair=await loadPair('');}
+  catch(e){
+    try{pair=await loadPair('https://homecopparis.github.io/catalogue/');}
+    catch(e2){throw new Error('index inaccessible ('+(e.message||'réseau')+')');}
+  }
+  var buf=pair.buf,meta=pair.meta;
   var dv=new DataView(buf);
   var N=dv.getInt32(0,true),D=dv.getInt32(4,true);
   var off=8;
@@ -2398,16 +2411,11 @@ async function _vsLoadModel(){
     }catch(e){lastErr=e;}
   }
   if(!T)throw new Error('moteur JS inaccessible ('+(lastErr&&lastErr.message||'?')+') — vérifie bloqueur de pub / réseau');
-  VS.RawImage=T.RawImage;
+  VS.RawImage=T.RawImage;VS.T=T;
   var opts={dtype:'q8',progress_callback:function(p){
     if(p.status==='progress'&&p.total)_vsStatus('Téléchargement du modèle… '+Math.round(p.loaded/p.total*100)+'%');
   }};
-  /* 2. Config du modèle */
-  _vsStatus('Chargement de la config du modèle…');
-  try{
-    VS.processor=await T.AutoProcessor.from_pretrained(VS.modelId);
-  }catch(e){throw new Error('config modèle inaccessible (huggingface.co bloqué ? '+(e.message||'')+')');}
-  /* 3. Poids du modèle */
+  /* 2. Poids du modèle (prétraitement fait manuellement : identique à l'indexation) */
   _vsStatus('Téléchargement du modèle…');
   try{
     VS.model=VS.cls
@@ -2416,10 +2424,23 @@ async function _vsLoadModel(){
   }catch(e2){throw new Error('poids du modèle : '+(e2.message||e2));}
 }
 
-/* Embedding brut d'une image (RawImage) selon le modèle de l'index */
+/* Embedding brut d'une image (RawImage) selon le modèle de l'index.
+   Prétraitement MANUEL, identique bit à bit à build_visual_index.py :
+   resize direct 224×224 (pas de center-crop) + normalisation. */
 async function _vsEmbed(im){
-  var inputs=await VS.processor(im);
-  var out=await VS.model(inputs);
+  var MEAN=VS.cls?[0.485,0.456,0.406]:[0.48145466,0.4578275,0.40821073];
+  var STD =VS.cls?[0.229,0.224,0.225]:[0.26862954,0.26130258,0.27577711];
+  im=await im.resize(224,224);
+  if(im.channels!==3)im=im.rgb();
+  var d=im.data,np=224*224;
+  var x=new Float32Array(3*np);
+  for(var i=0;i<np;i++){
+    x[i]      =(d[i*3]  /255-MEAN[0])/STD[0];
+    x[np+i]   =(d[i*3+1]/255-MEAN[1])/STD[1];
+    x[2*np+i] =(d[i*3+2]/255-MEAN[2])/STD[2];
+  }
+  var t=new VS.T.Tensor('float32',x,[1,3,224,224]);
+  var out=await VS.model({pixel_values:t});
   if(VS.cls){/* DINOv2 : token CLS de last_hidden_state [1,257,embDim] */
     return out.last_hidden_state.data.slice(0,VS.embDim);
   }
