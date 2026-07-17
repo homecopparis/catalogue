@@ -2534,6 +2534,164 @@ function _vsSearchCropped(){
   _vsRunSearch(cv.toDataURL('image/jpeg',0.92));
 }
 
+/* ── Couleur dominante de la photo (pour re-classement) — classification HSV ── */
+function _vsPixelColor(r,g,b){
+  r/=255;g/=255;b/=255;
+  var mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,d=mx-mn;
+  var s=d===0?0:d/(1-Math.abs(2*l-1));
+  if(l>=0.90&&s<0.30)return 'Blanc';
+  if(l<0.13)return 'Noir';
+  if(s<0.12)return l>0.78?'Blanc':(l<0.28?'Noir':'Gris');
+  var hh;
+  if(mx===r)hh=60*(((g-b)/d)%6);
+  else if(mx===g)hh=60*((b-r)/d+2);
+  else hh=60*((r-g)/d+4);
+  if(hh<0)hh+=360;
+  if(hh<15||hh>=345)return l>0.65?'Rose':(l<0.20?'Marron':'Rouge');
+  if(hh<40)return (s<0.45&&l>0.55)?'Beige':(l<0.45?'Marron':'Orange');
+  if(hh<68)return (s<0.45&&l>0.55)?'Beige':(l<0.42?'Olive':'Jaune');
+  if(hh<172)return (hh<100&&l<0.5)?'Olive':'Vert';
+  if(hh<200)return 'Vert';
+  if(hh<258)return l<0.32?'Marine':'Bleu';
+  if(hh<295)return 'Violet';
+  return l>0.55?'Rose':'Violet';
+}
+var VS_COLOR_NEIGHBORS={'Vert':['Olive'],'Olive':['Vert'],'Marine':['Bleu','Noir'],'Bleu':['Marine'],
+ 'Noir':['Marine','Gris'],'Gris':['Noir'],'Blanc':['Beige','Gris'],'Beige':['Blanc','Marron'],
+ 'Marron':['Beige','Olive'],'Rouge':['Rose','Orange'],'Rose':['Rouge'],'Orange':['Jaune','Rouge'],
+ 'Jaune':['Orange'],'Violet':[]};
+
+async function _vsDetectColor(url){
+  try{
+    var img=new Image();
+    await new Promise(function(res,rej){img.onload=res;img.onerror=rej;img.src=url});
+    var cv=document.createElement('canvas');cv.width=64;cv.height=64;
+    cv.getContext('2d').drawImage(img,0,0,64,64);
+    var d=cv.getContext('2d').getImageData(10,10,44,44).data;/* zone centrale */
+    var counts={},total=0;
+    for(var i=0;i<d.length;i+=4){
+      var best=_vsPixelColor(d[i],d[i+1],d[i+2]);
+      counts[best]=(counts[best]||0)+1;total++;
+    }
+    /* le blanc est souvent le fond : on l'écarte sauf s'il écrase tout */
+    var entries=Object.entries(counts).sort(function(x,y){return y[1]-x[1]});
+    var top=entries[0];
+    if(top[0]==='Blanc'&&top[1]/total<0.82&&entries[1])top=entries[1];
+    return (top[1]/total>=0.18)?top[0]:null;
+  }catch(e){return null}
+}
+
+/* ── Recherche hybride Claude (Edge Function visual-search) ── */
+var VS_FT_FAMILY={
+  'T-Shirts':['T-Shirts','Polos'],'Polos':['Polos','T-Shirts'],'Chemises':['Chemises'],
+  'Sweats':['Sweats','Pulls à capuche','Pulls & Mailles'],
+  'Pulls à capuche':['Pulls à capuche','Sweats','Pulls & Mailles'],
+  'Pulls & Mailles':['Pulls & Mailles','Sweats','Pulls à capuche'],
+  'Vestes':['Vestes','Manteaux','Doudounes'],'Manteaux':['Manteaux','Vestes','Doudounes'],
+  'Doudounes':['Doudounes','Vestes','Manteaux'],
+  'Jeans':['Jeans','Pantalons'],'Pantalons':['Pantalons','Jeans'],'Shorts':['Shorts'],
+  'Casquettes':['Casquettes','Bonnets'],'Bonnets':['Bonnets','Casquettes'],'Écharpes':['Écharpes'],
+  'Ceinture':['Ceinture','Ceintures'],'Chaussures':['Chaussures'],
+  'Sac à main':['Sac à main','Sac bandoulière','Cabas','Mini sac','Sac seau','Pochette','Besace','Sacs'],
+  'Sac bandoulière':['Sac bandoulière','Sac à main','Pochette','Besace','Mini sac','Sacs'],
+  'Pochette':['Pochette','Sac bandoulière','Mini sac','Trousse'],
+  'Cabas':['Cabas','Sac à main','Sacs'],'Sac à dos':['Sac à dos'],
+  'Portefeuille':['Portefeuille','Porte-cartes','Étui']
+};
+
+function _vsDownscale(url,maxSide){
+  return new Promise(function(res,rej){
+    var img=new Image();
+    img.onload=function(){
+      var sc=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+      var cv=document.createElement('canvas');
+      cv.width=Math.round(img.naturalWidth*sc);cv.height=Math.round(img.naturalHeight*sc);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      res(cv.toDataURL('image/jpeg',0.85).split(',')[1]);
+    };
+    img.onerror=rej;img.src=url;
+  });
+}
+
+function _vsLoadThumb(pid){
+  return new Promise(function(res){
+    var p=_PID_MAP[pid];
+    if(!p){res(null);return}
+    var img=new Image();
+    img.crossOrigin='anonymous';
+    img.onload=function(){res(img)};img.onerror=function(){res(null)};
+    img.src=imgUrl(p.p,p.ts||p.s,'q');
+  });
+}
+
+/* Construit jusqu'à 3 mosaïques 8×8 numérotées ; retourne {mosaics:[b64], mapping:{num:pid}} */
+async function _vsBuildMosaics(pids){
+  var TH=140,COLS=8,PER=64;
+  var imgs=await Promise.all(pids.map(_vsLoadThumb));
+  var ok=[];
+  for(var i=0;i<pids.length;i++)if(imgs[i])ok.push([pids[i],imgs[i]]);
+  var mosaics=[],mapping={},num=1;
+  for(var m=0;m<Math.min(3,Math.ceil(ok.length/PER));m++){
+    var chunk=ok.slice(m*PER,(m+1)*PER);
+    var rows=Math.ceil(chunk.length/COLS);
+    var cv=document.createElement('canvas');
+    cv.width=COLS*TH;cv.height=rows*TH;
+    var cx=cv.getContext('2d');
+    cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);
+    for(var k=0;k<chunk.length;k++){
+      var x=(k%COLS)*TH,y=Math.floor(k/COLS)*TH;
+      cx.drawImage(chunk[k][1],x,y,TH,TH);
+      cx.fillStyle='#000';cx.fillRect(x,y,36,26);
+      cx.fillStyle='#00e676';cx.font='bold 19px sans-serif';
+      cx.fillText(String(num),x+4,y+20);
+      mapping[num]=chunk[k][0];num++;
+    }
+    mosaics.push(cv.toDataURL('image/jpeg',0.85).split(',')[1]);
+  }
+  return {mosaics:mosaics,mapping:mapping};
+}
+
+async function _vsEdge(body,critical){
+  if(!sb||VS.edgeDown)return null;
+  try{
+    var r=await sb.functions.invoke('visual-search',{body:body});
+    if(r.error){if(critical)VS.edgeDown=true;return null}
+    return r.data;
+  }catch(e){if(critical)VS.edgeDown=true;return null}
+}
+
+/* Sélection des candidats selon la description Claude, triés par score visuel */
+function _vsCandidates(desc,scores){
+  var brandF=desc&&desc.marque?_foldTxt(desc.marque):null;
+  var fts=desc&&desc.type&&VS_FT_FAMILY[desc.type]?VS_FT_FAMILY[desc.type]:null;
+  if(!VS.albRow||VS.albRowPids!==VS.pids){
+    var cn={};CATEGORIES.forEach(function(c){cn[c.id]=_foldTxt(c.n)});
+    VS.albRow=VS.pids.map(function(pid){var pp=_PID_MAP[pid];return pp?(cn[pp.a]||''):''});
+    VS.ftRow=VS.pids.map(function(pid){var pp=_PID_MAP[pid];return pp?(pp.ft||null):null});
+    VS.brfRow=VS.pids.map(function(pid){var pp=_PID_MAP[pid];return pp?_foldTxt(pp.br||''):''});
+    VS.albRowPids=VS.pids;
+  }
+  function pick(useBrand,useType){
+    var out=[];
+    for(var r=0;r<VS.N;r++){
+      if(useBrand&&brandF){
+        var okB=VS.albRow[r].indexOf(brandF)!==-1||(VS.brfRow[r]&&(VS.brfRow[r]===brandF||VS.brfRow[r].indexOf(brandF)!==-1));
+        if(!okB)continue;
+      }
+      if(useType&&fts&&fts.indexOf(VS.ftRow[r])===-1)continue;
+      out.push(r);
+    }
+    return out;
+  }
+  var rows=[];
+  if(brandF&&fts){rows=pick(true,true);if(rows.length<6)rows=pick(true,false);}
+  else if(brandF){rows=pick(true,false);}
+  else if(fts){rows=pick(false,true);}
+  if(rows.length<6)return null;
+  rows.sort(function(a,b){return scores[b]-scores[a]});
+  return rows.slice(0,180);
+}
+
 async function _vsRunSearch(url){
   try{
     hcpTrack('recherche_visuelle',{});
@@ -2562,12 +2720,65 @@ async function _vsRunSearch(url){
         if(s2>scores[r])scores[r]=s2;
       }
     }
+    /* Bonus couleur : la forme prime, la couleur départage (fc du catalogue) */
+    var qColor=await _vsDetectColor(url);
+    VS.lastColor=qColor;
+    if(qColor&&qColor!=='Blanc'){
+      if(!_PID_MAP){_PID_MAP={};PRODUCTS.forEach(function(pp){_PID_MAP[pp.p]=pp})}
+      if(!VS.fcRow||VS.fcRowPids!==VS.pids){
+        VS.fcRow=VS.pids.map(function(pid){var pp=_PID_MAP[pid];return pp?(pp.fc||null):null});
+        VS.fcRowPids=VS.pids;
+      }
+      var neigh=VS_COLOR_NEIGHBORS[qColor]||[];
+      for(var r2=0;r2<N;r2++){
+        var fc=VS.fcRow[r2];
+        if(!fc)continue;
+        if(fc===qColor)scores[r2]+=10;
+        else if(neigh.indexOf(fc)!==-1)scores[r2]+=6;
+      }
+    }
+    /* ── Étage hybride Claude : description + confirmation visuelle ── */
+    var exactPids=[],closePids=[],detected=null;
+    if(!_PID_MAP){_PID_MAP={};PRODUCTS.forEach(function(pp){_PID_MAP[pp.p]=pp})}
+    try{
+      _vsStatus('Analyse IA de la photo…');
+      var qb64=await _vsDownscale(url,640);
+      detected=await _vsEdge({action:'describe',image:qb64},true);
+      if(detected&&(detected.marque||detected.type)){
+        var candRows=_vsCandidates(detected,scores);
+        if(candRows){
+          _vsStatus('Comparaison IA avec '+candRows.length+' candidats…');
+          var built=await _vsBuildMosaics(candRows.map(function(r){return VS.pids[r]}));
+          if(built.mosaics.length){
+            /* un appel PAR mosaïque (en parallèle) : attention focalisée = meilleure précision */
+            var matches=await Promise.all(built.mosaics.map(function(mm){
+              return _vsEdge({action:'match',image:qb64,mosaics:[mm],desc:detected});
+            }));
+            matches.forEach(function(match){
+              if(!match)return;
+              (match.exact||[]).forEach(function(n){if(built.mapping[n])exactPids.push(built.mapping[n])});
+              (match.proches||[]).forEach(function(n){if(built.mapping[n])closePids.push(built.mapping[n])});
+            });
+          }
+        }
+      }
+    }catch(e){/* hybride indisponible : on continue en visuel pur */}
+
     var order=Array.from(scores.keys()).sort(function(a,b){return scores[b]-scores[a]}).slice(0,40);
     var hits=order.map(function(k){return{pid:VS.pids[k],score:scores[k]/127}});
     /* Seuil de pertinence, calibré par modèle (DINOv2 sépare mieux que CLIP) */
     var top=hits[0]?hits[0].score:0;
     var floor=VS.cls?0.5:0.45, band=VS.cls?0.25:0.18;
     hits=hits.filter(function(h){return h.score>=Math.max(floor,top-band)});
+    /* Fusion : matches Claude d'abord (exact puis proches), puis le visuel */
+    if(exactPids.length||closePids.length){
+      var seen={},fused=[];
+      exactPids.forEach(function(pid){if(!seen[pid]){seen[pid]=1;fused.push({pid:pid,score:1})}});
+      closePids.forEach(function(pid){if(!seen[pid]){seen[pid]=1;fused.push({pid:pid,score:0.9})}});
+      hits.forEach(function(hh){if(!seen[hh.pid]&&fused.length<40){seen[hh.pid]=1;fused.push(hh)}});
+      hits=fused;
+    }
+    VS.lastDetected=detected;VS.lastExact=exactPids.length;
     _vsShowResults(hits,top);
     _vsStatus('');
   }catch(e){
@@ -2595,6 +2806,14 @@ function _vsShowResults(hits,topScore){
   ACTIVE_FILTERS={types:[],colors:[],brands:[],prices:[]};ACTIVE_SORT=null;
   buildFilterBar(prods);
   var subtitle=prods.length+' produits, du plus proche au plus lointain';
+  if(VS.lastDetected){
+    var dd=VS.lastDetected,parts=[];
+    if(dd.marque)parts.push(dd.marque);
+    if(dd.type)parts.push(dd.type);
+    if(dd.couleur)parts.push(dd.couleur);
+    if(parts.length)subtitle+=' · IA : '+parts.join(' · ');
+    if(VS.lastExact)subtitle+=' · ✨ '+VS.lastExact+' correspondance'+(VS.lastExact>1?'s':'')+' confirmée'+(VS.lastExact>1?'s':'');
+  }else if(VS.lastColor&&VS.lastColor!=='Blanc')subtitle+=' · couleur détectée : '+VS.lastColor;
   if(typeof weak!=='undefined'&&weak)subtitle+=' — correspondance faible : essaie une photo plus serrée sur le produit';
   document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>📷 Ressemblants <span style="font-size:13px;color:var(--text-dim);font-weight:400">('+subtitle+')</span></h2>';
   FILTERED=prods;RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
