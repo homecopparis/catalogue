@@ -2620,18 +2620,18 @@ function _vsLoadThumb(pid){
     var img=new Image();
     img.crossOrigin='anonymous';
     img.onload=function(){res(img)};img.onerror=function(){res(null)};
-    img.src=imgUrl(p.p,p.ts||p.s,'q');
+    img.src=imgUrl(p.p,p.ts||p.s,'n');/* 320px : logos lisibles */
   });
 }
 
-/* Construit jusqu'à 3 mosaïques 8×8 numérotées ; retourne {mosaics:[b64], mapping:{num:pid}} */
+/* Construit jusqu'à 4 mosaïques 7×7 (vignettes 200px, crop carré) ; retourne {mosaics:[b64], mapping:{num:pid}} */
 async function _vsBuildMosaics(pids){
-  var TH=140,COLS=8,PER=64;
+  var TH=200,COLS=7,PER=49;
   var imgs=await Promise.all(pids.map(_vsLoadThumb));
   var ok=[];
   for(var i=0;i<pids.length;i++)if(imgs[i])ok.push([pids[i],imgs[i]]);
   var mosaics=[],mapping={},num=1;
-  for(var m=0;m<Math.min(3,Math.ceil(ok.length/PER));m++){
+  for(var m=0;m<Math.min(4,Math.ceil(ok.length/PER));m++){
     var chunk=ok.slice(m*PER,(m+1)*PER);
     var rows=Math.ceil(chunk.length/COLS);
     var cv=document.createElement('canvas');
@@ -2640,10 +2640,12 @@ async function _vsBuildMosaics(pids){
     cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);
     for(var k=0;k<chunk.length;k++){
       var x=(k%COLS)*TH,y=Math.floor(k/COLS)*TH;
-      cx.drawImage(chunk[k][1],x,y,TH,TH);
-      cx.fillStyle='#000';cx.fillRect(x,y,36,26);
-      cx.fillStyle='#00e676';cx.font='bold 19px sans-serif';
-      cx.fillText(String(num),x+4,y+20);
+      var im=chunk[k][1];
+      var s=Math.min(im.naturalWidth,im.naturalHeight);
+      cx.drawImage(im,(im.naturalWidth-s)/2,(im.naturalHeight-s)/2,s,s,x,y,TH,TH);
+      cx.fillStyle='#000';cx.fillRect(x,y,48,34);
+      cx.fillStyle='#00e676';cx.font='bold 28px sans-serif';
+      cx.fillText(String(num),x+6,y+27);
       mapping[num]=chunk[k][0];num++;
     }
     mosaics.push(cv.toDataURL('image/jpeg',0.85).split(',')[1]);
@@ -2661,8 +2663,18 @@ async function _vsEdge(body,critical){
 }
 
 /* Sélection des candidats selon la description Claude, triés par score visuel */
+var VS_BRAND_EXPAND={'nike':['nike','jordan'],'jordan':['jordan','nike'],'air jordan':['jordan','nike']};
 function _vsCandidates(desc,scores){
-  var brandF=desc&&desc.marque?_foldTxt(desc.marque):null;
+  /* tokens significatifs de la marque détectée (+ équivalences) : "Jordan x Travis Scott" → [jordan, travis, scott, nike] */
+  var brandToks=null;
+  if(desc&&desc.marque){
+    var bf=_foldTxt(desc.marque);
+    var toks=bf.split(/[^a-z0-9]+/).filter(function(t){return t.length>=3});
+    (VS_BRAND_EXPAND[bf]||[]).forEach(function(t){if(toks.indexOf(t)===-1)toks.push(t)});
+    toks.forEach(function(t){(VS_BRAND_EXPAND[t]||[]).forEach(function(e){if(toks.indexOf(e)===-1)toks.push(e)})});
+    if(toks.length)brandToks=toks;
+  }
+  var brandF=brandToks?_foldTxt(desc.marque):null;
   var fts=desc&&desc.type&&VS_FT_FAMILY[desc.type]?VS_FT_FAMILY[desc.type]:null;
   if(!VS.albRow||VS.albRowPids!==VS.pids){
     var cn={};CATEGORIES.forEach(function(c){cn[c.id]=_foldTxt(c.n)});
@@ -2675,7 +2687,12 @@ function _vsCandidates(desc,scores){
     var out=[];
     for(var r=0;r<VS.N;r++){
       if(useBrand&&brandF){
-        var okB=VS.albRow[r].indexOf(brandF)!==-1||(VS.brfRow[r]&&(VS.brfRow[r]===brandF||VS.brfRow[r].indexOf(brandF)!==-1));
+        var alb=VS.albRow[r],brf=VS.brfRow[r],okB=false;
+        /* match si le nom d'album ou la marque IA contient la marque complète OU l'un de ses tokens */
+        if(alb.indexOf(brandF)!==-1||(brf&&brf.indexOf(brandF)!==-1))okB=true;
+        else for(var bt=0;bt<brandToks.length;bt++){
+          if(alb.indexOf(brandToks[bt])!==-1||(brf&&brf.indexOf(brandToks[bt])!==-1)){okB=true;break}
+        }
         if(!okB)continue;
       }
       if(useType&&fts){
@@ -2693,8 +2710,15 @@ function _vsCandidates(desc,scores){
   else if(brandF){rows=pick(true,false);}
   else if(fts){rows=pick(false,true);}
   if(rows.length<6)return null;
-  rows.sort(function(a,b){return scores[b]-scores[a]});
-  return rows.slice(0,180);
+  /* priorité aux albums qui matchent la marque complète, puis score visuel */
+  rows.sort(function(a,b){
+    if(brandF){
+      var ea=VS.albRow[a].indexOf(brandF)!==-1?1:0, eb=VS.albRow[b].indexOf(brandF)!==-1?1:0;
+      if(ea!==eb)return eb-ea;
+    }
+    return scores[b]-scores[a];
+  });
+  return rows.slice(0,196);
 }
 
 async function _vsRunSearch(url){
