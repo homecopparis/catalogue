@@ -8,7 +8,8 @@
 var VERSION = 'hcp-v2';
 var STATIC_CACHE = VERSION + '-static';
 var DATA_CACHE = VERSION + '-data';
-var IMG_CACHE = VERSION + '-img';
+/* cache images STABLE : n'est plus purgé aux montées de version (les URLs Flickr sont immuables) */
+var IMG_CACHE = 'hcp-img-stable2';
 var IMG_LIMIT = 400;
 
 self.addEventListener('install', function (e) {
@@ -21,10 +22,11 @@ self.addEventListener('install', function (e) {
 });
 
 self.addEventListener('activate', function (e) {
+  var KEEP = [STATIC_CACHE, DATA_CACHE, IMG_CACHE];
   e.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) {
-        if (k.indexOf(VERSION) !== 0) return caches.delete(k);
+        if (KEEP.indexOf(k) === -1) return caches.delete(k);
       }));
     }).then(function () { return self.clients.claim(); })
   );
