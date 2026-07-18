@@ -2678,7 +2678,12 @@ function _vsCandidates(desc,scores){
         var okB=VS.albRow[r].indexOf(brandF)!==-1||(VS.brfRow[r]&&(VS.brfRow[r]===brandF||VS.brfRow[r].indexOf(brandF)!==-1));
         if(!okB)continue;
       }
-      if(useType&&fts&&fts.indexOf(VS.ftRow[r])===-1)continue;
+      if(useType&&fts){
+        var ftv=VS.ftRow[r];
+        /* produit non classifié : on le garde si la marque a déjà filtré (sinon trop de bruit) */
+        if(ftv){if(fts.indexOf(ftv)===-1)continue;}
+        else if(!useBrand||!brandF)continue;
+      }
       out.push(r);
     }
     return out;
