@@ -5,7 +5,7 @@
    - statiques (logo, icônes)   : cache-first
    - images Flickr              : cache-first plafonné à 400 entrées
 */
-var VERSION = 'hcp-v1';
+var VERSION = 'hcp-v2';
 var STATIC_CACHE = VERSION + '-static';
 var DATA_CACHE = VERSION + '-data';
 var IMG_CACHE = VERSION + '-img';
@@ -57,13 +57,15 @@ function cacheFirst(req, cacheName, limit) {
   return caches.open(cacheName).then(function (c) {
     return c.match(req).then(function (hit) {
       if (hit) return hit;
-      return fetch(req).then(function (res) {
-        if (res && (res.ok || res.type === 'opaque')) {
+      /* Requête CORS vérifiable (Flickr envoie Access-Control-Allow-Origin:*) :
+         on ne met JAMAIS en cache un échec — un raté reste retentable. */
+      return fetch(new Request(req.url, { mode: 'cors' })).then(function (res) {
+        if (res && res.ok) {
           c.put(req, res.clone());
           if (limit) trimCache(cacheName, limit);
         }
         return res;
-      });
+      }).catch(function () { return fetch(req); });
     });
   });
 }
