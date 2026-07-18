@@ -1021,10 +1021,10 @@ function renderNewRow(){
   if(all.length<4){wrap.style.display='none';wrap.innerHTML='';return}
   var h='<div class="new-row-head"><h2>Nouveautés</h2><a onclick="showNouveautes();return false">Voir tout ('+all.length+') →</a></div><div class="new-row">';
   all.slice(0,16).forEach(function(p){
-    var img=p.ts?imgUrl(p.p,p.ts,'n'):(p.s?imgUrl(p.p,p.s,'n'):'');
+    var img=p.ts?imgUrl(p.p,p.ts,'q'):(p.s?imgUrl(p.p,p.s,'q'):'');
     var price=extractPrice(p.t);
     h+='<div class="nr-card" onclick="location.hash=\'#/p/'+escH(p.p)+'\'">';
-    if(img)h+='<img src="'+escH(img)+'" loading="lazy" referrerpolicy="no-referrer" alt="">';
+    if(img)h+='<img src="'+escH(img)+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" alt="">';
     if(price)h+='<div class="nr-price">'+price+'</div>';
     h+='</div>';
   });
