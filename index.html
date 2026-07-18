@@ -2617,10 +2617,18 @@ function _vsLoadThumb(pid){
   return new Promise(function(res){
     var p=_PID_MAP[pid];
     if(!p){res(null);return}
+    var base=imgUrl(p.p,p.ts||p.s,'n');/* 320px : logos lisibles */
     var img=new Image();
     img.crossOrigin='anonymous';
-    img.onload=function(){res(img)};img.onerror=function(){res(null)};
-    img.src=imgUrl(p.p,p.ts||p.s,'n');/* 320px : logos lisibles */
+    img.onload=function(){res(img)};
+    img.onerror=function(){
+      /* cache SW opaque hérité : on contourne avec une URL différente */
+      var img2=new Image();
+      img2.crossOrigin='anonymous';
+      img2.onload=function(){res(img2)};img2.onerror=function(){res(null)};
+      img2.src=base+'?cors=1';
+    };
+    img.src=base;
   });
 }
 
