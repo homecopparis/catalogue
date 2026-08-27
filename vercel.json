@@ -6,26 +6,100 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
       ]
     },
     {
       "source": "/(.*).jpg",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=86400" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
       ]
     },
     {
       "source": "/icons/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=604800" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800"
+        }
       ]
     },
     {
       "source": "/visual_index.bin",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/m/lv-run-away",
+      "destination": "/m/louis-vuitton-run-away",
+      "permanent": true
+    },
+    {
+      "source": "/m/lv-run-away.html",
+      "destination": "/m/louis-vuitton-run-away",
+      "permanent": true
+    },
+    {
+      "source": "/m/lv-runner-tatic",
+      "destination": "/m/louis-vuitton-runner-tatic",
+      "permanent": true
+    },
+    {
+      "source": "/m/lv-runner-tatic.html",
+      "destination": "/m/louis-vuitton-runner-tatic",
+      "permanent": true
+    },
+    {
+      "source": "/m/lv-skate",
+      "destination": "/m/louis-vuitton-skate",
+      "permanent": true
+    },
+    {
+      "source": "/m/lv-skate.html",
+      "destination": "/m/louis-vuitton-skate",
+      "permanent": true
+    },
+    {
+      "source": "/m/lv-sneakers",
+      "destination": "/m/louis-vuitton-sneakers",
+      "permanent": true
+    },
+    {
+      "source": "/m/lv-sneakers.html",
+      "destination": "/m/louis-vuitton-sneakers",
+      "permanent": true
+    },
+    {
+      "source": "/m/lv-trainers",
+      "destination": "/m/louis-vuitton-trainers",
+      "permanent": true
+    },
+    {
+      "source": "/m/lv-trainers.html",
+      "destination": "/m/louis-vuitton-trainers",
+      "permanent": true
+    },
+    {
+      "source": "/m/lv-x-timberland",
+      "destination": "/m/louis-vuitton-x-timberland",
+      "permanent": true
+    },
+    {
+      "source": "/m/lv-x-timberland.html",
+      "destination": "/m/louis-vuitton-x-timberland",
+      "permanent": true
     }
   ]
 }
