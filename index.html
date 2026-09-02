@@ -807,11 +807,21 @@ var VALISES_RX=/\b(valise|valises|rimowa|luggage|suitcase|trolley|bagage)\b/i;
 var ACCESSOIRES_IDS={
   '72177720313032027':1,'72177720316332783':1,'72177720313062334':1,
   '72177720334058723':1,'72177720333424749':1,'72177720333072985':1,
-  '72177720333072950':1,'72177720333074652':1,'72177720333079076':1
+  '72177720333072950':1,'72177720333074652':1,'72177720333079076':1,
+  /* Royal Pop, LEGO (divers / autres) */
+  '72177720334119494':1,'lego':1
+};
+/* Albums explicitement classes dans CHAUSSURES (override du tp).
+   Nike TN, Saucony, Adidas x Gucci, Adizero : le nom ne contient aucun mot-cle
+   chaussure, donc ils tombaient par defaut dans Vetements. */
+var CHAUSSURES_IDS={
+  '72177720334074358':1,'72177720334283274':1,
+  '72177720333378980':1,'72177720335194704':1
 };
 function getGroupForCat(c){
   /* Priorite absolue : albums explicitement listes en Accessoires */
   if(ACCESSOIRES_IDS[c.id])return 'accessoires';
+  if(CHAUSSURES_IDS[c.id])return 'chaussures';
   var tp=c.tp||'';
   if(tp==='Chaussure')return 'chaussures';
   if(tp==='Sac')return 'maroquinerie';
@@ -845,6 +855,11 @@ function buildSidebar(){
     var c=CATEGORIES[i];var g=getGroupForCat(c);
     groups[g].push(c);groupCounts[g]+=(c.c||0);
   }
+  /* Tri alphabetique des albums a l'interieur de chaque groupe (insensible accents/casse) */
+  var _collator=(window.Intl&&Intl.Collator)?new Intl.Collator('fr',{sensitivity:'base',numeric:true}):null;
+  function _cmpCat(a,b){var na=(a.n||''),nb=(b.n||'');
+    return _collator?_collator.compare(na,nb):na.localeCompare(nb,'fr')}
+  for(var gkey in groups){groups[gkey].sort(_cmpCat)}
   var order=['vetements','chaussures','maroquinerie','accessoires','bijoux','electronique','valises'];
   for(var k=0;k<order.length;k++){
     var gk=order[k];var list=groups[gk];if(list.length===0)continue;
