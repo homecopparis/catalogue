@@ -169,6 +169,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .search-tag .tag-x{cursor:pointer;opacity:.6;font-size:13px}
 .search-tag .tag-x:hover{opacity:1}
 .search-results-info{padding:4px 0;font-size:11px;color:var(--text-dim);margin-bottom:8px}
+.share-btn{display:inline-flex;align-items:center;gap:5px;margin-left:10px;padding:4px 10px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;color:var(--text-dim);font-size:11px;cursor:pointer;vertical-align:middle;white-space:nowrap}
+.share-btn:hover{border-color:var(--green);color:var(--green)}
+.share-btn.copied{border-color:var(--green);color:var(--green);background:var(--green-dim)}
 .search-clear{position:absolute;right:32px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-dim);font-size:13px;cursor:pointer;padding:4px;line-height:1;display:none}
 .search-clear:hover{color:var(--text)}
 .search-wrap.has-text .search-clear{display:block}
@@ -989,6 +992,21 @@ function routeFromHash(){
 }
 window.addEventListener('hashchange',routeFromHash);
 
+/* Lien partageable des resultats : https://www.homecopparis.com/#/search?q=pochette */
+function copySearchLink(e){
+  if(e&&e.stopPropagation)e.stopPropagation();
+  var q=LAST_SEARCH_Q||document.getElementById('searchInput').value||'';
+  var url=window.location.origin+window.location.pathname+'#/search?q='+encodeURIComponent(q.trim());
+  var btn=document.getElementById('shareSearchBtn');
+  var done=function(){
+    if(!btn)return;
+    btn.classList.add('copied');btn.textContent='✓ Lien copié';
+    setTimeout(function(){btn.classList.remove('copied');btn.textContent='🔗 Partager cette recherche'},2000);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done,function(){_fallbackCopy(url);done()});
+  }else{_fallbackCopy(url);done()}
+}
 function copyProductLink(e){
   if(e&&e.stopPropagation)e.stopPropagation();
   var url=window.location.href;
@@ -1507,7 +1525,7 @@ var TYPE_DICT={
   'Ensemble':['ensemble','set','tracksuit','le set','set complet','co-ord','coord','survet','survêtement','survetement'],
   'Chaussures':['chaussure','chaussures','shoe','shoes','sneaker','sneakers','basket','baskets','boots','boot','botte','bottes','mule','mules','sandale','sandales','loafer','loafers','mocassin'],
   'Casquette':['casquette','cap','caps','bob','bobs','bonnet','bonnets','chapeau','hat','fitted','snapback','trucker','beanie'],
-  'Sac':['sac','bag','bags','sacoche','pochette','besace','backpack','tote','clutch','messenger','banane','fanny pack','bumbag','cabas','sac à main','sac a main','handbag','sac bandoulière','sac bandouliere','sac à dos','sac a dos','trousse','sac seau','mini sac','sac de voyage','duffle'],
+  'Sac':['sac','sacs','bag','bags','sacoche','pochette','besace','backpack','tote','clutch','messenger','banane','fanny pack','bumbag','cabas','sac à main','sac a main','handbag','sac bandoulière','sac bandouliere','sac à dos','sac a dos','trousse','sac seau','mini sac','sac de voyage','duffle'],
   'Ceinture':['ceinture','belt','belts','ceintures'],
   'Écharpe':['écharpe','echarpe','scarf','scarves','foulard','châle','chale','shawl','étole','etole'],
   'Lunettes':['lunettes','sunglasses','glasses','eyewear'],
@@ -1551,6 +1569,46 @@ var COLOR_WORD_INDEX={};
     COLOR_DICT[canon].forEach(function(syn){if(syn.indexOf(' ')===-1){COLOR_WORD_INDEX[syn.toLowerCase()]=canon;COLOR_WORD_INDEX[_srchNorm(syn)]=canon}});
   });
 })();
+
+/* ── Sous-types : valeurs du champ ft plus precises que le type canonique
+      ("pochette" ⊂ Sac, "doudoune" ⊂ Veste, "bonnet" ⊂ Casquette).
+      La cle DOIT correspondre exactement a la valeur ft des produits. ── */
+var SUBTYPE_DICT={
+  'Pochette':['pochette','pochettes','pouch','clutch'],
+  'Cabas':['cabas','tote','tote bag','sac cabas','shopping bag'],
+  'Banane':['banane','bananes','sac banane','fanny pack','bumbag','bum bag'],
+  'Sac à dos':['sac a dos','sac à dos','backpack','sacs a dos'],
+  'Sac à main':['sac a main','sac à main','handbag','sacs a main'],
+  'Sac bandoulière':['sac bandouliere','sac bandoulière','bandouliere','bandoulière','crossbody','cross body','messenger'],
+  'Sac seau':['sac seau','bucket bag','bucket'],
+  'Mini sac':['mini sac','mini-sac','minisac','micro sac','petit sac'],
+  'Sac de voyage':['sac de voyage','duffle','duffel','duffle bag','sac weekend','sac week-end'],
+  'Besace':['besace','besaces'],
+  'Trousse':['trousse','trousses','trousse de toilette'],
+  'Portefeuille':['portefeuille','portefeuilles','wallet','porte monnaie','porte-monnaie'],
+  'Porte-cartes':['porte cartes','porte-cartes','porte carte','porte-carte','cardholder','card holder'],
+  'Étui':['etui','étui','etuis','étuis'],
+  'Doudounes':['doudoune','doudounes','puffer','down jacket'],
+  'Manteaux':['manteau','manteaux','coat','parka','trench','trench coat'],
+  'Bonnets':['bonnet','bonnets','beanie'],
+  'Casquettes':['casquette','casquettes','cap','snapback','trucker','fitted','bob','bobs'],
+  'Jouets':['jouet','jouets','peluche','peluches']
+};
+/* Reconnait un sous-type : correspondance exacte, ou tres proche (faute de frappe).
+   Le garde-fou de longueur evite que "sac" soit avale par "sac a main". */
+function _matchSubtype(text){
+  var t=_foldTxt(text);
+  if(!t)return null;
+  var best=null,bestScore=0;
+  for(var i=0;i<SUBTYPE_LIST.length;i++){
+    var e=SUBTYPE_LIST[i];
+    if(t===e.syn)return e.canon;
+    if(t.length<e.syn.length*0.6)continue;
+    var sc=fuzzyMatch(t,e.syn);
+    if(sc>=0.85&&sc>bestScore){bestScore=sc;best=e.canon}
+  }
+  return best;
+}
 
 /* ── Brand alias shortcuts ── */
 var BRAND_ALIASES={'lv':'louis vuitton','si':'stone island','cp':'cp company','ysl':'yves saint laurent','slp':'yves saint laurent','ald':'aimé leon dore','cdg':'comme des garçon','fog':'fear of god','ow':'off white','pa':'palm angels','bp':'broken planet','rl':'ralph lauren','tn':'nike tn','nb':'new balance','tnf':'the north face','northface':'the north face','bv':'bottega veneta','mcq':'alexander mcqueen','am95':'air max 95','airmax':'air max 95','lp':'loro piana'};
@@ -1610,6 +1668,7 @@ var BR_INDEX={}; /* marque IA (champ br) foldée -> nom affiché */
 /* La marque IA n'emploie pas toujours le nom de l'album ("Saint Laurent" vs "Yves Saint Laurent") */
 var BR_NORMALIZE={'saint laurent':'yves saint laurent','acne studios':'acne studio','off-white':'off white','gallery dept':'gallery dept.','stussy':'stussy'};
 var BR_COUNTS={}; /* marque IA foldée -> nb produits */
+var FT_COUNTS={}; /* sous-type (ft foldé) -> nb produits */
 
 /* ── Marque IA normalisée vers le vocabulaire des albums ── */
 function _brNorm(br){var f=_foldTxt(br||'');return _foldTxt(BR_NORMALIZE[f]||f)}
@@ -1633,9 +1692,29 @@ var FT_TO_TYPE={
 /* ── Mots vides ignorés dans les requêtes ── */
 var SEARCH_STOPWORDS={'en':1,'de':1,'du':1,'des':1,'le':1,'la':1,'les':1,'un':1,'une':1,'et':1,'avec':1,'pour':1,'au':1,'aux':1,'d':1,'l':1,'ou':1}; /* 'a'/'à' conservés : "sac à main" */
 
+/* Liste aplatie {canon, syn} + libelle affiche */
+var SUBTYPE_LIST=[],SUBTYPE_LABEL={},SUBTYPE_MAXWORDS=1;
+(function(){
+  Object.keys(SUBTYPE_DICT).forEach(function(canon){
+    SUBTYPE_LABEL[_foldTxt(canon)]=canon;
+    SUBTYPE_DICT[canon].forEach(function(syn){
+      var sf=_foldTxt(syn);
+      var variants=[sf];
+      /* la requete est tokenisee sans mots vides : "sac de voyage" arrive en "sac voyage" */
+      var stripped=sf.split(/\s+/).filter(function(w){return !SEARCH_STOPWORDS[w]}).join(' ');
+      if(stripped&&stripped!==sf)variants.push(stripped);
+      variants.forEach(function(v){
+        SUBTYPE_LIST.push({canon:canon,syn:v});
+        var w=v.split(' ').length;
+        if(w>SUBTYPE_MAXWORDS)SUBTYPE_MAXWORDS=w;
+      });
+    });
+  });
+})();
+
 /* ── Build search index at load ── */
 function buildSearchIndex(){
-  BRAND_INDEX={};BRAND_WORDS={};BR_INDEX={};BR_COUNTS={};
+  BRAND_INDEX={};BRAND_WORDS={};BR_INDEX={};BR_COUNTS={};FT_COUNTS={};
   var CAT_MAP={};
   CATEGORIES.forEach(function(c){
     CAT_MAP[c.id]=c;
@@ -1688,6 +1767,7 @@ function buildSearchIndex(){
       dtSet[cat.tp]=catConf;
     }
 
+    if(p.ft)FT_COUNTS[_foldTxt(p.ft)]=(FT_COUNTS[_foldTxt(p.ft)]||0)+1;
     /* 1bis. Classification vision (ft) — source la plus fiable, conf 0.9 */
     if(p.ft&&FT_TO_TYPE[p.ft]){
       var ftCanon=FT_TO_TYPE[p.ft];
@@ -1867,8 +1947,11 @@ function fuzzyMatch(query,target,threshold){
 
 /* ═══ Token resolution ═══ */
 function resolveToken(token){
-  var result={type:null,color:null,brand:null,raw:token,score:0,conf:0};
+  var result={type:null,subtype:null,color:null,brand:null,raw:token,score:0,conf:0};
   var tkn=_srchNorm(token);
+  /* Sous-type ("pochette", "doudoune", "bonnet") : plus precis que le type, il gagne */
+  var sub0=_matchSubtype(token);
+  if(sub0){result.subtype=sub0;result.score=1;result.conf=1;return result}
   /* Synonyme exact : prioritaire ("pull" = Pull, et non Hoodie via "pull capuche") */
   var bestTypeScore=0,bestType=null;
   var exactType=TYPE_WORD_INDEX[token]||TYPE_WORD_INDEX[tkn];
@@ -1927,6 +2010,15 @@ function resolveMultiWord(tokens){
     var found=false;
     for(var len=Math.min(3,tokens.length-i);len>=2;len--){
       var combo=tokens.slice(i,i+len).join(' ');
+      /* Sous-type compose ("sac a main", "porte cartes", "sac de voyage") */
+      if(len<=SUBTYPE_MAXWORDS){
+        var comboSub=_matchSubtype(combo);
+        if(comboSub&&!BRAND_INDEX[combo]){
+          resolved.push({type:null,subtype:comboSub,color:null,brand:null,raw:combo,score:1,conf:1});
+          for(var ks=i;ks<i+len;ks++)skip[ks]=true;
+          found=true;break;
+        }
+      }
       /* Nom d'album exact : prioritaire sur les couleurs/types composés ("off white" = marque) */
       if(BRAND_INDEX[combo]){
         resolved.push({type:null,color:null,brand:BRAND_INDEX[combo],raw:combo,score:1,conf:1});
@@ -2000,7 +2092,7 @@ function resolveMultiWord(tokens){
    SMART SEARCH v4 — 3-level: strict → family → discovery
    ═══════════════════════════════════════════════════════ */
 function smartSearch(query){
-  if(!query||!query.trim())return{products:PRODUCTS,brands:CATEGORIES,info:'',level:0,count:PRODUCTS.length,filters:{types:[],colors:[],brands:[],free:[]},levelLabel:'',hint:''};
+  if(!query||!query.trim())return{products:PRODUCTS,brands:CATEGORIES,info:'',level:0,count:PRODUCTS.length,filters:{types:[],subtypes:[],colors:[],brands:[],free:[]},levelLabel:'',hint:''};
   var q=query.trim().toLowerCase().replace(/[\u2018\u2019']/g,"'");
   Object.keys(BRAND_ALIASES).forEach(function(alias){
     if(q.indexOf(BRAND_ALIASES[alias])!==-1)return;
@@ -2008,13 +2100,14 @@ function smartSearch(query){
     q=q.replace(re,BRAND_ALIASES[alias]);
   });
   var tokens=q.split(/\s+/).filter(function(t){return t.length>0&&!SEARCH_STOPWORDS[t]});
-  if(!tokens.length)return{products:PRODUCTS,brands:CATEGORIES,info:'',level:0,count:PRODUCTS.length,filters:{types:[],colors:[],brands:[],free:[]},levelLabel:'',hint:''};
+  if(!tokens.length)return{products:PRODUCTS,brands:CATEGORIES,info:'',level:0,count:PRODUCTS.length,filters:{types:[],subtypes:[],colors:[],brands:[],free:[]},levelLabel:'',hint:''};
   var resolved=resolveMultiWord(tokens);
 
-  var filterTypes=[],filterColors=[],filterBrands=[],freeTokens=[];
+  var filterTypes=[],filterColors=[],filterBrands=[],freeTokens=[],filterSubtypes=[];
   var _seenBrands={};
   resolved.forEach(function(r){
-    if(r.type){if(filterTypes.indexOf(r.type)===-1)filterTypes.push(r.type)}
+    if(r.subtype){if(filterSubtypes.indexOf(r.subtype)===-1)filterSubtypes.push(r.subtype)}
+    else if(r.type){if(filterTypes.indexOf(r.type)===-1)filterTypes.push(r.type)}
     else if(r.color){if(filterColors.indexOf(r.color)===-1)filterColors.push(r.color)}
     else if(r.brand){
       var _bk=r.brand.id||('n:'+r.brand.n);
@@ -2022,6 +2115,16 @@ function smartSearch(query){
     }
     else freeTokens.push(r.raw);
   });
+
+  /* Un sous-type restreint la recherche ; son type parent sert de filet pour les
+     resultats elargis quand le sous-type ne donne presque rien */
+  var subSet={},displayTypes=filterTypes.slice();
+  filterSubtypes.forEach(function(st){
+    subSet[_foldTxt(st)]=true;
+    var parent=FT_TO_TYPE[st];
+    if(parent&&filterTypes.indexOf(parent)===-1)filterTypes.push(parent);
+  });
+  var hasSub=filterSubtypes.length>0;
 
   var hasBrand=filterBrands.length>0;
   var hasType=filterTypes.length>0;
@@ -2066,7 +2169,7 @@ function smartSearch(query){
       }
       return false;
     });
-    return{products:brandProducts,brands:brandCats,catChips:brandCats,info:'Marque: '+filterBrands.map(function(b){return b.disp||b.n}).join(', '),count:brandProducts.length,filters:{types:filterTypes,colors:filterColors,brands:filterBrands,free:freeTokens},level:1,levelLabel:'Tous les produits',hint:''};
+    return{products:brandProducts,brands:brandCats,catChips:brandCats,info:'Marque: '+filterBrands.map(function(b){return b.disp||b.n}).join(', '),count:brandProducts.length,filters:{types:displayTypes,subtypes:filterSubtypes,colors:filterColors,brands:filterBrands,free:freeTokens},level:1,levelLabel:'Tous les produits',hint:''};
   }
 
   /* Build expansion sets */
@@ -2143,6 +2246,15 @@ function smartSearch(query){
       }
     }else{typeScore=1;typeClass='match'}
 
+    /* ── Sous-type (ft exact) ── */
+    if(hasSub){
+      if(entry.ftl&&subSet[entry.ftl]){typeScore=1;typeClass='match'}
+      else{
+        if(typeScore>0.3)typeScore=0.3;
+        if(typeClass==='match')typeClass='family';
+      }
+    }
+
     /* ── Color ── */
     if(hasColor){
       var cMatch=false;
@@ -2191,8 +2303,8 @@ function smartSearch(query){
       return;
     }
 
-    var isL1=(typeScore>=0.7||!hasType)&&(colorScore>=0.7||!hasColor)&&(textScore>=0.3||!hasFree);
-    var isL2=(typeScore>=0.15||!hasType)&&(colorScore>=0.15||!hasColor)&&(textScore>=0.15||!hasFree);
+    var isL1=(typeScore>=0.7||(!hasType&&!hasSub))&&(colorScore>=0.7||!hasColor)&&(textScore>=0.3||!hasFree);
+    var isL2=(typeScore>=0.15||(!hasType&&!hasSub))&&(colorScore>=0.15||!hasColor)&&(textScore>=0.15||!hasFree);
 
     if(isL1){level1.push({entry:entry,score:finalScore,level:1})}
     else if(isL2){level2.push({entry:entry,score:finalScore,level:2})}
@@ -2252,7 +2364,8 @@ function smartSearch(query){
 
   /* Info */
   var infoParts=[];
-  if(filterTypes.length)infoParts.push('Type: '+filterTypes.join(', '));
+  if(filterSubtypes.length)infoParts.push('Type: '+filterSubtypes.join(', '));
+  if(displayTypes.length)infoParts.push('Type: '+displayTypes.join(', '));
   if(filterColors.length)infoParts.push('Couleur: '+filterColors.join(', '));
   if(filterBrands.length)infoParts.push('Marque: '+filterBrands.map(function(b){return b.disp||b.n}).join(', '));
   if(freeTokens.length)infoParts.push('Texte: '+freeTokens.join(' '));
@@ -2270,7 +2383,7 @@ function smartSearch(query){
   }
 
   return{products:products,brands:brands,info:infoParts.join(' · '),count:products.length,
-    filters:{types:filterTypes,colors:filterColors,brands:filterBrands,free:freeTokens},
+    filters:{types:displayTypes,subtypes:filterSubtypes,colors:filterColors,brands:filterBrands,free:freeTokens},
     level:resultLevel,levelLabel:levelLabels[resultLevel]||'',hint:hint};
 }
 
@@ -2306,11 +2419,23 @@ function buildSuggestions(query){
     }
     suggestions.push({label:BR_INDEX[bf],type:'Marque',kind:'aibrand',score:sb*1.05,count:BR_COUNTS[bf]||0});
   });
+  var qIsSubtype=_matchSubtype(q)!==null;
+  /* Sous-types ("Pochette", "Cabas"...) : plus precis, donc proposes en premier */
+  Object.keys(SUBTYPE_DICT).forEach(function(canon){
+    var bestS=0;
+    SUBTYPE_DICT[canon].forEach(function(syn){var sc=fuzzyMatch(q,_foldTxt(syn));if(sc>bestS)bestS=sc});
+    if(bestS>0.5){
+      var cnt=FT_COUNTS[_foldTxt(canon)]||0;
+      if(cnt>0)suggestions.push({label:canon,type:'Type',kind:'subtype',score:bestS*1.1,count:cnt});
+    }
+  });
   /* Type suggestions — count includes family expansion */
   Object.keys(TYPE_DICT).forEach(function(canonical){
     var syns=TYPE_DICT[canonical];
     var bestS=0;
     syns.forEach(function(syn){var s=fuzzyMatch(q,syn.toLowerCase());if(s>bestS)bestS=s});
+    /* "sac" tape en entier : le type complet passe devant ses sous-types */
+    if(!qIsSubtype&&(TYPE_WORD_INDEX[q]===canonical||TYPE_WORD_INDEX[_foldTxt(q)]===canonical))bestS=1.15;
     if(bestS>0.4){
       /* Count products matching this type OR its family expansion */
       var expandedTypes={};
@@ -2495,6 +2620,7 @@ function executeSmartSearch(q,opts){
   if(!opts||!opts._q)_pushHash('#/search?q='+encodeURIComponent(q));
   var tagsHtml='';
   if(result.filters){
+    (result.filters.subtypes||[]).forEach(function(t){tagsHtml+='<span class="search-tag">'+escH(t)+' <span class="tag-x" onclick="removeSearchToken(this,\'type\',\''+escH(t)+'\')">×</span></span>'});
     result.filters.types.forEach(function(t){tagsHtml+='<span class="search-tag">'+escH(t)+' <span class="tag-x" onclick="removeSearchToken(this,\'type\',\''+escH(t)+'\')">×</span></span>'});
     result.filters.colors.forEach(function(c){tagsHtml+='<span class="search-tag">'+escH(c)+' <span class="tag-x" onclick="removeSearchToken(this,\'color\',\''+escH(c)+'\')">×</span></span>'});
     result.filters.brands.forEach(function(b){var _bl=b.disp||b.n;tagsHtml+='<span class="search-tag">'+escH(_bl)+' <span class="tag-x" onclick="removeSearchToken(this,\'brand\',\''+escH(b.raw||_bl)+'\')">×</span></span>'});
@@ -2521,7 +2647,8 @@ function executeSmartSearch(q,opts){
     result.catChips.slice(0,8).forEach(function(c){chips+='<span class="nr-chip" onclick="showBrand(\''+escH(c.id)+'\')">'+escH(c.n)+' <span style="opacity:.45">'+(c.c||0)+'</span></span>'});
     hintHtml+=chips+'</div>';
   }
-  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="clearSearch()">←</button><h2>Recherche</h2><span class="search-results-info">'+countText+(result.info?' — '+escH(result.info):'')+levelBadge+'</span>'+hintHtml;
+  var shareBtn=result.count>0?'<button class="share-btn" id="shareSearchBtn" onclick="copySearchLink()" title="Copier le lien de cette recherche">🔗 Partager cette recherche</button>':'';
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="clearSearch()">←</button><h2>Recherche</h2><span class="search-results-info">'+countText+(result.info?' — '+escH(result.info):'')+levelBadge+shareBtn+'</span>'+hintHtml;
   FILTERED=result.products;
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
   if(!FILTERED.length)renderNoResults(q);
