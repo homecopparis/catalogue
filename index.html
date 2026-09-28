@@ -205,8 +205,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .menu-group-body .menu-item{padding-left:28px;font-size:12px}
 .menu-group-body .menu-item-all{color:var(--green);font-weight:500;font-size:12px}
 .img-fallback{display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:linear-gradient(135deg,var(--surface),var(--bg2));color:var(--text-dim);font-size:11px;text-align:center;padding:8px;font-family:var(--font-display);font-style:italic;letter-spacing:.5px}
-.product-card img.broken,.brand-card img.broken{display:none}
-.product-card.no-img::after,.brand-card.no-img::after{content:attr(data-fallback);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--surface),var(--bg2));color:var(--text-dim);font-size:12px;text-align:center;padding:12px;font-family:var(--font-display);font-style:italic}
+.product-card img.broken,.brand-card img.broken,.nr-card img.broken{display:none}
+.nr-card.no-img{min-height:130px}.nr-card.nr-outfit.no-img{min-height:213px}
+.product-card.no-img::after,.brand-card.no-img::after,.nr-card.no-img::after{content:attr(data-fallback);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--surface),var(--bg2));color:var(--text-dim);font-size:12px;text-align:center;padding:12px;font-family:var(--font-display);font-style:italic}
 .sidebar-footer{padding:12px 16px;border-top:1px solid var(--border)}
 .auth-btn{display:block;width:100%;padding:9px;background:transparent;color:var(--green);border:1px solid var(--green);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;text-align:center;margin-bottom:8px;transition:all .15s;font-family:var(--font-body)}
 .auth-btn:hover{background:var(--green-dim)}
@@ -326,7 +327,14 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   .hero h1{font-size:24px}
 }
 @keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.brand-card,.product-card{animation:fadeInUp .35s ease both}
+.brand-card,.product-card{animation:fadeInUp .35s ease backwards}
+/* Écrans tactiles (pas de survol) : le logo au survol ne sert à rien et ses filtres
+   (flou + mix-blend-mode) coûtent une couche GPU par carte ; les pastilles prix/favori
+   perdent leur flou d'arrière-plan (3 backdrop-filter par carte produit). */
+@media (hover:none){
+  .brand-logo-overlay{display:none}
+  .product-card .price-overlay,.fav-btn,.fav-count{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(0,0,0,.62)}
+}
 /* ═══ FILTER BAR ═══ */
 .filter-bar{margin-bottom:20px;display:none}
 .filter-bar.visible{display:block}
@@ -1129,7 +1137,7 @@ function _outfitRowHtml(){
   var h='<div class="new-row-head"><h2>Outfits \u00b7 Inspiration</h2><a onclick="showOutfits();return false">Voir tout ('+OUTFIT_PRODUCTS.length+') \u2192</a></div><div class="new-row" style="margin-bottom:24px">';
   list.forEach(function(p){
     var img=p.s?imgUrl(p.p,p.s,'n'):'';
-    h+='<div class="nr-card nr-outfit" onclick="location.hash=\'#/p/'+escH(p.p)+'\'">';
+    h+='<div class="nr-card nr-outfit" data-fallback="'+escH(p.t||'Outfit')+'" onclick="location.hash=\'#/p/'+escH(p.p)+'\'">';
     if(img)h+='<img src="'+escH(img)+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" alt="'+escH(p.t||'Outfit')+'">';
     h+='<div class="nr-outfit-num">'+escH(p.t||'')+'</div></div>';
   });
@@ -1213,7 +1221,7 @@ function renderNewRow(){
   all.slice(0,16).forEach(function(p){
     var img=p.ts?imgUrl(p.p,p.ts,'q'):(p.s?imgUrl(p.p,p.s,'q'):'');
     var price=extractPrice(p.t);
-    h+='<div class="nr-card" onclick="location.hash=\'#/p/'+escH(p.p)+'\'">';
+    h+='<div class="nr-card" data-fallback="'+(price?escH(price)+' \u20ac':'Image indisponible')+'" onclick="location.hash=\'#/p/'+escH(p.p)+'\'">';
     if(img)h+='<img src="'+escH(img)+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" alt="">';
     if(price)h+='<div class="nr-price">'+price+'</div>';
     h+='</div>';
@@ -1535,6 +1543,16 @@ var BRAND_LOGO_RULES=[
 ];
 /* Liste d'extensions a essayer en cascade pour les logos (certains sont en SVG, d'autres PNG/WebP/JPG) */
 var LOGO_EXTS=['svg','png','webp','jpg'];
+/* État réel de site/logos au 28/09/2026 : on demande directement le bon fichier au lieu
+   d'essayer .svg → .png → .webp → .jpg à chaque chargement (jusqu'à 4 erreurs 404 par
+   carte). LOGO_EXT = logos valides qui ne sont pas en .svg. LOGO_NONE = marques sans
+   logo utilisable : aucun fichier, ou un fichier de 15 octets « Redirecting... »
+   (téléchargement raté). Après avoir ajouté un vrai logo pour une de ces marques,
+   la retirer de LOGO_NONE (et l'ajouter à LOGO_EXT si ce n'est pas un .svg). */
+var LOGO_EXT={'dior':'png','broken-planet':'webp'};
+var LOGO_NONE={'ami-paris':1,'arte':1,'birkenstock':1,'canada-goose':1,'chloe':1,'delvaux':1,'denim-tears':1,'drole-de-monsieur':1,'dyson':1,'enfants-riches-deprimes':1,'fear-of-god':1,'ghd':1,'golden-goose':1,'kroen':1,'lego':1,'loro-piana':1,'mertra':1,'mmy':1,'nike-nocta':1,'palace':1,'palm-angels':1,'rick-owens':1,'syna':1,'thom-browne':1};
+/* Le logo n'apparaît qu'au survol : inutile de le charger sur mobile/tablette tactile. */
+var CAN_HOVER=!!(window.matchMedia&&window.matchMedia('(hover:hover)').matches);
 function tryNextLogoExt(img){
   var idx=parseInt(img.getAttribute('data-ext-idx')||'0')+1;
   if(idx>=LOGO_EXTS.length){img.style.display='none';return;}
@@ -1553,7 +1571,7 @@ function brandLogoSlug(name){
    Si elle echoue (404), on bascule sur la cover Flickr d'origine via onerror. */
 function tryLocalCover(img){
   var fb=img.getAttribute('data-flickr-fallback');
-  if(fb){img.removeAttribute('data-flickr-fallback');img.src=fb;return;}
+  if(fb){img.removeAttribute('data-flickr-fallback');img.removeAttribute('data-rbase');img.src=fb;return;}
   handleImgErr(img);
 }
 
@@ -1575,7 +1593,10 @@ function renderBrandCards(cats){
       var errHandler=(localCover&&flickrCover)?'tryLocalCover(this)':'handleImgErr(this)';
       h+='<img src="'+escH(primaryCover)+'" alt="'+escH(c.n)+'" loading="lazy" referrerpolicy="no-referrer"'+fbAttr+' onerror="'+errHandler+'">';
     }
-    if(slug){h+='<img class="brand-logo-overlay" src="logos/'+slug+'.svg" alt="" loading="lazy" data-slug="'+slug+'" data-ext-idx="0" onerror="tryNextLogoExt(this)">';}
+    if(slug&&CAN_HOVER&&!LOGO_NONE[slug]){
+      var lext=LOGO_EXT[slug]||'svg';
+      h+='<img class="brand-logo-overlay" src="logos/'+slug+'.'+lext+'" alt="" loading="lazy" data-slug="'+slug+'" data-ext-idx="'+Math.max(0,LOGO_EXTS.indexOf(lext))+'" onerror="tryNextLogoExt(this)">';
+    }
     h+='<div class="brand-overlay"><div class="name">'+escH(c.n)+'</div><div class="cnt">'+c.c+' articles</div></div></div>';
   }
   g.innerHTML=h;
@@ -1613,16 +1634,11 @@ function renderBatch(){
   grid.insertAdjacentHTML('beforeend',h);RENDER_INDEX=end;
 }
 
-/* Global image-error handler: after retries exhausted, mark the parent card as no-img */
+/* Appelé par les attributs onerror="handleImgErr(this)" des cartes. La relance est
+   centralisée dans setupImageRetry (écouteur global) : on ne compte donc plus deux
+   fois la même erreur. Filet de sécurité si l'écouteur n'est pas encore en place. */
 function handleImgErr(img){
-  var retries=parseInt(img.getAttribute('data-retry-final')||'0');
-  if(retries>=3){
-    img.classList.add('broken');
-    var card=img.closest('.product-card,.brand-card');
-    if(card)card.classList.add('no-img');
-    return;
-  }
-  img.setAttribute('data-retry-final',retries+1);
+  if(!_IMG_RETRY_ON)_imgRetry(img);
 }
 
 function setupInfiniteScroll(){
@@ -3547,32 +3563,122 @@ function cleanTitle(title){
 }
 function escH(s){if(!s)return '';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 
+/* ═══ IMAGES : relance unique + chien de garde (28/09/2026) ═══
+   Avant : deux mécanismes se déclenchaient sur la même erreur, les relances des
+   covers étaient immédiates (une coupure réseau d'une seconde suffisait à les
+   épuiser), une image restée « en attente » n'était jamais relancée, et dans les
+   rangées de l'accueil une image abandonnée laissait une case noire.
+   Maintenant :
+   - erreur → jusqu'à 3 relances espacées (0,7 s, 2 s, 5 s), la 2e en taille Flickr
+     plus petite ; ensuite la carte affiche son libellé de secours (.no-img) ;
+   - chien de garde : une image visible qui n'a toujours pas fini au bout de 10 s est
+     re-demandée en parallèle (sans couper le téléchargement en cours) ; la première
+     des deux qui arrive s'affiche ;
+   - au retour sur la page (onglet réactivé, retour arrière), les images visibles
+     sont re-vérifiées. */
+var _IMG_RETRY_ON=false;
+var IMG_CARD_SEL='.product-card,.brand-card,.nr-card,.lb-outfit-item';
+var IMG_WATCH_SEL='#brandsGrid img,#newRow img,#productsGrid img,#lightbox img';
+var IMG_STALL_MS=10000;
+function _imgStrip(u){return String(u||'').replace(/[?&][rk]=\d+$/,'')}
+function _imgSmaller(u){
+  var m=u.match(/_([bzn])\.jpg$/);
+  if(!m||u.indexOf('staticflickr.com')===-1)return u;
+  return u.slice(0,-5)+({b:'z',z:'n',n:'q'})[m[1]]+'.jpg';
+}
+function _imgGiveUp(img){
+  img.classList.add('broken');
+  var card=img.closest(IMG_CARD_SEL);
+  if(card)card.classList.add('no-img');
+}
+function _imgRetry(img){
+  if(!img.getAttribute('src')||img.hasAttribute('data-retrying'))return;
+  if(img.classList.contains('brand-logo-overlay')||img.hasAttribute('data-flickr-fallback'))return;
+  var cur=_imgStrip(img.src),rb=img.getAttribute('data-rbase');
+  /* Nouvelle image dans le même <img> (ex. #lbImg réutilisé) : compteur remis à zéro */
+  if(!rb||(cur!==rb&&cur!==_imgSmaller(rb))){
+    rb=cur;img.setAttribute('data-rbase',rb);img.removeAttribute('data-retry');
+    img.classList.remove('broken');
+  }
+  if(img.classList.contains('broken'))return;
+  var n=parseInt(img.getAttribute('data-retry')||'0',10);
+  if(n>=3){_imgGiveUp(img);return}
+  img.setAttribute('data-retry',n+1);
+  img.setAttribute('data-retrying','1');
+  var next=(n===1)?_imgSmaller(cur):cur;
+  setTimeout(function(){
+    img.removeAttribute('data-retrying');
+    if(!img.isConnected||_imgStrip(img.src)!==cur)return;
+    img.src=next+(next.indexOf('?')===-1?'?':'&')+'r='+(n+1);
+  },[700,2000,5000][n]);
+}
+/* Image bloquée : on la redemande à côté sans interrompre le chargement en cours */
+function _imgKick(img){
+  var k=parseInt(img.getAttribute('data-kick')||'0',10);
+  if(k>=2)return;
+  img.setAttribute('data-kick',k+1);
+  var cur=_imgStrip(img.src);
+  var url=cur+(cur.indexOf('?')===-1?'?':'&')+'k='+(k+1);
+  var probe=new Image();
+  try{probe.referrerPolicy='no-referrer'}catch(_){}
+  probe.onload=function(){
+    if(img.isConnected&&_imgStrip(img.src)===cur&&!(img.complete&&img.naturalWidth>0)){
+      img.removeAttribute('loading');img.src=url;
+    }
+  };
+  probe.src=url;
+}
+function _imgScan(){
+  if(document.hidden)return;
+  var now=Date.now(),vh=window.innerHeight,vw=window.innerWidth;
+  var list=document.querySelectorAll(IMG_WATCH_SEL);
+  for(var i=0;i<list.length;i++){
+    var img=list[i];
+    if(!img.getAttribute('src')||img.classList.contains('broken')||img.classList.contains('brand-logo-overlay'))continue;
+    if(img.complete&&img.naturalWidth>0){if(img.hasAttribute('data-seen'))img.removeAttribute('data-seen');continue}
+    if(img.hasAttribute('data-retrying'))continue;
+    var r=img.getBoundingClientRect();
+    if(!r.width||!r.height||r.bottom<-100||r.top>vh+100||r.right<-100||r.left>vw+100)continue;
+    /* Terminée mais vide : erreur passée inaperçue → relance normale */
+    if(img.complete){_imgRetry(img);continue}
+    var seen=+img.getAttribute('data-seen')||0;
+    if(!seen){img.setAttribute('data-seen',now);continue}
+    if(now-seen>IMG_STALL_MS){img.setAttribute('data-seen',now);_imgKick(img)}
+  }
+}
 function setupImageRetry(){
+  if(_IMG_RETRY_ON)return;
+  _IMG_RETRY_ON=true;
   document.addEventListener('error',function(e){
-    if(e.target.tagName!=='IMG')return;var img=e.target;
-    /* IGNORE le logo overlay : son onerror inline cache l'image, pas besoin de retry
+    var img=e.target;
+    if(!img||img.tagName!=='IMG')return;
+    /* IGNORE le logo overlay : son onerror inline gère la cascade d'extensions,
        et surtout ne pas marquer la brand-card parente en .no-img */
     if(img.classList.contains('brand-logo-overlay'))return;
-    /* IGNORE les images avec fallback Flickr en attente (cover locale absente sur GitHub).
-       Laisse tryLocalCover faire son boulot via le onerror inline. */
+    /* IGNORE les covers locales avec fallback Flickr en attente : tryLocalCover
+       (onerror inline) bascule sur la cover Flickr. */
     if(img.hasAttribute('data-flickr-fallback'))return;
-    /* Skip if already flagged broken */
-    if(img.classList.contains('broken'))return;
-    var retries=parseInt(img.getAttribute('data-retry')||'0');
-    if(retries>=2){
-      /* Final fallback: mark card as no-img so CSS shows the placeholder */
-      img.classList.add('broken');
-      var card=img.closest('.product-card,.brand-card');
-      if(card)card.classList.add('no-img');
-      return;
-    }
-    img.setAttribute('data-retry',retries+1);
-    var src=img.src;
-    if(src.indexOf('_b.jpg')!==-1){img.src=src.replace('_b.jpg','_z.jpg');return}
-    if(src.indexOf('_n.jpg')!==-1){img.src=src.replace('_n.jpg','_q.jpg');return}
-    if(src.indexOf('_z.jpg')!==-1){img.src=src.replace('_z.jpg','_n.jpg');return}
-    setTimeout(function(){img.src=src.split('?')[0]+'?r='+retries},1000*retries);
+    _imgRetry(img);
   },true);
+  /* Une image finalement chargée repart d'un état propre */
+  document.addEventListener('load',function(e){
+    var img=e.target;
+    if(!img||img.tagName!=='IMG'||!img.hasAttribute('data-rbase')&&!img.hasAttribute('data-kick')&&!img.hasAttribute('data-seen'))return;
+    img.removeAttribute('data-retry');img.removeAttribute('data-kick');img.removeAttribute('data-seen');img.removeAttribute('data-rbase');
+    if(img.classList.contains('broken')){
+      img.classList.remove('broken');
+      var card=img.closest(IMG_CARD_SEL);if(card)card.classList.remove('no-img');
+    }
+  },true);
+  setInterval(_imgScan,2500);
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden)return;
+    /* Le temps passé en arrière-plan ne compte pas comme un blocage */
+    var l=document.querySelectorAll(IMG_WATCH_SEL+'[data-seen]');
+    for(var i=0;i<l.length;i++)l[i].removeAttribute('data-seen');
+    _imgScan();
+  });
+  window.addEventListener('pageshow',function(){setTimeout(_imgScan,300)});
 }
 
 /* ═══════════════════════════════════════════════════════
