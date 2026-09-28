@@ -282,6 +282,23 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .lightbox img{max-width:90vw;max-height:80vh;border-radius:8px;object-fit:contain}
 .lightbox .lb-info{margin-top:12px;text-align:center}
 .lb-similar{margin-top:10px;text-align:center;max-width:min(90vw,560px)}
+/* Outfits : bande « Les pièces de la tenue » dans la fiche + grille 9:16 */
+.lb-outfit{margin-top:12px;text-align:center;max-width:min(94vw,640px)}
+.lb-outfit-label{font-size:11px;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px}
+.lb-outfit-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:2px}
+.lb-outfit-item{position:relative;width:78px;cursor:pointer;flex-shrink:0}
+.lightbox .lb-outfit-item img{width:78px;height:78px;max-width:none;max-height:none;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,.2);display:block;transition:transform .15s,border-color .15s;background:#1a1a1a}
+.lb-outfit-item:hover img{transform:scale(1.06);border-color:var(--green)}
+.lb-outfit-item span{display:block;font-size:10px;line-height:1.25;color:rgba(255,255,255,.7);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-outfit-total{color:var(--green);font-weight:600;letter-spacing:.3px}
+.lightbox.lb-is-outfit #lbCart,.lightbox.lb-is-outfit #lbFav{display:none}
+.lightbox.lb-is-outfit #lbImg{max-height:calc(100vh - 250px)}
+@media(max-width:768px){.lb-outfit{padding-bottom:58px}.lb-outfit-item{width:62px}.lightbox .lb-outfit-item img{width:62px;height:62px}.lightbox.lb-is-outfit #lbImg{max-height:calc(100vh - 320px)}}
+.outfit-grid .product-card img{aspect-ratio:9/16}
+.outfit-grid .fav-btn,.outfit-grid .fav-count{display:none}
+.new-row .nr-card.nr-outfit{flex:0 0 120px;width:120px}
+.new-row .nr-card.nr-outfit img{width:120px;height:213px}
+.nr-outfit-num{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:600;padding:2px 7px;border-radius:5px;pointer-events:none}
 .lb-sim-label{font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
 .lb-sim-row{display:flex;gap:8px;justify-content:flex-start;overflow-x:auto;padding:2px;scrollbar-width:thin}
 .lb-sim-row img{width:56px;height:56px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.15);transition:transform .15s,border-color .15s;flex-shrink:0}
@@ -446,6 +463,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <button class="lb-nav lb-next" id="lbNext" onclick="lbNext(event)" aria-label="Produit suivant">›</button>
   <img id="lbImg" src="" alt="" referrerpolicy="no-referrer">
   <div class="lb-info"><div class="lb-brand" id="lbBrand"></div><div class="lb-price" id="lbPrice"></div><div class="lb-desc" id="lbDesc"></div></div>
+  <div class="lb-outfit" id="lbOutfit" style="display:none"></div>
   <div class="lb-similar" id="lbSimilar" style="display:none"></div>
   <button class="lb-copy" id="lbCopy" onclick="copyProductLink(event)" title="Copier le lien de ce produit">🔗 Copier le lien</button>
   <button class="lb-cart" id="lbCart" onclick="toggleLbCart(event)" title="Ajouter au panier devis">🛒</button>
@@ -674,6 +692,33 @@ var DATA_READY=false;      /* produits chargés */
 var SHELL_READY=false;     /* interface initialisée (une seule fois) */
 var PENDING_ACTION=null;   /* action différée en attendant les produits */
 
+/* ═══ OUTFITS (album Flickr « Outfits Inspiration ») ═══
+   Tenues complètes composées avec les articles du catalogue. Elles sont sorties
+   de PRODUCTS / CATEGORIES au chargement : elles n'apparaissent donc ni dans la
+   recherche, ni dans Nouveautés, ni dans « Vous aimerez aussi », ni dans les
+   groupes du menu. Les pièces de chaque tenue sont lues dans outfits.json
+   (clé = titre Flickr exact, ex. « Outfit 12 »). */
+var OUTFITS_ALBUM_ID='72177720335846367';
+var OUTFIT_PRODUCTS=[];var OUTFITS_CAT=null;var OUTFIT_PIECES=null;
+function _outfitNum(p){var m=(p.t||'').match(/outfit\s*(\d+)/i);return m?parseInt(m[1],10):9999}
+function _isOutfitCat(c){return !!c&&(c.id===OUTFITS_ALBUM_ID||c.tp==='Outfit')}
+function _isOutfitProd(p){return !!p&&(p.a===OUTFITS_ALBUM_ID||(OUTFITS_CAT&&p.a===OUTFITS_CAT.id))}
+function _splitOutfitCats(cats){var out=[];for(var i=0;i<cats.length;i++){if(_isOutfitCat(cats[i]))OUTFITS_CAT=cats[i];else out.push(cats[i])}return out}
+function loadOutfitPieces(cb){
+  if(OUTFIT_PIECES){if(cb)cb();return}
+  fetch('outfits.json',{cache:'no-cache'}).then(function(r){return r.ok?r.json():{}})
+    .then(function(j){OUTFIT_PIECES=(j&&j.outfits)||{};if(cb)cb()})
+    .catch(function(){OUTFIT_PIECES={};if(cb)cb()});
+}
+function _outfitInfo(p){
+  if(!OUTFIT_PIECES)return null;
+  var v=OUTFIT_PIECES[(p.t||'').trim()];
+  if(!v){var n=_outfitNum(p);if(n<9999)v=OUTFIT_PIECES['Outfit '+n]}
+  if(!v)return null;
+  if(Array.isArray(v))return{pieces:v};
+  return v;
+}
+
 function _normalizeCats(rawCats){
   return rawCats.map(function(c){
     if(c.n)return c; /* already optimized */
@@ -702,6 +747,10 @@ function applyFullData(data){
     if(p.cs)out.cs=p.cs;
     return out;
   });
+  /* Outfits : sortis du catalogue produits (voir OUTFITS_ALBUM_ID) */
+  CATEGORIES=_splitOutfitCats(CATEGORIES);
+  OUTFIT_PRODUCTS=PRODUCTS.filter(_isOutfitProd).sort(function(a,b){return _outfitNum(a)-_outfitNum(b)});
+  if(OUTFIT_PRODUCTS.length)PRODUCTS=PRODUCTS.filter(function(p){return !_isOutfitProd(p)});
   /* Recalcul des compteurs des albums thematiques */
   Object.keys(THEMATIC_ALBUM_AGGREGATION).forEach(function(themeName){
     var cat=CATEGORIES.find(function(c){return c.n===themeName});
@@ -725,7 +774,7 @@ function applyFullData(data){
 fetch('data.cats.json').then(function(r){return r.ok?r.json():null}).then(function(cats){
   if(!cats||DATA_READY)return;
   PREFIX=cats.prefix||'https://live.staticflickr.com/65535/';
-  CATEGORIES=_normalizeCats(cats.categories||[]);
+  CATEGORIES=_splitOutfitCats(_normalizeCats(cats.categories||[]));
   init();
 }).catch(function(){/* fichier pas encore déployé : l'étape 2 prendra le relais */});
 
@@ -851,6 +900,10 @@ function buildSidebar(){
   h+='<div class="menu-item" data-cat="favorites" onclick="showFavorites()"><span>\u2665 Mes Favoris</span><span class="count" id="favMenuCount">'+(favCount||'')+'</span></div>';
   var newCount=PRODUCTS.filter(_isNew).length;
   h+='<div class="menu-item" data-cat="nouveautes" onclick="showNouveautes()"><span>Nouveaut\u00e9s</span><span class="count">'+(newCount?newCount.toLocaleString('fr-FR'):'')+'</span></div>';
+  if(OUTFITS_CAT||OUTFIT_PRODUCTS.length){
+    var _oc=OUTFIT_PRODUCTS.length||(OUTFITS_CAT&&OUTFITS_CAT.c)||'';
+    h+='<div class="menu-item" data-cat="outfits" onclick="showOutfits()"><span>\u2728 Outfits</span><span class="count">'+_oc+'</span></div>';
+  }
   /* Group categories */
   var groups={vetements:[],chaussures:[],maroquinerie:[],accessoires:[],bijoux:[],electronique:[],valises:[]};
   var groupCounts={vetements:0,chaussures:0,maroquinerie:0,accessoires:0,bijoux:0,electronique:0,valises:0};
@@ -962,7 +1015,14 @@ function routeFromHash(){
     return;
   }
   if((m=h.match(/^#\/p\/([^\/]+)$/))){
-    var pid=m[1];var prod=PRODUCTS.find(function(p){return p.p===pid});
+    var pid=m[1];
+    var _oi=OUTFIT_PRODUCTS.findIndex(function(p){return p.p===pid});
+    if(_oi>=0){
+      _routing=true;
+      try{showOutfits({_q:1});openLightbox(_oi,{_q:1})}finally{_routing=false}
+      return;
+    }
+    var prod=PRODUCTS.find(function(p){return p.p===pid});
     if(!prod){showHome({_q:1});return}
     _routing=true;
     try{
@@ -982,6 +1042,8 @@ function routeFromHash(){
     var _si=document.getElementById('searchInput');if(_si)_si.value=_sq;
     if(typeof _updateClearBtn==='function')_updateClearBtn();
     executeSmartSearch(_sq,{_q:1});
+  }else if(h==='#/outfits'){
+    showOutfits({_q:1});
   }else if(h==='#/new'){
     showNouveautes({_q:1});
   }else if((m=h.match(/^#\/cat\/([^\/]+)$/))){
@@ -1042,6 +1104,78 @@ function showHome(opts){
   if(!opts||!opts._q)_pushHash('#/');
 }
 
+/* ═══ OUTFITS ═══ */
+function showOutfits(opts){
+  if(_needsData(function(){showOutfits(opts)}))return;
+  window.scrollTo({top:0,left:0,behavior:'auto'});
+  CURRENT_VIEW='outfits';CURRENT_CAT=null;setActiveMenu('outfits');
+  document.getElementById('hero').style.display='none';
+  document.getElementById('brandsGrid').style.display='none';
+  var _nr=document.getElementById('newRow');if(_nr)_nr.style.display='none';
+  document.getElementById('productsSection').style.display='block';
+  document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>Outfits <span style="font-size:13px;color:var(--text-dim);font-weight:400">(tenues complètes composées avec les articles du catalogue — ouvre une tenue pour voir ses pièces)</span></h2>';
+  hcpTrack('pageview',{url:'/outfits',title:'Outfits'});
+  hideFilterBar();
+  ACTIVE_FILTERS={types:[],colors:[],brands:[],prices:[]};ACTIVE_SORT=null;
+  BRAND_PRODUCTS=OUTFIT_PRODUCTS.slice();FILTERED=BRAND_PRODUCTS;
+  RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
+  renderBatch();closeSidebarMobile();
+  loadOutfitPieces();
+  if(!opts||!opts._q)_pushHash('#/outfits');
+}
+function _outfitRowHtml(){
+  if(!OUTFIT_PRODUCTS.length)return '';
+  var list=OUTFIT_PRODUCTS.slice().sort(function(a,b){return _outfitNum(b)-_outfitNum(a)}).slice(0,16);
+  var h='<div class="new-row-head"><h2>Outfits \u00b7 Inspiration</h2><a onclick="showOutfits();return false">Voir tout ('+OUTFIT_PRODUCTS.length+') \u2192</a></div><div class="new-row" style="margin-bottom:24px">';
+  list.forEach(function(p){
+    var img=p.s?imgUrl(p.p,p.s,'n'):'';
+    h+='<div class="nr-card nr-outfit" onclick="location.hash=\'#/p/'+escH(p.p)+'\'">';
+    if(img)h+='<img src="'+escH(img)+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" alt="'+escH(p.t||'Outfit')+'">';
+    h+='<div class="nr-outfit-num">'+escH(p.t||'')+'</div></div>';
+  });
+  return h+'</div>';
+}
+function renderLbOutfit(p){
+  var el=document.getElementById('lbOutfit');var lb=document.getElementById('lightbox');
+  var isOutfit=_isOutfitProd(p);
+  if(lb)lb.classList.toggle('lb-is-outfit',isOutfit);
+  if(!el)return;
+  if(!isOutfit){el.innerHTML='';el.style.display='none';return}
+  var sim=document.getElementById('lbSimilar');if(sim){sim.innerHTML='';sim.style.display='none'}
+  if(!OUTFIT_PIECES){
+    el.innerHTML='<div class="lb-outfit-label">Chargement des pièces…</div>';el.style.display='';
+    loadOutfitPieces(function(){if(FILTERED[LB_CURRENT_IDX]===p)renderLbOutfit(p)});
+    return;
+  }
+  var info=_outfitInfo(p);
+  if(info&&(info.saison||info.nom)){
+    var t=(p.t||'Outfit')+' \u00b7 '+[info.saison,info.nom].filter(Boolean).join(' \u2014 ');
+    document.getElementById('lbBrand').textContent=t;
+  }
+  var items=[];
+  ((info&&info.pieces)||[]).forEach(function(id){var q=PRODUCTS.find(function(x){return x.p===id});if(q)items.push(q)});
+  if(!items.length){el.innerHTML='';el.style.display='none';return}
+  var total=0,allPriced=true;
+  var h='<div class="lb-outfit-row">';
+  items.forEach(function(q){
+    var im=q.ts?imgUrl(q.p,q.ts,'q'):(q.s?imgUrl(q.p,q.s,'q'):'');
+    var c=CATEGORIES.find(function(x){return x.id===q.a});var cn=c?c.n:'';
+    var pr=extractPrice(q.t);
+    if(pr)total+=parseInt(pr,10);else allPriced=false;
+    h+='<div class="lb-outfit-item" onclick="openOutfitPiece(event,\''+escH(q.p)+'\')" title="'+escH(cn)+'">';
+    if(im)h+='<img src="'+escH(im)+'" loading="lazy" referrerpolicy="no-referrer" alt="'+escH(cn)+'">';
+    h+='<span>'+escH(cn)+'</span>'+(pr?'<span>'+pr+' \u20ac</span>':'')+'</div>';
+  });
+  h+='</div>';
+  var lbl='Les pièces de la tenue ('+items.length+')'+(allPriced&&total>0?' <b class="lb-outfit-total">\u00b7 '+total+' \u20ac au total</b>':'');
+  el.innerHTML='<div class="lb-outfit-label">'+lbl+'</div>'+h;el.style.display='';
+}
+function openOutfitPiece(e,pid){
+  if(e)e.stopPropagation();
+  hcpTrack('outfit_piece_clic',{pid:pid});
+  window.location.hash='#/p/'+pid;
+}
+
 /* ═══ NOUVEAUTÉS ═══ */
 var NEW_DAYS=7;
 function _isNew(p){return(parseInt(p.u||0,10))>((Date.now()/1000)-NEW_DAYS*86400)}
@@ -1073,8 +1207,9 @@ function showNouveautes(opts){
 function renderNewRow(){
   var wrap=document.getElementById('newRow');if(!wrap)return;
   var all=PRODUCTS.filter(_isNew).sort(function(a,b){return(b.u||0)-(a.u||0)});
-  if(all.length<4){wrap.style.display='none';wrap.innerHTML='';return}
-  var h='<div class="new-row-head"><h2>Nouveautés</h2><a onclick="showNouveautes();return false">Voir tout ('+all.length+') →</a></div><div class="new-row">';
+  var oh=_outfitRowHtml();
+  if(all.length<4){if(oh){wrap.innerHTML=oh;wrap.style.display=''}else{wrap.style.display='none';wrap.innerHTML=''}return}
+  var h=oh+'<div class="new-row-head"><h2>Nouveautés</h2><a onclick="showNouveautes();return false">Voir tout ('+all.length+') →</a></div><div class="new-row">';
   all.slice(0,16).forEach(function(p){
     var img=p.ts?imgUrl(p.p,p.ts,'q'):(p.s?imgUrl(p.p,p.s,'q'):'');
     var price=extractPrice(p.t);
@@ -1118,6 +1253,7 @@ var THEMATIC_ALBUM_AGGREGATION={
 };
 
 function showBrand(albumId,opts){
+  if(albumId===OUTFITS_ALBUM_ID||(OUTFITS_CAT&&albumId===OUTFITS_CAT.id)){showOutfits(opts);return}
   if(_needsData(function(){showBrand(albumId,opts)}))return;
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='brand';CURRENT_CAT=albumId;setActiveMenu(albumId);
@@ -1447,6 +1583,7 @@ function renderBrandCards(cats){
 
 function renderBatch(){
   var grid=document.getElementById('productsGrid');
+  var _ofv=(CURRENT_VIEW==='outfits');grid.classList.toggle('outfit-grid',_ofv);
   var end=Math.min(RENDER_INDEX+BATCH_SIZE,FILTERED.length);var h='';
   for(var i=RENDER_INDEX;i<end;i++){
     var p=FILTERED[i];
@@ -1454,8 +1591,8 @@ function renderBatch(){
     var cardImg='';
     if(p.p){
       if(p.p.indexOf('http')===0){cardImg=p.p;}
-      else if(p.ts){cardImg=imgUrl(p.p,p.ts,'n');}
-      else if(p.s){cardImg=imgUrl(p.p,p.s,'n');}
+      else if(p.ts){cardImg=imgUrl(p.p,p.ts,_ofv?'z':'n');}
+      else if(p.s){cardImg=imgUrl(p.p,p.s,_ofv?'z':'n');}
     }
     var price=extractPrice(p.t);
     var pubTitle=cleanTitle(p.t);
@@ -1466,7 +1603,7 @@ function renderBatch(){
     var noImgClass=cardImg?'':' no-img';
     h+='<div class="product-card'+noImgClass+'" data-fallback="'+escH(fallbackLabel)+'" onclick="openLightbox('+i+')">';
     if(price)h+='<div class="price-overlay">'+price+'</div>';
-    if(_isNew(p))h+='<div class="new-badge">NEW</div>';
+    if(_isNew(p)&&!_ofv)h+='<div class="new-badge">NEW</div>';
     h+='<button class="fav-btn'+(fav?' active':'')+'" data-pid="'+escH(pid)+'" onclick="onFavClick(event,'+i+')">'+(fav?'\u2665':'\u2661')+'</button>';
     h+='<div class="fav-count'+(gc>0?' visible':'')+'" data-pid="'+escH(pid)+'"><span class="fc-heart">\u2665</span> '+gc+'</div>';
     h+='<div class="card-dim"></div>';
@@ -2600,6 +2737,10 @@ function executeSmartSearch(q,opts){
     else if(CURRENT_VIEW==='brand')showBrand(CURRENT_CAT);
     return;
   }
+  /* « outfit », « tenue », « look », « inspiration » : ouvre la page Outfits */
+  if(OUTFIT_PRODUCTS.length&&/^(outfits?|tenues?|looks?|inspirations?|outfits? inspiration)$/i.test(q)){
+    document.getElementById('searchTags').innerHTML='';showOutfits(opts);return;
+  }
   var result=smartSearch(q);
   /* Requête = une seule catégorie ("b22" → Dior B22) : navigation directe vers l'album */
   if(result.filters&&result.filters.brands.length===1&&!result.filters.types.length&&!result.filters.colors.length&&!result.filters.free.length){
@@ -3322,6 +3463,7 @@ function openLightbox(idx,opts){
   var lbCopy=document.getElementById('lbCopy');
   if(lbCopy){lbCopy.classList.remove('copied');lbCopy.textContent='🔗 Copier le lien'}
   renderLbSimilar(p);
+  renderLbOutfit(p);
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow='hidden';
   /* MAJ etat boutons prev/next */
@@ -3343,6 +3485,8 @@ function closeLightbox(e){
   }else if(CURRENT_VIEW==='brand'&&CURRENT_CAT){
     if(ACTIVE_FILTERS.types.length===1)_setHash('#/cat/'+CURRENT_CAT+'/ft/'+_slugifyFt(ACTIVE_FILTERS.types[0]));
     else _setHash('#/cat/'+CURRENT_CAT);
+  }else if(CURRENT_VIEW==='outfits'){
+    _setHash('#/outfits');
   }else if(CURRENT_VIEW==='search'&&LAST_SEARCH_Q){
     _setHash('#/search?q='+encodeURIComponent(LAST_SEARCH_Q));
   }else{_setHash('#/')}
