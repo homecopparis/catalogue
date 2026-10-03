@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home Cop Paris — Liens</title>
+<style>
+  :root{
+    --green:#1B6B3E;
+    --paper:#FFFFFF;
+    --muted:#6f8a7a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--green);
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    display:flex;
+    justify-content:center;
+    padding:48px 20px 56px;
+  }
+  .wrap{width:100%;max-width:520px;}
+
+  /* ---------- logo ---------- */
+  .logo{text-align:center;margin-bottom:10px;}
+  .logo .name{
+    font-size:46px;font-weight:800;letter-spacing:2px;line-height:1;
+  }
+  .rule{
+    display:flex;align-items:center;justify-content:center;gap:14px;margin:14px 0 10px;
+  }
+  .rule .line{height:2px;background:var(--green);width:84px;}
+  .rule .dia{width:11px;height:11px;background:var(--green);transform:rotate(45deg);}
+  .logo .city{
+    font-size:14px;font-weight:500;letter-spacing:13px;padding-left:13px;
+  }
+  .tagline{
+    text-align:center;font-style:italic;font-size:15px;color:var(--muted);
+    margin:18px 0 38px;
+  }
+
+  /* ---------- section label ---------- */
+  .section{
+    display:flex;align-items:center;gap:14px;
+    margin:34px 0 16px;
+  }
+  .section span{
+    font-size:12px;font-weight:700;letter-spacing:5px;white-space:nowrap;
+  }
+  .section .bar{flex:1;height:1.5px;background:var(--green);opacity:.45;}
+
+  /* ---------- link buttons ---------- */
+  a.btn{
+    display:block;text-decoration:none;color:var(--green);
+    border:2px solid var(--green);
+    padding:17px 20px;margin-bottom:12px;
+    transition:background .16s ease,color .16s ease;
+  }
+  a.btn .t{
+    font-size:16px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;
+  }
+  a.btn .d{
+    font-size:13px;font-weight:500;margin-top:5px;opacity:.75;
+  }
+  a.btn.solid{background:var(--green);color:#fff;}
+  a.btn:hover,a.btn:focus{background:var(--green);color:#fff;}
+  a.btn.solid:hover,a.btn.solid:focus{background:#145230;border-color:#145230;}
+
+  /* ---------- footer ---------- */
+  .foot{
+    margin-top:44px;padding-top:18px;border-top:2px solid var(--green);
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    font-size:12px;
+  }
+  .foot .i{font-style:italic;}
+  .foot .h{font-weight:700;letter-spacing:2px;}
+
+  @media (max-width:380px){
+    .logo .name{font-size:38px;}
+    a.btn .t{font-size:14px;letter-spacing:2px;}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- LOGO -->
+    <div class="logo">
+      <div class="name">HOME COP</div>
+      <div class="rule"><span class="line"></span><span class="dia"></span><span class="line"></span></div>
+      <div class="city">PARIS</div>
+    </div>
+    <p class="tagline">Sneakers · Vêtements · Maroquinerie · Bijoux</p>
+
+    <!-- CATALOGUE -->
+    <div class="section"><span>CATALOGUE</span><i class="bar"></i></div>
+
+    <a class="btn solid" href="https://homecopparis.com" target="_blank" rel="noopener">
+      <div class="t">Catalogue en ligne</div>
+      <div class="d">homecopparis.com — tous les produits, mis à jour</div>
+    </a>
+
+    <a class="btn" href="https://www.flickr.com/photos/199204953@N02/albums" target="_blank" rel="noopener">
+      <div class="t">Anciens catalogues</div>
+      <div class="d">Vos favoris précédemment enregistrés y sont conservés</div>
+    </a>
+
+    <!-- VIDÉOS -->
+    <div class="section"><span>VIDÉOS</span><i class="bar"></i></div>
+
+    <a class="btn" href="https://www.youtube.com/channel/UCf7SyvIBIf700ThHPz0Hqag" target="_blank" rel="noopener">
+      <div class="t">Chaîne YouTube</div>
+      <div class="d">Reviews, unboxings, drops</div>
+    </a>
+
+    <!-- CONTACT -->
+    <div class="section"><span>CONTACT</span><i class="bar"></i></div>
+
+    <a class="btn" href="https://instagram.com/homecopparis_" target="_blank" rel="noopener">
+      <div class="t">Instagram</div>
+      <div class="d">@homecopparis_ — commandes et questions en DM</div>
+    </a>
+
+    <!-- FOOTER -->
+    <div class="foot">
+      <span class="i">Merci d'avoir grandi avec nous.</span>
+      <span class="h">@HOMECOPPARIS_</span>
+    </div>
+
+  </div>
+</body>
+</html>
