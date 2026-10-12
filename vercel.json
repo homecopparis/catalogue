@@ -42,6 +42,16 @@
   ],
   "redirects": [
     {
+      "source": "/m/louis-vuitton-x-timberland",
+      "destination": "/m/timberland-collaboration",
+      "permanent": true
+    },
+    {
+      "source": "/m/louis-vuitton-x-timberland.html",
+      "destination": "/m/timberland-collaboration",
+      "permanent": true
+    },
+    {
       "source": "/m/lv-run-away",
       "destination": "/m/louis-vuitton-run-away",
       "permanent": true
@@ -93,12 +103,12 @@
     },
     {
       "source": "/m/lv-x-timberland",
-      "destination": "/m/louis-vuitton-x-timberland",
+      "destination": "/m/timberland-collaboration",
       "permanent": true
     },
     {
       "source": "/m/lv-x-timberland.html",
-      "destination": "/m/louis-vuitton-x-timberland",
+      "destination": "/m/timberland-collaboration",
       "permanent": true
     }
   ]
