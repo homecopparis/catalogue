@@ -87,7 +87,7 @@ function hcpTrack(name,data){
     "addressCountry": "FR"
   },
   "sameAs": [
-    "https://www.instagram.com/homecopparis/"
+    "https://www.instagram.com/homecopparis_/"
   ]
 }
 </script>
@@ -423,7 +423,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     </div>
     <button class="cart-btn" id="cartBtn" onclick="openCartModal()">🛒 Mon panier <span class="cart-badge empty" id="cartBadge">0</span></button>
     <button class="auth-btn" id="authBtn" onclick="openLoginModal()">Connexion</button>
-    <a class="dm-btn" href="https://www.instagram.com/homecopparis/" target="_blank" rel="noopener">DM Instagram</a>
+    <a class="dm-btn" href="https://www.instagram.com/homecopparis_/" target="_blank" rel="noopener">DM Instagram</a>
   </div>
 </aside>
 <main class="main">
@@ -539,7 +539,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <div class="fav-error" id="cartError"></div>
     <div class="fav-success" id="cartSuccess"></div>
     <div id="quoteUrlBlock" style="display:none;margin-top:12px;padding:12px;background:rgba(0,230,118,.08);border:1px solid var(--green);border-radius:8px">
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Envoie cette URL en DM Instagram à <strong>@homecopparis</strong> :</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Envoie cette URL en DM Instagram à <strong>@homecopparis_</strong> :</div>
       <div style="display:flex;gap:6px;align-items:center">
         <input id="quoteUrlInput" type="text" readonly style="flex:1;font-size:11px;font-family:monospace">
         <button class="fav-btn-primary" id="quoteCopyBtn" onclick="copyQuoteUrl()" style="padding:8px 12px;font-size:12px">Copier</button>
@@ -4242,7 +4242,7 @@ async function sendQuoteRequest(){
   var url=PROD_URL+'#/quote/'+r.data.id;
   document.getElementById('quoteUrlInput').value=url;
   document.getElementById('quoteUrlBlock').style.display='';
-  showFormMsg('cartSuccess','Demande créée ! Copie l\'URL ci-dessous et envoie-la en DM Instagram à @homecopparis.',false);
+  showFormMsg('cartSuccess','Demande créée ! Copie l\'URL ci-dessous et envoie-la en DM Instagram à @homecopparis_.',false);
   showToast('Devis créé ✓');
   btn.disabled=false;btn.textContent='Envoyer ma demande';
   document.getElementById('cartMessage').value='';
