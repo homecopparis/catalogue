@@ -350,6 +350,19 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .filter-reset:hover{border-color:var(--green);color:var(--green)}
 .filter-active-info{font-size:11px;color:var(--green);margin-bottom:8px}
 @media(max-width:768px){.filter-pill{padding:4px 8px;font-size:11px}.filter-group{gap:4px}}
+/* Marques au-delà des 25 premières : repliées derrière « + N marques » */
+.filter-pill.fp-more{display:none}
+.filter-group.fp-open .filter-pill.fp-more{display:inline-flex}
+.filter-pill.fp-toggle{border-style:dashed}
+/* Résultats de recherche sur mobile : une ligne par groupe, qui défile horizontalement
+   (sinon 40 marques + couleurs + prix repoussent les résultats sous l'écran) */
+@media(max-width:768px){
+  .filter-bar.fb-search .filter-group{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+  .filter-bar.fb-search .filter-group::-webkit-scrollbar{display:none}
+  .filter-bar.fb-search .filter-pill,.filter-bar.fb-search .filter-group-label{flex-shrink:0;white-space:nowrap}
+  .filter-bar.fb-search .filter-pill.fp-more{display:inline-flex}
+  .filter-bar.fb-search .filter-pill.fp-toggle{display:none}
+}
 /* ═══ FAVORITES ═══ */
 .fav-btn{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);border:none;width:30px;height:30px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:rgba(255,255,255,.7);opacity:0;transition:opacity .22s ease,transform .15s,color .2s;z-index:12;line-height:1}
 .product-card:hover .fav-btn,.fav-btn.active{opacity:1}
@@ -742,6 +755,7 @@ function _normalizeCats(rawCats){
 function applyFullData(data){
   PREFIX=data.prefix||'https://live.staticflickr.com/65535/';
   CATEGORIES=_normalizeCats(data.categories||[]);
+  _loadBrands(data);
   PRODUCTS=(data.products||[]).map(function(p){
     if(p.a!==undefined&&p.p!==undefined){
       if(p.ts===undefined)p.ts=p.s; /* ts omis dans data.min.json quand identique */
@@ -783,6 +797,7 @@ fetch('data.cats.json').then(function(r){return r.ok?r.json():null}).then(functi
   if(!cats||DATA_READY)return;
   PREFIX=cats.prefix||'https://live.staticflickr.com/65535/';
   CATEGORIES=_splitOutfitCats(_normalizeCats(cats.categories||[]));
+  _loadBrands(cats);
   init();
 }).catch(function(){/* fichier pas encore déployé : l'étape 2 prendra le relais */});
 
@@ -1046,10 +1061,10 @@ function routeFromHash(){
       if(ft){ACTIVE_FILTERS.types=[ft];applyFilters({_q:1})}
     }finally{_routing=false}
   }else if((m=h.match(/^#\/search\?q=(.+)$/))){
-    var _sq='';try{_sq=decodeURIComponent(m[1])}catch(e){_sq=m[1]}
+    var _sp=_parseSearchHash(m[1]),_sq=_sp.q;
     var _si=document.getElementById('searchInput');if(_si)_si.value=_sq;
     if(typeof _updateClearBtn==='function')_updateClearBtn();
-    executeSmartSearch(_sq,{_q:1});
+    executeSmartSearch(_sq,{_q:1,filters:_sp.filters,sort:_sp.sort});
   }else if(h==='#/outfits'){
     showOutfits({_q:1});
   }else if(h==='#/new'){
@@ -1062,11 +1077,43 @@ function routeFromHash(){
 }
 window.addEventListener('hashchange',routeFromHash);
 
+/* Lien d'une recherche, filtres compris :
+   #/search?q=doudoune&marque=Moncler,Canada%20Goose&couleur=Noir&prix=r100&tri=asc
+   Chaque valeur est encodée ; la virgule sépare les valeurs d'un même filtre. */
+var SEARCH_FILTER_KEYS={marque:'brands',type:'types',couleur:'colors',prix:'prices'};
+function _searchHash(q){
+  var h='#/search?q='+encodeURIComponent((q||'').trim());
+  if(CURRENT_VIEW!=='search')return h;
+  Object.keys(SEARCH_FILTER_KEYS).forEach(function(k){
+    var arr=ACTIVE_FILTERS[SEARCH_FILTER_KEYS[k]];
+    if(arr&&arr.length)h+='&'+k+'='+arr.map(encodeURIComponent).join(',');
+  });
+  if(ACTIVE_SORT)h+='&tri='+ACTIVE_SORT;
+  return h;
+}
+/* rest = ce qui suit "q=" dans le hash. Les anciens liens (q seul) restent valides. */
+function _parseSearchHash(rest){
+  var parts=rest.split('&'),qRaw=parts[0],f={types:[],colors:[],brands:[],prices:[]},sort=null,has=false;
+  for(var i=1;i<parts.length;i++){
+    var eq=parts[i].indexOf('='),k=eq>0?parts[i].slice(0,eq):'',v=eq>0?parts[i].slice(eq+1):'';
+    if(SEARCH_FILTER_KEYS[k]){
+      v.split(',').forEach(function(x){
+        if(!x)return;
+        try{x=decodeURIComponent(x)}catch(e){}
+        f[SEARCH_FILTER_KEYS[k]].push(x);has=true;
+      });
+    }else if(k==='tri'&&(v==='asc'||v==='desc')){sort=v;has=true}
+    else qRaw+='&'+parts[i]; /* "&" tapé à la main dans la requête */
+  }
+  var q='';try{q=decodeURIComponent(qRaw)}catch(e){q=qRaw}
+  return{q:q,filters:has?f:null,sort:sort};
+}
+
 /* Lien partageable des resultats : https://www.homecopparis.com/#/search?q=pochette */
 function copySearchLink(e){
   if(e&&e.stopPropagation)e.stopPropagation();
   var q=LAST_SEARCH_Q||document.getElementById('searchInput').value||'';
-  var url=window.location.origin+window.location.pathname+'#/search?q='+encodeURIComponent(q.trim());
+  var url=window.location.origin+window.location.pathname+_searchHash(q);
   var btn=document.getElementById('shareSearchBtn');
   var done=function(){
     if(!btn)return;
@@ -1296,25 +1343,73 @@ function showBrand(albumId,opts){
   if(!opts||!opts._q)_pushHash('#/cat/'+albumId);
 }
 
-/* Marque effective d'un produit : champ br (analyse IA), sinon nom de l'album
-   d'origine pour les produits agreges dans un album thematique. */
-function _brandOf(p){
-  if(p.br)return p.br;
+/* ═══ MARQUES CANONIQUES ═══
+   data.cats.json / data.min.json fournissent (voir scripts/album_brands.py + config/brands.json) :
+   - categories[].b : marque(s) de l'album — ["Dior"], ["Nike","Jacquemus"] pour une collab ;
+                      absent pour un album multi-marques ou thématique (Ceintures, OLD MONEY…)
+   - brands         : {marque: [alias]}
+   Sans ces champs (repli sur data.json), tout retombe sur le comportement par nom d'album. */
+var BRAND_CANON={};     /* clé (nom ou alias) -> nom affiché */
+var CAT_BRANDS={};      /* id album -> [marques affichées] */
+var CAT_BRAND_KEYS={};  /* id album -> [clés] */
+var CAT_MENTIONS={};    /* id album sans marque (multi-marques) -> [clés des marques citées dans son nom] */
+var _BK_MEMO={};
+/* Clé de comparaison d'une marque. DOIT rester identique à brand_key() de scripts/album_brands.py */
+function _brandKey(s){
+  if(!s)return'';
+  var m=_BK_MEMO[s];
+  if(m===undefined){m=_foldTxt(s).replace(/[‘’']/g,'').replace(/[^a-z0-9]+/g,' ').trim();_BK_MEMO[s]=m}
+  return m;
+}
+function _loadBrands(data){
+  if(data&&data.brands){
+    Object.keys(data.brands).forEach(function(b){
+      BRAND_CANON[_brandKey(b)]=b;
+      (data.brands[b]||[]).forEach(function(a){BRAND_CANON[_brandKey(a)]=b});
+    });
+  }
+  CAT_BRANDS={};CAT_BRAND_KEYS={};CAT_MENTIONS={};
+  var canonKeys=Object.keys(BRAND_CANON);
+  CATEGORIES.forEach(function(c){
+    if(c.b&&c.b.length){CAT_BRANDS[c.id]=c.b;CAT_BRAND_KEYS[c.id]=c.b.map(_brandKey);return}
+    /* "OLD MONEY (Loro Piana, Botega, Zegna)" cite Loro Piana, Bottega Veneta et Zegna */
+    var nk=' '+_brandKey(c.n)+' ',m=[];
+    canonKeys.forEach(function(k){
+      if(nk.indexOf(' '+k+' ')===-1)return;
+      var ck=_brandKey(BRAND_CANON[k]);
+      if(m.indexOf(ck)===-1)m.push(ck);
+    });
+    if(m.length)CAT_MENTIONS[c.id]=m;
+  });
+}
+/* Albums portant une marque canonique (clé) */
+function _catsOfBrand(key){
+  return CATEGORIES.filter(function(c){var k=CAT_BRAND_KEYS[c.id];return !!k&&k.indexOf(key)!==-1});
+}
+/* Marque(s) d'un produit : champ br (analyse photo) s'il existe, sinon marque(s) de son album.
+   Repli (anciennes données sans marque d'album) : nom de l'album d'origine pour les
+   produits agrégés dans un album thématique. */
+function _brandsOf(p){
+  if(p.br)return[p.br];
+  var cb=CAT_BRANDS[p.a];
+  if(cb)return cb;
   if(CURRENT_CAT&&p.a!==CURRENT_CAT){
     var c=CATEGORIES.find(function(x){return x.id===p.a});
-    if(c)return c.n;
+    if(c)return[c.n];
   }
-  return null;
+  return[];
 }
 
-function buildFilterBar(prods){
+var BRAND_PILLS_MAX=25; /* marques affichées d'emblée ; les suivantes sont repliées */
+function buildFilterBar(prods,opts){
   var bar=document.getElementById('filterBar');
+  var barCls='filter-bar visible'+((opts&&opts.search)?' fb-search':'');
   /* Count brands, types and colors */
   var typeCounts={},colorCounts={},brandCounts={},priceCounts={};
   prods.forEach(function(p){
     var ft=p.ft||'Autres';typeCounts[ft]=(typeCounts[ft]||0)+1;
     if(p.fc){colorCounts[p.fc]=(colorCounts[p.fc]||0)+1;}
-    var br=_brandOf(p);if(br){brandCounts[br]=(brandCounts[br]||0)+1;}
+    var brs=_brandsOf(p);for(var bi=0;bi<brs.length;bi++){brandCounts[brs[bi]]=(brandCounts[brs[bi]]||0)+1;}
     var pr=_priceRangeOf(p);if(pr){priceCounts[pr]=(priceCounts[pr]||0)+1;}
   });
   var pricedRanges=PRICE_RANGES.filter(function(r){return priceCounts[r[0]]>0});
@@ -1328,18 +1423,23 @@ function buildFilterBar(prods){
     if(aEnd!==bEnd)return aEnd-bEnd;
     return brandCounts[b]-brandCounts[a];
   });
-  if(brands.length>25)brands=brands.slice(0,25); /* cap : vues agrégées (Nouveautés) */
+  /* Collab ("Dior B30 x Stone Island") : chaque produit porte toutes les marques,
+     le filtre ne départagerait rien → pas de groupe Marque */
+  if(brands.length>1&&brands.every(function(b){return brandCounts[b]===prods.length}))brands=[];
   /* Only show filter bar if there's something to filter */
   if(types.length<=1&&colors.length<=1&&brands.length<=1&&pricedRanges.length<=1&&pricedCount<2){bar.className='filter-bar';bar.innerHTML='';return;}
-  bar.className='filter-bar visible';
+  bar.className=barCls;
   var h='';
   /* Brand filters */
   if(brands.length>1){
     h+='<div class="filter-group" id="filterBrands"><span class="filter-group-label">Marque</span>';
-    brands.forEach(function(b){
-      h+='<span class="filter-pill" data-filter-type="brand" data-value="'+escH(b)+'" onclick="toggleFilter(\'brand\',\''+escH(b)+'\')">';
+    brands.forEach(function(b,i){
+      h+='<span class="filter-pill'+(i>=BRAND_PILLS_MAX?' fp-more':'')+'" data-filter-type="brand" data-value="'+escH(b)+'" onclick="toggleFilter(\'brand\',\''+escH(b)+'\')">';
       h+=escH(b)+' <span class="fp-count">'+brandCounts[b]+'</span></span>';
     });
+    if(brands.length>BRAND_PILLS_MAX){
+      h+='<span class="filter-pill fp-toggle" data-filter-type="more" data-more="'+(brands.length-BRAND_PILLS_MAX)+'" onclick="toggleMoreBrands(this)">+ '+(brands.length-BRAND_PILLS_MAX)+' marques</span>';
+    }
     h+='</div>';
   }
   /* Type filters */
@@ -1379,6 +1479,11 @@ function buildFilterBar(prods){
   bar.innerHTML=h;
 }
 
+function toggleMoreBrands(el){
+  var g=el.parentNode,open=g.classList.toggle('fp-open');
+  el.textContent=open?'− Réduire':'+ '+el.getAttribute('data-more')+' marques';
+}
+
 function toggleSort(dir){
   hcpTrack('filtre',{groupe:'tri_prix',valeur:dir,album:CURRENT_CAT||''});
   ACTIVE_SORT=(ACTIVE_SORT===dir)?null:dir;
@@ -1402,6 +1507,7 @@ function applyFilters(opts){
   document.querySelectorAll('#filterBar .filter-pill').forEach(function(el){
     var g=el.getAttribute('data-filter-type');
     var v=el.getAttribute('data-value');
+    if(g==='more')return;
     if(g==='sort'){el.classList.toggle('active',ACTIVE_SORT===v);return;}
     var arr=g==='type'?ACTIVE_FILTERS.types:(g==='brand'?ACTIVE_FILTERS.brands:(g==='price'?ACTIVE_FILTERS.prices:ACTIVE_FILTERS.colors));
     el.classList.toggle('active',arr.indexOf(v)!==-1);
@@ -1410,7 +1516,7 @@ function applyFilters(opts){
   FILTERED=BRAND_PRODUCTS.filter(function(p){
     if(hasType){var ft=p.ft||'Autres';if(ACTIVE_FILTERS.types.indexOf(ft)===-1)return false;}
     if(hasColor){if(!p.fc||ACTIVE_FILTERS.colors.indexOf(p.fc)===-1)return false;}
-    if(hasBrand){var br=_brandOf(p);if(!br||ACTIVE_FILTERS.brands.indexOf(br)===-1)return false;}
+    if(hasBrand){var brs=_brandsOf(p),brOk=false;for(var bi=0;bi<brs.length;bi++){if(ACTIVE_FILTERS.brands.indexOf(brs[bi])!==-1){brOk=true;break}}if(!brOk)return false;}
     if(hasPrice){var pr=_priceRangeOf(p);if(!pr||ACTIVE_FILTERS.prices.indexOf(pr)===-1)return false;}
     return true;
   });
@@ -1423,7 +1529,8 @@ function applyFilters(opts){
       if(pb==null)return -1;
       return ACTIVE_SORT==='asc'?pa-pb:pb-pa;
     });
-  }else if(hasType||hasColor||hasBrand||hasPrice){
+  }else if((hasType||hasColor||hasBrand||hasPrice)&&CURRENT_VIEW!=='search'&&CURRENT_VIEW!=='visual'){
+    /* Recherche (texte ou par photo) : on garde l'ordre de pertinence des résultats */
     FILTERED.sort(function(a,b){return(parseInt(b.u||0,10))-(parseInt(a.u||0,10))});
   }
   /* Update info */
@@ -1434,12 +1541,17 @@ function applyFilters(opts){
   }else{info.style.display='none';}
   /* Re-render */
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
-  renderBatch();
+  if(!FILTERED.length){
+    /* Combinaison de filtres sans produit (ex. une marque + une couleur qu'elle n'a pas) */
+    document.getElementById('productsGrid').innerHTML='<div class="no-results-box"><h3>Aucun article avec ces filtres</h3><span style="cursor:pointer;text-decoration:underline" onclick="resetFilters()">Réinitialiser les filtres</span></div>';
+  }else renderBatch();
   /* Sync URL with active ft filter (only if single type + single color-less) */
   if((!opts||!opts._q)&&CURRENT_VIEW==='brand'&&CURRENT_CAT){
     if(ACTIVE_FILTERS.types.length===1&&!hasColor&&!hasBrand&&!hasPrice&&!ACTIVE_SORT){_setHash('#/cat/'+CURRENT_CAT+'/ft/'+_slugifyFt(ACTIVE_FILTERS.types[0]))}
     else _setHash('#/cat/'+CURRENT_CAT);
   }
+  /* Recherche : les filtres font partie du lien (partage, retour arrière) */
+  if((!opts||!opts._q)&&CURRENT_VIEW==='search'&&LAST_SEARCH_Q)_setHash(_searchHash(LAST_SEARCH_Q));
 }
 
 function resetFilters(){
@@ -1965,9 +2077,13 @@ function buildSearchIndex(){
     });
     var allTypes=detectedTypes.map(function(dt){return dt.type});
 
+    /* cbs = marque(s) canonique(s) connue(s) : br identifié, sinon marque(s) de l'album.
+       cbm = à défaut, marques citées dans le nom d'un album multi-marques */
+    var _cbs=(p.br&&p.br!=='Autre'&&p.br!=='Inconnue')?[_brandKey(p.br)]:(CAT_BRAND_KEYS[p.a]||null);
+
     PRODUCT_SEARCH_INDEX.push({
       p:p,bn:brandName,bnl:brandName.toLowerCase(),bnf:_foldTxt(brandName),tl:tl,tlf:_foldTxt(tl),
-      ftl:_foldTxt(p.ft||''),brf:_brNorm(p.br),
+      ftl:_foldTxt(p.ft||''),brf:_brNorm(p.br),cbs:_cbs,cbm:CAT_MENTIONS[p.a]||null,
       types:allTypes,bestType:bestType,typeConf:bestTypeConf,
       primaryColor:primaryColor,colorConf:colorConf
     });
@@ -2124,7 +2240,7 @@ function resolveToken(token){
       if(s>bestColorScore){bestColorScore=s;bestColor=canonical}
     });
   });
-  var bestBrandScore=0,bestBrand=null,brandStrong=false;
+  var bestBrandScore=0,bestBrand=null,brandStrong=false,brandMinC=0.55;
   if(BRAND_ALIASES[token]){
     var aliasTarget=BRAND_ALIASES[token];
     if(BRAND_INDEX[aliasTarget]){bestBrandScore=1;bestBrand=BRAND_INDEX[aliasTarget];brandStrong=true}
@@ -2141,6 +2257,11 @@ function resolveToken(token){
     var s=fuzzyMatch(tf,bf);
     if(s>bestBrandScore){bestBrandScore=s;bestBrand={id:null,n:BR_INDEX[bf],c:0};brandStrong=(bf===tf||(bf.split(/\s+/).indexOf(tf)!==-1&&!TYPE_WORD_INDEX[tf]&&!COLOR_WORD_INDEX[tf]))}
   });
+  /* Marque canonique ou alias exact qu'aucun nom d'album ne permet de trouver ("mihara") */
+  if(bestBrandScore<brandMinC&&!TYPE_WORD_INDEX[token]&&!COLOR_WORD_INDEX[token]&&!TYPE_WORD_INDEX[tkn]&&!COLOR_WORD_INDEX[tkn]){
+    var _cn=BRAND_CANON[_brandKey(token)];
+    if(_cn){bestBrandScore=1;bestBrand={id:null,n:_cn,c:0};brandStrong=true}
+  }
   /* Pick best — type/couleur exacts ne doivent pas être volés par une marque
      matchée en sous-chaîne seulement ("sac" dans "versace") */
   var typeMin=0.6,colorMin=0.6,brandMin=0.55;
@@ -2235,6 +2356,13 @@ function resolveMultiWord(tokens){
           found=true;break;
         }
       }
+      /* Marque canonique composée qu'aucun nom d'album ne permet de trouver ("christian dior") */
+      var _cnm=BRAND_CANON[_brandKey(combo)];
+      if(_cnm){
+        resolved.push({type:null,color:null,brand:{id:null,n:_cnm,c:0},raw:combo,score:1,conf:1});
+        for(var k3=i;k3<i+len;k3++)skip[k3]=true;
+        found=true;break;
+      }
     }
     if(!found)resolved.push(resolveToken(tokens[i]));
   }
@@ -2293,12 +2421,27 @@ function smartSearch(query){
     CATEGORIES.forEach(function(c){if(_foldTxt(c.n).indexOf(b.qf)!==-1)_nc++});
     /* seulement si le texte tapé correspond vraiment (sinon une faute de frappe s'afficherait) */
     b.disp=(_nc>1&&b.raw&&b.rawExact)?b.raw.replace(/\b\w/g,function(m){return m.toUpperCase()}):b.n;
+    /* Marque canonique : le texte tapé est exactement une marque ou un alias connu
+       ("miu miu", "nike", "ysl" → Saint Laurent). "b22" ou "nike tn" n'en sont pas :
+       ils restent des recherches d'album. */
+    var _cnb=BRAND_CANON[_brandKey(b.raw||'')]||BRAND_CANON[_brandKey(b.qf)];
+    b.cb=_cnb?_brandKey(_cnb):null;
+    if(_cnb)b.disp=_cnb;
   });
   /* Un produit matche une marque si :
      - album exactement résolu (couvre les fautes de frappe), OU
      - le nom de son album contient le texte tapé ("gucci" → Gucci, Gucci Homme, Gucci Sneakers), OU
      - sa marque IA (br) correspond au texte tapé ou au nom résolu */
   function _brandMatch(b,entry){
+    if(b.cb){
+      /* Même marque canonique, quel que soit le nom de l'album ("MiuMiu Maroquinerie", "Air Max 95").
+         Un produit dont la marque est connue ne remonte que pour elle : "arte" ne ramène plus
+         "Bijoux Cartier", ni "on" tout "Louis Vuitton". */
+      if(entry.cbs)return entry.cbs.indexOf(b.cb)!==-1;
+      /* Marque inconnue (album multi-marques pas encore analysé) : le produit reste trouvé
+         si le nom de son album cite la marque ("OLD MONEY (Loro Piana, …)" pour "loro piana") */
+      return(entry.cbm&&entry.cbm.indexOf(b.cb)!==-1)?0.6:0; /* 0.6 = supposé : classé après les sûrs */
+    }
     if(b.id&&entry.p.a===b.id)return true;
     if(entry.bnf&&b.qf&&entry.bnf.indexOf(b.qf)!==-1)return true;
     if(entry.brf&&b.qf&&(entry.brf===b.qf||entry.brf.indexOf(b.qf)!==-1))return true;
@@ -2307,18 +2450,25 @@ function smartSearch(query){
 
   /* Brand-only shortcut: return all brand products immediately */
   if(hasBrand&&!hasType&&!hasColor&&!hasFree){
-    var brandProducts=[];
+    var brandProducts=[],brandMaybe=[];
     PRODUCT_SEARCH_INDEX.forEach(function(entry){
+      var bm=0;
       for(var bi=0;bi<filterBrands.length;bi++){
-        if(_brandMatch(filterBrands[bi],entry)){brandProducts.push(entry.p);return}
+        var m=_brandMatch(filterBrands[bi],entry);
+        if(m===true){bm=1;break}
+        if(m>bm)bm=m;
       }
+      if(bm>=1)brandProducts.push(entry.p);
+      else if(bm>0)brandMaybe.push(entry.p); /* album multi-marques qui cite la marque */
     });
+    brandProducts=brandProducts.concat(brandMaybe);
     var brandCats=CATEGORIES.filter(function(c){
       var cf=_foldTxt(c.n);
       for(var bi2=0;bi2<filterBrands.length;bi2++){
         var b2=filterBrands[bi2];
         if(b2.id&&c.id===b2.id)return true;
         if(b2.qf&&cf.indexOf(b2.qf)!==-1)return true;
+        if(b2.cb&&CAT_BRAND_KEYS[c.id]&&CAT_BRAND_KEYS[c.id].indexOf(b2.cb)!==-1)return true;
       }
       return false;
     });
@@ -2360,10 +2510,14 @@ function smartSearch(query){
 
     /* ── Brand (album OU marque IA br) ── */
     if(hasBrand){
-      var bMatch=false;
-      for(var bi=0;bi<filterBrands.length;bi++){if(_brandMatch(filterBrands[bi],entry)){bMatch=true;break}}
+      var bMatch=0;
+      for(var bi=0;bi<filterBrands.length;bi++){
+        var bmv=_brandMatch(filterBrands[bi],entry);
+        if(bmv===true){bMatch=1;break}
+        if(bmv>bMatch)bMatch=bmv;
+      }
       if(!bMatch){brandOk=false;return}/* Skip non-matching brands early */
-      brandScore=1;
+      brandScore=bMatch; /* 1 = marque sûre, 0.6 = album multi-marques qui cite la marque */
     }
 
     /* ── Type ── */
@@ -2763,7 +2917,8 @@ function executeSmartSearch(q,opts){
     var _b=result.filters.brands[0];
     if(_b.id&&_b.qf){
       var _matches=CATEGORIES.filter(function(c){return _foldTxt(c.n).indexOf(_b.qf)!==-1});
-      if(_matches.length===1&&_matches[0].id===_b.id){
+      /* …sauf si la marque couvre d'autres albums ("miu miu" → vêtements + maroquinerie + sneakers) */
+      if(_matches.length===1&&_matches[0].id===_b.id&&!(_b.cb&&(_catsOfBrand(_b.cb).length>1||(CAT_BRAND_KEYS[_b.id]||[]).indexOf(_b.cb)===-1))){
         document.getElementById('searchTags').innerHTML='';
         hcpTrack('recherche',{requete:q,resultats:result.count,niveau:result.level});
         _addRecent(q);
@@ -2806,10 +2961,33 @@ function executeSmartSearch(q,opts){
   }
   var shareBtn=result.count>0?'<button class="share-btn" id="shareSearchBtn" onclick="copySearchLink()" title="Copier le lien de cette recherche">🔗 Partager cette recherche</button>':'';
   document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="clearSearch()">←</button><h2>Recherche</h2><span class="search-results-info">'+countText+(result.info?' — '+escH(result.info):'')+levelBadge+shareBtn+'</span>'+hintHtml;
-  FILTERED=result.products;
+  /* Barre de filtres sur les résultats (marque, type, couleur, prix, tri) : mêmes pastilles
+     que dans un album, calculées sur les produits trouvés. */
+  BRAND_PRODUCTS=result.products;
+  FILTERED=BRAND_PRODUCTS;
+  if(FILTERED.length)buildFilterBar(BRAND_PRODUCTS,{search:true});
   RENDER_INDEX=0;document.getElementById('productsGrid').innerHTML='';
-  if(!FILTERED.length)renderNoResults(q);
-  else renderBatch();
+  if(!FILTERED.length){renderNoResults(q);closeSidebarMobile();return}
+  /* Filtres repris d'un lien (#/search?q=…&marque=…) : on ne garde que les valeurs proposées */
+  var _of=opts&&opts.filters,_os=opts&&opts.sort,_restored=false;
+  if(_of||_os){
+    var _avail={};
+    document.querySelectorAll('#filterBar .filter-pill').forEach(function(el){_avail[el.getAttribute('data-filter-type')+'|'+el.getAttribute('data-value')]=1});
+    if(_of){
+      ACTIVE_FILTERS.types=_of.types.filter(function(v){return _avail['type|'+v]});
+      ACTIVE_FILTERS.colors=_of.colors.filter(function(v){return _avail['color|'+v]});
+      ACTIVE_FILTERS.brands=_of.brands.filter(function(v){return _avail['brand|'+v]});
+      ACTIVE_FILTERS.prices=_of.prices.filter(function(v){return _avail['price|'+v]});
+    }
+    if(_os&&_avail['sort|'+_os])ACTIVE_SORT=_os;
+    _restored=!!(ACTIVE_FILTERS.types.length||ACTIVE_FILTERS.colors.length||ACTIVE_FILTERS.brands.length||ACTIVE_FILTERS.prices.length||ACTIVE_SORT);
+  }
+  if(_restored){
+    applyFilters({_q:1});
+    /* une marque repliée mais active doit rester visible */
+    var _g=document.getElementById('filterBrands'),_t=_g&&_g.querySelector('.fp-toggle');
+    if(_t&&_g.querySelector('.fp-more.active'))toggleMoreBrands(_t);
+  }else renderBatch();
   closeSidebarMobile();
 }
 
@@ -3470,7 +3648,7 @@ function openLightbox(idx,opts){
   document.getElementById('lbPrice').textContent=price||'';
   document.getElementById('lbDesc').textContent=p.d||'';
   LB_CURRENT_PID=getProductPid(p);
-  hcpTrack('produit_vu',{pid:p.p,album:(cat?cat.n:''),marque:p.br||'',prix:extractPrice(p.t)||''});
+  hcpTrack('produit_vu',{pid:p.p,album:(cat?cat.n:''),marque:_brandsOf(p).join(' + '),prix:extractPrice(p.t)||''});
   var lbFavBtn=document.getElementById('lbFav');
   var lbFav=isFavorite(LB_CURRENT_PID);
   lbFavBtn.classList.toggle('active',lbFav);
@@ -3504,7 +3682,7 @@ function closeLightbox(e){
   }else if(CURRENT_VIEW==='outfits'){
     _setHash('#/outfits');
   }else if(CURRENT_VIEW==='search'&&LAST_SEARCH_Q){
-    _setHash('#/search?q='+encodeURIComponent(LAST_SEARCH_Q));
+    _setHash(_searchHash(LAST_SEARCH_Q));
   }else{_setHash('#/')}
 }
 
