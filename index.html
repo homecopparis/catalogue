@@ -396,8 +396,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   .products-header{padding-left:0}
 }
 /* ═══ ACCUEIL : tuiles par catégorie ═══ */
-.cat-tiles{margin-top:28px;text-align:left}
-.ct-title{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text-dim);margin-bottom:12px}
+.cat-tiles{margin-bottom:28px}
 .ct-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
 .ct-tile{position:relative;display:block;aspect-ratio:4/5;border-radius:12px;overflow:hidden;background:var(--surface);cursor:pointer;text-decoration:none;color:#fff}
 .ct-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
@@ -406,7 +405,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .ct-label{position:absolute;left:10px;right:10px;bottom:10px;z-index:1;font-size:14px;font-weight:600;line-height:1.2;text-shadow:0 1px 3px rgba(0,0,0,.6)}
 @media(max-width:1200px){.ct-row{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:768px){
-  .cat-tiles{margin-top:18px}
   .hero{padding:10px 0 22px}
   .ct-row{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;scroll-padding-left:16px;scrollbar-width:none;margin:0 -16px;padding:0 16px 4px}
   .ct-row::-webkit-scrollbar{display:none}
@@ -525,7 +523,7 @@ html.light .order-go{color:#fff}
   </div>
 </aside>
 <main class="main">
-  <div class="hero" id="hero"><h1>Streetwear & <em>Luxe</em></h1><div class="cat-tiles" id="catTiles" style="display:none"></div></div>
+  <div class="hero" id="hero"><h1>Streetwear & <em>Luxe</em></h1></div>
   <div class="new-row-wrap" id="newRow" style="display:none"></div>
   <div class="brands-grid" id="brandsGrid"></div>
   <div class="products-section" id="productsSection">
@@ -1264,17 +1262,17 @@ function sortCategoriesForHome(cats){
    HOME_TILES vient de data.cats.json (clé tiles, générée depuis config/home_tiles.json) :
    [{l: libellé, q: recherche lancée au clic, p/s: photo Flickr}]. Sans cette clé, pas de tuiles. */
 var HOME_TILES=[];
-function renderCatTiles(){
-  var el=document.getElementById('catTiles');if(!el)return;
-  if(!HOME_TILES||!HOME_TILES.length){el.innerHTML='';el.style.display='none';return}
-  var h='<div class="ct-title">Par catégorie</div><div class="ct-row">';
+/* Bloc « Par catégorie » : affiché dans #newRow entre les Outfits et les Nouveautés (renderNewRow) */
+function _catTilesHtml(){
+  if(!HOME_TILES||!HOME_TILES.length)return '';
+  var h='<div class="cat-tiles"><div class="new-row-head"><h2>Par catégorie</h2></div><div class="ct-row">';
   HOME_TILES.forEach(function(t,i){
     var img=(t.p&&t.s)?imgUrl(t.p,t.s,'n'):'';
     h+='<a class="ct-tile" href="#/search?q='+encodeURIComponent(t.q)+'" onclick="openCatTile('+i+');return false">';
     if(img)h+='<img src="'+escH(img)+'" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">';
     h+='<span class="ct-label">'+escH(t.l)+'</span></a>';
   });
-  el.innerHTML=h+'</div>';el.style.display='';
+  return h+'</div></div>';
 }
 function openCatTile(i){
   var t=HOME_TILES[i];if(!t)return;
@@ -1286,7 +1284,7 @@ function openCatTile(i){
 function showHome(opts){
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='home';CURRENT_CAT=null;setActiveMenu('home');
-  document.getElementById('hero').style.display='';renderCatTiles();
+  document.getElementById('hero').style.display='';
   document.getElementById('brandsGrid').style.display='';if(typeof renderNewRow==='function')renderNewRow();
   document.getElementById('productsSection').style.display='none';
   hideFilterBar();renderBrandCards(sortCategoriesForHome(CATEGORIES));closeSidebarMobile();
@@ -1314,7 +1312,14 @@ function showOutfits(opts){
   if(!opts||!opts._q)_pushHash('#/outfits');
 }
 function _outfitRowHtml(){
-  if(!OUTFIT_PRODUCTS.length)return '';
+  if(!OUTFIT_PRODUCTS.length){
+    /* Produits pas encore chargés mais l'album Outfits existe : on réserve la rangée
+       pour que les tuiles en dessous ne sautent pas à l'arrivée des données */
+    if(!OUTFITS_CAT||DATA_READY)return '';
+    var sk='<div class="new-row-head"><h2>Outfits \u00b7 Inspiration</h2></div><div class="new-row" style="margin-bottom:26px">';
+    for(var i=0;i<6;i++)sk+='<div class="nr-card nr-outfit no-img" aria-hidden="true"></div>';
+    return sk+'</div>';
+  }
   var list=OUTFIT_PRODUCTS.slice().sort(function(a,b){return _outfitNum(b)-_outfitNum(a)}).slice(0,16);
   var h='<div class="new-row-head"><h2>Outfits \u00b7 Inspiration</h2><a onclick="showOutfits();return false">Voir tout ('+OUTFIT_PRODUCTS.length+') \u2192</a></div><div class="new-row" style="margin-bottom:24px">';
   list.forEach(function(p){
@@ -1394,10 +1399,13 @@ function showNouveautes(opts){
 }
 
 /* Rangée Nouveautés en page d'accueil (16 plus récents, scroll horizontal) */
+/* Haut de l'accueil, dans l'ordre : Outfits · Inspiration → Par catégorie → Nouveautés.
+   (Les blocs par marque suivent dans #brandsGrid.) Appelé une première fois avant l'arrivée
+   des produits : les tuiles s'affichent tout de suite, la rangée Outfits réserve sa place. */
 function renderNewRow(){
   var wrap=document.getElementById('newRow');if(!wrap)return;
   var all=PRODUCTS.filter(_isNew).sort(function(a,b){return(b.u||0)-(a.u||0)});
-  var oh=_outfitRowHtml();
+  var oh=_outfitRowHtml()+_catTilesHtml();
   if(all.length<4){if(oh){wrap.innerHTML=oh;wrap.style.display=''}else{wrap.style.display='none';wrap.innerHTML=''}return}
   var h=oh+'<div class="new-row-head"><h2>Nouveautés</h2><a onclick="showNouveautes();return false">Voir tout ('+all.length+') →</a></div><div class="new-row">';
   all.slice(0,16).forEach(function(p){
@@ -2554,6 +2562,42 @@ function resolveMultiWord(tokens){
 /* ═══════════════════════════════════════════════════════
    SMART SEARCH v4 — 3-level: strict → family → discovery
    ═══════════════════════════════════════════════════════ */
+/* Classe des produits par nouveauté en mélangeant les marques.
+   Chaque marque a sa file, du plus récent au plus ancien. À chaque position on prend la marque
+   dont le prochain produit est le plus récent, avec deux règles pour le mélange :
+   - jamais la même marque que les MIX_GAP positions précédentes ;
+   - chaque produit déjà montré d'une marque « vieillit » son suivant de MIX_STEP jours :
+     un arrivage de 100 pièces d'une marque ne passe pas devant tout le reste, les autres
+     marques remontent entre ses pièces. */
+var MIX_GAP=2,MIX_STEP=2*86400;
+function _mixKey(p){return p.br&&p.br!=='Autre'?p.br:((CAT_BRANDS[p.a]&&CAT_BRANDS[p.a][0])||p.a)}
+function _noveltyMix(prods){
+  var n=prods.length;if(n<3)return prods.slice();
+  var queues={},keys=[];
+  prods.forEach(function(p){var k=_mixKey(p);if(!queues[k]){queues[k]=[];keys.push(k)}queues[k].push(p)});
+  var B=keys.length,lists=new Array(B),pos=new Array(B),next=new Array(B);
+  for(var i=0;i<B;i++){
+    lists[i]=queues[keys[i]].sort(function(a,b){return(parseInt(b.u||0,10))-(parseInt(a.u||0,10))});
+    pos[i]=0;next[i]=parseInt(lists[i][0].u||0,10);
+  }
+  var out=new Array(n),r1=-1,r2=-1;
+  for(var o=0;o<n;o++){
+    var best=-1,bestV=-Infinity,alt=-1,altV=-Infinity;
+    for(var j=0;j<B;j++){
+      if(pos[j]<0)continue;
+      var v=next[j];
+      if(v>altV){altV=v;alt=j}
+      if(j!==r1&&j!==r2&&v>bestV){bestV=v;best=j}
+    }
+    if(best===-1)best=alt; /* il ne reste qu'une ou deux marques */
+    var L=lists[best];out[o]=L[pos[best]++];
+    if(pos[best]>=L.length)pos[best]=-1;
+    else next[best]=parseInt(L[pos[best]].u||0,10)-pos[best]*MIX_STEP;
+    r2=r1;r1=best;
+  }
+  return out;
+}
+
 function smartSearch(query){
   if(!query||!query.trim())return{products:PRODUCTS,brands:CATEGORIES,info:'',level:0,count:PRODUCTS.length,filters:{types:[],subtypes:[],colors:[],brands:[],free:[]},levelLabel:'',hint:''};
   var q=query.trim().toLowerCase().replace(/[\u2018\u2019']/g,"'");
@@ -2843,7 +2887,24 @@ function smartSearch(query){
   }
 
   results.sort(function(a,b){return b.score-a.score});
-  var products=results.map(function(r){return r.entry.p});
+  var products;
+  if(!hasBrand&&!freeTokens.length){
+    /* Recherche par type et/ou couleur seulement ("veste", "doudoune noire", tuiles de l'accueil) :
+       les résultats exacts se valent, et l'ordre des albums les ferait défiler marque par marque.
+       On les classe par nouveauté en alternant les marques ; les résultats élargis suivent. */
+    var _bands=[],_rest=[];
+    results.forEach(function(r){
+      if(r.level!==1){_rest.push(r.entry.p);return}
+      var k=Math.round(r.score*20),b=_bands.length?_bands[_bands.length-1]:null;
+      if(!b||b.k!==k){b={k:k,list:[]};_bands.push(b)}
+      b.list.push(r.entry.p);
+    });
+    products=[];
+    _bands.forEach(function(b){products=products.concat(_noveltyMix(b.list))});
+    products=products.concat(_rest);
+  }else{
+    products=results.map(function(r){return r.entry.p});
+  }
 
   /* Filter brands for display */
   var brandIds={};
