@@ -528,6 +528,7 @@ html.light .order-go{color:#fff}
   <div class="hero" id="hero"><h1>Streetwear & <em>Luxe</em></h1></div>
   <div class="new-row-wrap" id="newRow" style="display:none"></div>
   <div class="brands-grid" id="brandsGrid"></div>
+  <div class="new-row-wrap" id="outfitsRowBottom" style="display:none"></div>
   <div class="products-section" id="productsSection">
     <div class="products-header" id="productsHeader"></div>
     <div class="filter-mobile" id="filterMobile"></div>
@@ -927,7 +928,7 @@ function _needsData(fn){
   if(ps&&grid){
     document.getElementById('hero').style.display='none';
     document.getElementById('brandsGrid').style.display='none';
-    var _nrd=document.getElementById('newRow');if(_nrd)_nrd.style.display='none';
+    var _nrd=document.getElementById('newRow');if(_nrd)_nrd.style.display='none';var _obd=document.getElementById('outfitsRowBottom');if(_obd)_obd.style.display='none';
     ps.style.display='block';
     document.getElementById('productsHeader').innerHTML='<h2>Chargement…</h2>';
     grid.innerHTML='<p style="color:var(--text-dim);padding:20px">Chargement du catalogue…</p>';
@@ -1105,7 +1106,7 @@ function toggleGroup(gk){
 function showGroup(gk){
   CURRENT_VIEW='group';CURRENT_CAT='group-'+gk;setActiveMenu('group-'+gk);
   document.getElementById('hero').style.display='none';
-  document.getElementById('brandsGrid').style.display='';var _nrg=document.getElementById('newRow');if(_nrg)_nrg.style.display='none';
+  document.getElementById('brandsGrid').style.display='';var _nrg=document.getElementById('newRow');if(_nrg)_nrg.style.display='none';var _obg=document.getElementById('outfitsRowBottom');if(_obg)_obg.style.display='none';
   document.getElementById('productsSection').style.display='none';
   hideFilterBar();
   var filtered=CATEGORIES.filter(function(c){return getGroupForCat(c)===gk});
@@ -1312,7 +1313,7 @@ function showOutfits(opts){
   CURRENT_VIEW='outfits';CURRENT_CAT=null;setActiveMenu('outfits');
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
-  var _nr=document.getElementById('newRow');if(_nr)_nr.style.display='none';
+  var _nr=document.getElementById('newRow');if(_nr)_nr.style.display='none';var _ob=document.getElementById('outfitsRowBottom');if(_ob)_ob.style.display='none';
   document.getElementById('productsSection').style.display='block';
   document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>Outfits <span style="font-size:13px;color:var(--text-dim);font-weight:400">(tenues complètes composées avec les articles du catalogue — ouvre une tenue pour voir ses pièces)</span></h2>';
   hcpTrack('pageview',{url:'/outfits',title:'Outfits'});
@@ -1394,7 +1395,7 @@ function showNouveautes(opts){
   CURRENT_VIEW='nouveautes';CURRENT_CAT=null;setActiveMenu('nouveautes');
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
-  var _nr=document.getElementById('newRow');if(_nr)_nr.style.display='none';
+  var _nr=document.getElementById('newRow');if(_nr)_nr.style.display='none';var _ob=document.getElementById('outfitsRowBottom');if(_ob)_ob.style.display='none';
   document.getElementById('productsSection').style.display='block';
   var news=PRODUCTS.filter(_isNew);
   var subtitle=NEW_DAYS+' derniers jours';
@@ -1417,8 +1418,11 @@ function showNouveautes(opts){
    des produits : les tuiles s'affichent tout de suite, la rangée Outfits réserve sa place. */
 function renderNewRow(){
   var wrap=document.getElementById('newRow');if(!wrap)return;
+  var bot=document.getElementById('outfitsRowBottom');
   var all=PRODUCTS.filter(_isNew).sort(function(a,b){return(b.u||0)-(a.u||0)});
-  var oh=_outfitRowHtml()+_catTilesHtml();
+  var oh=_catTilesHtml();
+  /* Outfits : affichés APRÈS les marques (bloc séparé en bas de la home) */
+  if(bot){var oho=_outfitRowHtml();if(oho){bot.innerHTML=oho;bot.style.display=''}else{bot.style.display='none';bot.innerHTML=''}}
   if(all.length<4){if(oh){wrap.innerHTML=oh;wrap.style.display=''}else{wrap.style.display='none';wrap.innerHTML=''}return}
   var h=oh+'<div class="new-row-head"><h2>Nouveautés</h2><a onclick="showNouveautes();return false">Voir tout ('+all.length+') →</a></div><div class="new-row">';
   all.slice(0,16).forEach(function(p){
@@ -1469,7 +1473,7 @@ function showBrand(albumId,opts){
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='brand';CURRENT_CAT=albumId;setActiveMenu(albumId);
   document.getElementById('hero').style.display='none';
-  document.getElementById('brandsGrid').style.display='none';var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';
+  document.getElementById('brandsGrid').style.display='none';var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';var _obx=document.getElementById('outfitsRowBottom');if(_obx)_obx.style.display='none';
   document.getElementById('productsSection').style.display='block';
   var cat=CATEGORIES.find(function(c){return c.id===albumId});
   var catName=cat?cat.n:albumId;
@@ -1510,7 +1514,7 @@ function showType(ftList,opts,label){
   CURRENT_VIEW='type';CURRENT_CAT=null;setActiveMenu('home');
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
-  var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';
+  var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';var _obx=document.getElementById('outfitsRowBottom');if(_obx)_obx.style.display='none';
   document.getElementById('productsSection').style.display='block';
   var ftSet={};ftList.forEach(function(f){ftSet[f]=1});
   var prods=PRODUCTS.filter(function(p){return p.ft&&ftSet[p.ft]});
@@ -3293,7 +3297,7 @@ function executeSmartSearch(q,opts){
   CURRENT_VIEW='search';CURRENT_CAT=null;
   setActiveMenu('');
   document.getElementById('hero').style.display='none';
-  document.getElementById('brandsGrid').style.display='none';var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';
+  document.getElementById('brandsGrid').style.display='none';var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';var _obx=document.getElementById('outfitsRowBottom');if(_obx)_obx.style.display='none';
   document.getElementById('productsSection').style.display='block';
   hideFilterBar();
   var countText=result.count+' résultat'+(result.count!==1?'s':'');
@@ -3915,7 +3919,7 @@ function _vsShowResults(hits,topScore){
   CURRENT_VIEW='visual';CURRENT_CAT=null;setActiveMenu('');
   document.getElementById('hero').style.display='none';
   document.getElementById('brandsGrid').style.display='none';
-  var _nrv=document.getElementById('newRow');if(_nrv)_nrv.style.display='none';
+  var _nrv=document.getElementById('newRow');if(_nrv)_nrv.style.display='none';var _obv=document.getElementById('outfitsRowBottom');if(_obv)_obv.style.display='none';
   document.getElementById('productsSection').style.display='block';
   BRAND_PRODUCTS=prods;
   ACTIVE_FILTERS={types:[],colors:[],brands:[],prices:[]};ACTIVE_SORT=null;
@@ -4426,7 +4430,7 @@ function showFavorites(){
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='favorites';CURRENT_CAT=null;setActiveMenu('favorites');
   document.getElementById('hero').style.display='none';
-  document.getElementById('brandsGrid').style.display='none';var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';
+  document.getElementById('brandsGrid').style.display='none';var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';var _obx=document.getElementById('outfitsRowBottom');if(_obx)_obx.style.display='none';
   document.getElementById('productsSection').style.display='block';
   hideFilterBar();
   var favs=getFavorites();
@@ -4995,7 +4999,7 @@ function showSelection(ids,opts){
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='selection';CURRENT_CAT=null;setActiveMenu('');
   document.getElementById('hero').style.display='none';
-  document.getElementById('brandsGrid').style.display='none';var _nr=document.getElementById('newRow');if(_nr)_nr.style.display='none';
+  document.getElementById('brandsGrid').style.display='none';var _nr=document.getElementById('newRow');if(_nr)_nr.style.display='none';var _ob=document.getElementById('outfitsRowBottom');if(_ob)_ob.style.display='none';
   document.getElementById('productsSection').style.display='block';
   hideFilterBar();
   var byId={};PRODUCTS.forEach(function(p){byId[p.p]=p});
@@ -5093,7 +5097,7 @@ async function showQuoteView(quoteId){
   window.scrollTo({top:0,left:0,behavior:'auto'});
   CURRENT_VIEW='quote';CURRENT_CAT=null;
   document.getElementById('hero').style.display='none';
-  document.getElementById('brandsGrid').style.display='none';var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';
+  document.getElementById('brandsGrid').style.display='none';var _nrx=document.getElementById('newRow');if(_nrx)_nrx.style.display='none';var _obx=document.getElementById('outfitsRowBottom');if(_obx)_obx.style.display='none';
   document.getElementById('productsSection').style.display='block';
   document.getElementById('productsHeader').innerHTML='<button class="back-btn" onclick="showHome()">←</button><h2>Devis</h2>';
   hideFilterBar();
