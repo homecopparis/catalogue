@@ -269,8 +269,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .product-card:hover .price-overlay{opacity:1;transform:translateY(0)}
 .product-card .new-badge{position:absolute;bottom:10px;right:10px;background:var(--green);color:#0a0a0a;font-size:9px;font-weight:800;letter-spacing:.8px;padding:3px 7px;border-radius:5px;z-index:12;pointer-events:none}
 .new-row-wrap{margin-bottom:28px}
-.new-row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.new-row-head h2{font-family:var(--font-display);font-size:22px;font-weight:600}
+.new-row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.new-row-head h2{font-family:var(--font-display);font-size:17px;font-weight:600;letter-spacing:.01em}
 .new-row-head a{color:var(--green);font-size:13px;text-decoration:none;cursor:pointer}
 .new-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin}
 .new-row .nr-card{flex:0 0 130px;width:130px;border-radius:10px;overflow:hidden;cursor:pointer;position:relative;background:var(--card)}
@@ -396,14 +396,16 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   .products-header{padding-left:0}
 }
 /* ═══ ACCUEIL : tuiles par catégorie ═══ */
-.cat-tiles{margin-bottom:28px}
-.ct-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
-.ct-tile{position:relative;display:block;aspect-ratio:4/5;border-radius:12px;overflow:hidden;background:var(--surface);cursor:pointer;text-decoration:none;color:#fff}
+.cat-tiles{margin-bottom:22px}
+.ct-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.ct-row::-webkit-scrollbar{height:6px}
+.ct-row::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.ct-tile{position:relative;flex:0 0 140px;width:140px;aspect-ratio:4/5;border-radius:10px;overflow:hidden;background:var(--surface);cursor:pointer;text-decoration:none;color:#fff;scroll-snap-align:start}
 .ct-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
 .ct-tile:hover img{transform:scale(1.05)}
 .ct-tile::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.78) 0%,rgba(0,0,0,.15) 46%,rgba(0,0,0,0) 70%)}
-.ct-label{position:absolute;left:10px;right:10px;bottom:10px;z-index:1;font-size:14px;font-weight:600;line-height:1.2;text-shadow:0 1px 3px rgba(0,0,0,.6)}
-@media(max-width:1200px){.ct-row{grid-template-columns:repeat(4,1fr)}}
+.ct-label{position:absolute;left:8px;right:8px;bottom:8px;z-index:1;font-size:13px;font-weight:600;line-height:1.2;text-shadow:0 1px 3px rgba(0,0,0,.65)}
+
 @media(max-width:768px){
   .hero{padding:10px 0 22px}
   .ct-row{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;scroll-padding-left:16px;scrollbar-width:none;margin:0 -16px;padding:0 16px 4px}
