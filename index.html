@@ -2011,7 +2011,7 @@ var TYPE_DICT={
   'Polo':['polo','polo shirt'],
   'Chemise':['chemise','shirt','blouse','chemisette','surchemise','overshirt','sur-chemise'],
   'Hoodie':['hoodie','hoody','capuche','sweat à capuche','sweat capuche','pull capuche','hoodie zip','hoodie sans zip','hooded','sweat a capuche'],
-  'Sweatshirt':['sweatshirt','sweater','crewneck','crew neck','crew-neck'],
+  'Sweatshirt':['sweatshirt','sweatshirts','sweat','sweats','sweater','crewneck','crew neck','crew-neck','col rond'],
   'Pull':['pull','pullover','pull-over','tricot','knit','knitwear','maille','cardigan','gilet maille'],
   'Veste':['veste','jacket','blazer','blouson','bomber','doudoune','puffer','down jacket','parka','manteau','coat','windbreaker','coupe-vent','coupe vent','shell','goretex','gore-tex','gore tex','matelassé','matelasse','quilted','anorak','softshell','hardshell','imperméable','impermeable','gilet','body warmer','sans manche','2en1','3en1','reversible','réversible'],
   'Pantalon':['pantalon','pants','pant','trousers','chino','chinos','cargo','jogging','jogger','joggers','trackpant','trackpants','track pant','baggy','flare','wide leg'],
@@ -2087,7 +2087,36 @@ var SUBTYPE_DICT={
   'Manteaux':['manteau','manteaux','coat','parka','trench','trench coat'],
   'Bonnets':['bonnet','bonnets','beanie'],
   'Casquettes':['casquette','casquettes','cap','snapback','trucker','fitted','bob','bobs'],
-  'Jouets':['jouet','jouets','peluche','peluches']
+  'Jouets':['jouet','jouets','peluche','peluches'],
+  /* Types précis issus de la ré-analyse (scripts/apply_reclassify.py) */
+  'T-shirts manches longues':['t-shirt manches longues','tshirt manches longues','t shirt manches longues','tee manches longues','manches longues','manche longue','long sleeve','longsleeve','long sleeves'],
+  'Débardeurs':['debardeur','débardeur','debardeurs','débardeurs','tank top','marcel'],
+  'Surchemises':['surchemise','surchemises','sur-chemise','overshirt','over shirt','chemise veste'],
+  'Sweats zippés':['sweat zippe','sweat zippé','sweats zippes','sweat zip','hoodie zip','hoodie zippe','hoodie zippé','zip hoodie','full zip','zip up','gilet zippe','gilet zippé'],
+  'Polaires':['polaire','polaires','fleece','sherpa'],
+  'Pulls col roulé':['col roule','col roulé','pull col roule','pull col roulé','turtleneck','roll neck'],
+  'Polos en maille':['polo en maille','polo maille','polos en maille','knit polo','polo tricot'],
+  'Cardigans':['cardigan','cardigans','gilet en maille','gilet maille'],
+  'Pulls sans manches':['pull sans manches','pull sans manche','sweater vest','debardeur en maille'],
+  'Vestes en jean':['veste en jean','veste jean','vestes en jean','blouson en jean','blouson jean','denim jacket','jean jacket','veste denim'],
+  'Vestes en cuir':['veste en cuir','veste cuir','vestes en cuir','blouson en cuir','blouson cuir','leather jacket','perfecto'],
+  'Bombers':['bomber','bombers','teddy','varsity','blouson aviateur','college jacket'],
+  'Coupe-vent':['coupe-vent','coupe vent','coupevent','windbreaker','k-way','kway','veste de pluie','impermeable','imperméable'],
+  'Vestes de survêtement':['veste de survetement','veste de survêtement','veste survetement','veste survêtement','track jacket','track top','tracktop','veste jogging'],
+  'Blazers':['blazer','blazers','veste de costume','veste costume'],
+  'Vestes sans manches':['veste sans manches','veste sans manche','gilet sans manches','gilet sans manche'],
+  'Joggings':['jogging','joggings','jogger','joggers','pantalon de survetement','pantalon de survêtement','bas de survetement','bas de survêtement','trackpant','trackpants','track pant','sweatpants','sweatpant','pantalon jogging'],
+  'Pantalons cargo':['cargo','cargos','pantalon cargo','pantalons cargo','cargo pants','cargo pant'],
+  'Shorts de bain':['short de bain','shorts de bain','maillot de bain','swim short','swimshort','boxer de bain'],
+  'Leggings':['legging','leggings'],
+  'Jupes':['jupe','jupes','skirt'],
+  'Robes':['robe','robes','dress','dresses'],
+  'Combinaisons':['combinaison','combinaisons','jumpsuit'],
+  'Valises':['valise','valises','suitcase','bagage','trolley'],
+  'Coques de téléphone':['coque','coques','coque de telephone','coque telephone','coque iphone','phone case'],
+  'Chaussettes':['chaussette','chaussettes','socks'],
+  'Gants':['gant','gants','gloves'],
+  'Jeans':['jean','jeans','denim']
 };
 /* Reconnait un sous-type : correspondance exacte, ou tres proche (faute de frappe).
    Le garde-fou de longueur evite que "sac" soit avale par "sac a main". */
@@ -2099,6 +2128,9 @@ function _matchSubtype(text){
     var e=SUBTYPE_LIST[i];
     if(t===e.syn)return e.canon;
     if(t.length<e.syn.length*0.6)continue;
+    /* un mot plus court contenu dans le synonyme n'est pas une faute de frappe :
+       "chemise" ne doit pas devenir "surchemise", ni "hoodie" "hoodie zip" */
+    if(e.syn.indexOf(t)!==-1)continue;
     var sc=fuzzyMatch(t,e.syn);
     if(sc>=0.85&&sc>bestScore){bestScore=sc;best=e.canon}
   }
@@ -2181,7 +2213,17 @@ var FT_TO_TYPE={
   'Sac à main':'Sac','Sac bandoulière':'Sac','Pochette':'Sac','Cabas':'Sac','Mini sac':'Sac',
   'Sac seau':'Sac','Sac à dos':'Sac','Banane':'Sac','Sac de voyage':'Sac','Besace':'Sac',
   'Sacs':'Sac','Trousse':'Sac',
-  'Portefeuille':'Accessoire','Porte-cartes':'Accessoire','Étui':'Accessoire'
+  'Portefeuille':'Accessoire','Porte-cartes':'Accessoire','Étui':'Accessoire',
+  /* Types précis issus de la ré-analyse */
+  'T-shirts manches longues':'T-shirt','Débardeurs':'T-shirt','Surchemises':'Chemise',
+  'Sweats zippés':'Hoodie','Polaires':'Veste','Pulls':'Pull','Pulls col roulé':'Pull',
+  'Polos en maille':'Polo','Cardigans':'Pull','Pulls sans manches':'Pull',
+  'Vestes en jean':'Veste','Vestes en cuir':'Veste','Bombers':'Veste','Coupe-vent':'Veste',
+  'Vestes de survêtement':'Veste','Blazers':'Veste','Vestes sans manches':'Veste',
+  'Joggings':'Pantalon','Pantalons cargo':'Pantalon','Leggings':'Pantalon','Shorts de bain':'Short',
+  'Ensembles':'Ensemble','Valises':'Sac','Lunettes':'Lunettes',
+  'Bijoux':'Accessoire','Montres':'Accessoire','Cravates':'Accessoire','Gants':'Accessoire',
+  'Coques de téléphone':'Accessoire'
 };
 
 /* ── Mots vides ignorés dans les requêtes ── */
@@ -2255,8 +2297,10 @@ function buildSearchIndex(){
     var detectedTypes=[];
     var dtSet={};
 
-    /* 1. Category-level type */
-    if(cat&&cat.tp&&cat.tp!=='Multi'&&cat.tp!=='Jouet'){
+    /* 1. Category-level type — sauf si l'analyse photo (ft) a reconnu un autre type :
+       un t-shirt de l'album Moncler (album « Veste ») ne doit pas sortir sur « veste » */
+    var _ftC=p.ft&&FT_TO_TYPE[p.ft];
+    if(cat&&cat.tp&&cat.tp!=='Multi'&&cat.tp!=='Jouet'&&(!_ftC||_ftC===cat.tp)){
       var catConf=PURE_TYPE_CATS[cat.tp]?0.9:0.6;
       detectedTypes.push({type:cat.tp,conf:catConf});
       dtSet[cat.tp]=catConf;
@@ -3615,6 +3659,21 @@ var VS_FT_FAMILY={
   'Cabas':['Cabas','Sac à main','Sacs'],'Sac à dos':['Sac à dos'],
   'Portefeuille':['Portefeuille','Porte-cartes','Étui']
 };
+/* Types précis issus de la ré-analyse : chacun hérite de la famille de son type d'origine */
+(function(){
+  var HAUTS=['T-Shirts','T-shirts manches longues','Débardeurs','Polos'];
+  var SWEATS=['Sweats','Pulls à capuche','Sweats zippés','Pulls','Cardigans','Polaires','Pulls col roulé','Pulls sans manches','Polos en maille','Pulls & Mailles'];
+  var VESTES=['Vestes','Coupe-vent','Bombers','Vestes en jean','Vestes en cuir','Vestes de survêtement','Blazers','Vestes sans manches','Polaires','Manteaux','Doudounes'];
+  var BAS=['Pantalons','Joggings','Pantalons cargo','Jeans','Leggings'];
+  function add(list,fam){list.forEach(function(k){VS_FT_FAMILY[k]=fam})}
+  add(HAUTS,HAUTS);add(SWEATS,SWEATS);add(VESTES,VESTES);add(BAS,BAS);
+  VS_FT_FAMILY['Chemises']=VS_FT_FAMILY['Surchemises']=['Chemises','Surchemises'];
+  VS_FT_FAMILY['Shorts']=VS_FT_FAMILY['Shorts de bain']=['Shorts','Shorts de bain'];
+  VS_FT_FAMILY['Polos']=['Polos','Polos en maille','T-Shirts'];
+  VS_FT_FAMILY['Polos en maille']=['Polos en maille','Polos','Pulls'];
+  VS_FT_FAMILY['Pochette']=['Pochette','Sac bandoulière','Mini sac','Trousse'];
+  VS_FT_FAMILY['Portefeuille']=VS_FT_FAMILY['Porte-cartes']=['Portefeuille','Porte-cartes','Étui','Pochette'];
+})();
 
 function _vsDownscale(url,maxSide){
   return new Promise(function(res,rej){
@@ -4040,7 +4099,16 @@ function closeSidebarMobile(){document.querySelector('.sidebar').classList.remov
 /* Prix affiché : « 125 € » (espace insécable) */
 function _fmtPrice(v){return v?String(v)+'\u00a0€':''}
 /* Libellé d'un type pour la fiche produit : le champ ft est au pluriel ("Doudounes") */
-var TYPE_SINGULAR={'T-Shirts':'T-shirt','Vestes':'Veste','Pulls à capuche':'Pull à capuche','Sweats':'Sweat','Doudounes':'Doudoune','Pantalons':'Pantalon','Shorts':'Short','Pulls & Mailles':'Pull / maille','Chemises':'Chemise','Casquettes':'Casquette','Polos':'Polo','Bonnets':'Bonnet','Jeans':'Jean','Écharpes':'Écharpe','Jouets':'Jouet','Sacs':'Sac','Manteaux':'Manteau','Ceintures':'Ceinture'};
+var TYPE_SINGULAR={'T-Shirts':'T-shirt','Vestes':'Veste','Pulls à capuche':'Pull à capuche','Sweats':'Sweat','Doudounes':'Doudoune','Pantalons':'Pantalon','Shorts':'Short','Pulls & Mailles':'Pull / maille','Chemises':'Chemise','Casquettes':'Casquette','Polos':'Polo','Bonnets':'Bonnet','Jeans':'Jean','Écharpes':'Écharpe','Jouets':'Jouet','Sacs':'Sac','Manteaux':'Manteau','Ceintures':'Ceinture',
+  'T-shirts manches longues':'T-shirt manches longues','Débardeurs':'Débardeur','Surchemises':'Surchemise',
+  'Sweats zippés':'Sweat zippé','Polaires':'Polaire','Pulls':'Pull','Pulls col roulé':'Pull col roulé',
+  'Polos en maille':'Polo en maille','Cardigans':'Cardigan','Pulls sans manches':'Pull sans manches',
+  'Vestes en jean':'Veste en jean','Vestes en cuir':'Veste en cuir','Bombers':'Bomber','Coupe-vent':'Coupe-vent',
+  'Vestes de survêtement':'Veste de survêtement','Blazers':'Blazer','Vestes sans manches':'Veste sans manches',
+  'Joggings':'Jogging','Pantalons cargo':'Pantalon cargo','Shorts de bain':'Short de bain','Leggings':'Legging',
+  'Jupes':'Jupe','Robes':'Robe','Combinaisons':'Combinaison','Ensembles':'Ensemble','Valises':'Valise',
+  'Bijoux':'Bijou','Montres':'Montre','Cravates':'Cravate','Coques de téléphone':'Coque de téléphone',
+  'Sous-vêtements':'Sous-vêtement'};
 function _typeLabel(ft){return ft?(TYPE_SINGULAR[ft]||ft):''}
 /* Ligne « Doudoune · Noir » d'un produit */
 function _prodMeta(p){var m=[];var t=_typeLabel(p.ft);if(t)m.push(t);if(p.fc)m.push(p.fc);return m.join(' · ')}
