@@ -830,6 +830,7 @@ var PENDING_ACTION=null;   /* action différée en attendant les produits */
 var OUTFITS_ALBUM_ID='72177720335846367';
 var OUTFIT_PRODUCTS=[];var OUTFITS_CAT=null;var OUTFIT_PIECES=null;
 function _outfitNum(p){var m=(p.t||'').match(/outfit\s*(\d+)/i);return m?parseInt(m[1],10):9999}
+function _outfitPos(p){return p.o==null?1e9:p.o}
 function _isOutfitCat(c){return !!c&&(c.id===OUTFITS_ALBUM_ID||c.tp==='Outfit')}
 function _isOutfitProd(p){return !!p&&(p.a===OUTFITS_ALBUM_ID||(OUTFITS_CAT&&p.a===OUTFITS_CAT.id))}
 function _splitOutfitCats(cats){var out=[];for(var i=0;i<cats.length;i++){if(_isOutfitCat(cats[i]))OUTFITS_CAT=cats[i];else out.push(cats[i])}return out}
@@ -880,7 +881,7 @@ function applyFullData(data){
   });
   /* Outfits : sortis du catalogue produits (voir OUTFITS_ALBUM_ID) */
   CATEGORIES=_splitOutfitCats(CATEGORIES);
-  OUTFIT_PRODUCTS=PRODUCTS.filter(_isOutfitProd).sort(function(a,b){return _outfitNum(a)-_outfitNum(b)});
+  OUTFIT_PRODUCTS=PRODUCTS.filter(_isOutfitProd).sort(function(a,b){return _outfitPos(a)-_outfitPos(b)});
   if(OUTFIT_PRODUCTS.length)PRODUCTS=PRODUCTS.filter(function(p){return !_isOutfitProd(p)});
   /* Recalcul des compteurs des albums thematiques */
   Object.keys(THEMATIC_ALBUM_AGGREGATION).forEach(function(themeName){
@@ -1334,7 +1335,7 @@ function _outfitRowHtml(){
     for(var i=0;i<6;i++)sk+='<div class="nr-card nr-outfit no-img" aria-hidden="true"></div>';
     return sk+'</div>';
   }
-  var list=OUTFIT_PRODUCTS.slice().sort(function(a,b){return _outfitNum(b)-_outfitNum(a)}).slice(0,16);
+  var list=OUTFIT_PRODUCTS.slice(0,16);
   var h='<div class="new-row-head"><h2>Outfits \u00b7 Inspiration</h2><a onclick="showOutfits();return false">Voir tout ('+OUTFIT_PRODUCTS.length+') \u2192</a></div><div class="new-row" style="margin-bottom:24px">';
   list.forEach(function(p){
     var img=p.s?imgUrl(p.p,p.s,'n'):'';
