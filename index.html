@@ -1374,10 +1374,10 @@ function renderLbOutfit(p){
     if(pr)total+=parseInt(pr,10);else allPriced=false;
     h+='<div class="lb-outfit-item" onclick="openOutfitPiece(event,\''+escH(q.p)+'\')" title="'+escH(cn)+'">';
     if(im)h+='<img src="'+escH(im)+'" loading="lazy" referrerpolicy="no-referrer" alt="'+escH(cn)+'">';
-    h+='<span>'+escH(cn)+'</span>'+(pr?'<span>'+pr+' \u20ac</span>':'')+'</div>';
+    h+='<span>'+escH(cn)+'</span>'+(pr?'<span>'+pr+'</span>':'')+'</div>';
   });
   h+='</div>';
-  var lbl='Les pièces de la tenue ('+items.length+')'+(allPriced&&total>0?' <b class="lb-outfit-total">\u00b7 '+total+' \u20ac au total</b>':'');
+  var lbl='Les pièces de la tenue ('+items.length+')'+(allPriced&&total>0?' <b class="lb-outfit-total">\u00b7 '+total+' au total</b>':'');
   el.innerHTML='<div class="lb-outfit-label">'+lbl+'</div>'+h;el.style.display='';
 }
 function openOutfitPiece(e,pid){
@@ -1429,7 +1429,7 @@ function renderNewRow(){
   all.slice(0,16).forEach(function(p){
     var img=p.ts?imgUrl(p.p,p.ts,'q'):(p.s?imgUrl(p.p,p.s,'q'):'');
     var price=extractPrice(p.t);
-    h+='<div class="nr-card" data-fallback="'+(price?escH(price)+' \u20ac':'Image indisponible')+'" onclick="location.hash=\'#/p/'+escH(p.p)+'\'">';
+    h+='<div class="nr-card" data-fallback="'+(price?escH(price):'Image indisponible')+'" onclick="location.hash=\'#/p/'+escH(p.p)+'\'">';
     if(img)h+='<img src="'+escH(img)+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" alt="">';
     if(price)h+='<div class="nr-price">'+_fmtPrice(price)+'</div>';
     h+='</div>';
@@ -1441,7 +1441,7 @@ function renderNewRow(){
 /* ═══ FILTER SYSTEM ═══ */
 var ACTIVE_FILTERS={types:[],colors:[],brands:[],prices:[]};
 var ACTIVE_SORT=null; /* null | 'asc' | 'desc' (prix) */
-var PRICE_RANGES=[['lt100','< 100 €',0,100],['r100','100 – 200 €',100,200],['r200','200 – 300 €',200,300],['gt300','300 € et +',300,1e9]];
+var PRICE_RANGES=[['lt100','< 100',0,100],['r100','100 – 200',100,200],['r200','200 – 300',200,300],['gt300','300 et +',300,1e9]];
 /* Prix numerique d'un produit depuis son titre ("155e", "95", "115e (Acné)"). null si non parsable. */
 function _priceOf(p){
   var t=(p.t||'').trim();
@@ -4103,8 +4103,8 @@ function setupLightboxSwipe(){
 }
 function toggleSidebar(){document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.overlay').classList.toggle('open')}
 function closeSidebarMobile(){document.querySelector('.sidebar').classList.remove('open');document.querySelector('.overlay').classList.remove('open')}
-/* Prix affiché : « 125 € » (espace insécable) */
-function _fmtPrice(v){return v?String(v)+'\u00a0€':''}
+/* Prix affiché : « 125 » (sans symbole euro — exigence de la marque) */
+function _fmtPrice(v){return v?String(v):''}
 /* Libellé d'un type pour la fiche produit : le champ ft est au pluriel ("Doudounes") */
 var TYPE_SINGULAR={'T-Shirts':'T-shirt','Vestes':'Veste','Pulls à capuche':'Pull à capuche','Sweats':'Sweat','Doudounes':'Doudoune','Pantalons':'Pantalon','Shorts':'Short','Pulls & Mailles':'Pull / maille','Chemises':'Chemise','Casquettes':'Casquette','Polos':'Polo','Bonnets':'Bonnet','Jeans':'Jean','Écharpes':'Écharpe','Jouets':'Jouet','Sacs':'Sac','Manteaux':'Manteau','Ceintures':'Ceinture',
   'T-shirts manches longues':'T-shirt manches longues','Débardeurs':'Débardeur','Surchemises':'Surchemise',
@@ -4938,7 +4938,7 @@ function onUserLogout(){USER_PROFILE=null;CART=_guestCartLoad();updateCartBadge(
    dans le presse-papiers et on ouvre la conversation (ig.me/m/<compte>). */
 var IG_HANDLE='homecopparis_';
 var ORDER_PID=null;
-/* « Moncler · Doudoune · Noir · 125 € » */
+/* « Moncler · Doudoune · Noir · 125 » (sans symbole euro) */
 function _orderLine(p){
   var cat=CATEGORIES.find(function(c){return c.id===p.a});
   var parts=[];if(cat)parts.push(cat.n);
